@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="MatchFeedbackConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/config/MatchFeedbackConfig.cs" id="1_match_feedback"]
+
+[resource]
+script = ExtResource("1_match_feedback")
+DragContactTolerance = 30.0
+StageMoveDuration = 0.24
+StageHoldDuration = 0.09
+CrashDuration = 0.3
+FadeDuration = 0.26
+StageGapFactor = 0.96
+StageLiftHeight = 40.0
+StageScale = 1.1
+ImpactScale = 1.16
+ImpactTintColor = Color(1.1, 0.95, 0.7, 1)
+MatchScore = 100
+FlashSize = 92.0
+FlashExpandScale = 1.72
+FlashDuration = 0.17
+FlashMaxAlpha = 0.95
+FlashColor = Color(1, 0.985, 0.94, 1)
+ScorePopupDuration = 0.98
+ScoreStartScale = 0.82
+ScorePeakScale = 1.56
+ScoreSettleScale = 1.14
+ScoreFloatDistance = 116.0
+ScoreBounceUpDuration = 0.16
+ScoreBounceDownDuration = 0.2
+ScoreFontSize = 64
+ScoreOutlineSize = 6
+ScoreFontColor = Color(1, 0.975, 0.73, 1)
+ScoreOutlineColor = Color(0.42, 0.2, 0.04, 1)
+ScoreMaxAlpha = 1.0

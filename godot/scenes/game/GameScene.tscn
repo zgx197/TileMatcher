@@ -1,8 +1,9 @@
-[gd_scene load_steps=9 format=4 uid="uid://csj5buw4bn8l"]
+[gd_scene load_steps=10 format=4 uid="uid://csj5buw4bn8l"]
 
 [ext_resource type="Script" path="res://scripts/game/GameScene.cs" id="1_te16v"]
 [ext_resource type="Script" path="res://scripts/board/BoardController.cs" id="2_qvnq0"]
 [ext_resource type="Resource" path="res://configs/layout_profiles/default_catalog.tres" id="3_catalog"]
+[ext_resource type="Resource" path="res://configs/effects/default_match_feedback.tres" id="4_match_feedback"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_boardbg"]
 bg_color = Color(0.0588235, 0.32549, 0.231373, 0.780392)
@@ -320,3 +321,4 @@ text = "固定原型"
 [node name="BoardController" type="Node2D" parent="."]
 script = ExtResource("2_qvnq0")
 ProfileCatalog = ExtResource("3_catalog")
+MatchFeedbackConfig = ExtResource("4_match_feedback")

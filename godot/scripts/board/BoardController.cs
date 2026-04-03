@@ -26,6 +26,9 @@ public partial class BoardController : Node2D
     /// <summary>当场景未显式绑定档案目录时，回退到这份默认资源。</summary>
     private const string DefaultCatalogPath = "res://configs/layout_profiles/default_catalog.tres";
 
+    /// <summary>场景未显式绑定消除反馈配置时，回退使用这份默认资源。</summary>
+    private const string DefaultMatchFeedbackPath = "res://configs/effects/default_match_feedback.tres";
+
     /// <summary>棋盘左右留白，避免牌桌贴边。</summary>
     private const float SidePadding = 36.0f;
 
@@ -49,6 +52,33 @@ public partial class BoardController : Node2D
 
     /// <summary>拖拽时允许设置的安全最大 ZIndex，避免触发 Godot CanvasItem 上限报错。</summary>
     private const int SafeMaxDragZIndex = 4000;
+
+    /// <summary>拖拽命中判定时，允许主体矩形向外扩张的接触容差。</summary>
+    private const float DragContactTolerance = 28.0f;
+
+    /// <summary>两张牌先移动到碰撞预备位的动画时长。</summary>
+    private const double MatchStageMoveDuration = 0.24;
+
+    /// <summary>在预备位短暂停顿的时间，让碰撞更有仪式感。</summary>
+    private const double MatchStageHoldDuration = 0.08;
+
+    /// <summary>从预备位飞向中点并碰撞的动画时长。</summary>
+    private const double MatchCrashDuration = 0.28;
+
+    /// <summary>碰撞后淡出和缩放动画时长。</summary>
+    private const double MatchFadeDuration = 0.24;
+
+    /// <summary>两张牌在碰撞前保留的左右间距。</summary>
+    private const float MatchStageGapFactor = 0.96f;
+
+    /// <summary>预备位整体向上悬浮的视觉抬升量。</summary>
+    private const float MatchStageLiftHeight = 36.0f;
+
+    /// <summary>碰撞瞬间两张牌共同放大的峰值倍率。</summary>
+    private const float MatchImpactScale = 1.12f;
+
+    /// <summary>分数弹字持续时间。</summary>
+    private const double ScorePopupDuration = 0.82;
 
     /// <summary>当前牌桌上真实存在的全部牌视图实例。</summary>
     private readonly List<TileView> _tileViews = [];
@@ -98,11 +128,22 @@ public partial class BoardController : Node2D
     /// <summary>拖拽前的原始 ZIndex。拖拽结束后必须恢复。</summary>
     private int _dragTileOriginalZIndex;
 
+    /// <summary>消除动画播放期间暂时锁定交互，避免同一时刻重复输入。</summary>
+    private bool _interactionLocked;
+
     [Export]
     public PackedScene TileScene { get; set; } = null!;
 
     [Export]
     public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
+
+    /// <summary>
+    /// 消除反馈资源。
+    /// 这里集中管理拖拽容差、三段动画、白色爆点和分数弹跳等“可调手感参数”，
+    /// 避免这些表现层数值继续散落在交互逻辑代码里。
+    /// </summary>
+    [Export]
+    public MatchFeedbackConfig MatchFeedbackConfig { get; set; } = null!;
 
     [Signal]
     public delegate void BoardGeneratedEventHandler(string summary);
@@ -142,6 +183,7 @@ public partial class BoardController : Node2D
         }
 
         EnsureProfileCatalogLoaded();
+        EnsureMatchFeedbackLoaded();
         EnsureDefaultProfileSelected();
     }
 
@@ -157,6 +199,11 @@ public partial class BoardController : Node2D
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_currentLayout is null)
+        {
+            return;
+        }
+
+        if (_interactionLocked)
         {
             return;
         }
@@ -478,6 +525,7 @@ public partial class BoardController : Node2D
             return;
         }
 
+        LogBoard($"拖拽命中目标，开始消除动画: dragged={DescribeTile(draggedTile.Data)}, target={DescribeTile(targetTile.Data)}");
         RemoveMatchedPair(draggedTile, targetTile);
     }
 
@@ -485,14 +533,18 @@ public partial class BoardController : Node2D
     /// 为被拖拽牌查找一个可作为消除目标的牌。
     /// </summary>
     /// <remarks>
-    /// 当前只接受：
-    /// - 另一张牌
-    /// - 可见
-    /// - 未移除
-    /// - 可移动
-    /// - 同牌面
-    /// - 主体矩形相交
-    /// 后续如果要提升手感，可以在这里演进为吸附或距离判定。
+    /// 这里刻意允许跨层命中。
+    /// 也就是说，只要另一张牌当前仍然可见、未移除、同牌面，并且主体矩形在容差范围内发生接触，
+    /// 就允许被视为一次“触碰到目标”。
+    ///
+    /// 这样做是为了贴近当前参考玩法中的观感：
+    /// - 被拖拽牌可以去触碰其他层仍然露出的同牌面麻将
+    /// - 不强制要求目标牌本身也必须是可拖拽状态
+    ///
+    /// 当前的“触碰”不是严格矩形相交，而是：
+    /// - 先把被拖拽牌矩形按容差向外扩张
+    /// - 再检测是否与目标牌主体矩形相交
+    /// 这样拖拽手感会更接近参考游戏，不需要把两张牌完全压进彼此内部。
     /// </remarks>
     private TileView? FindDragMatchTarget(TileView draggedTile)
     {
@@ -501,10 +553,11 @@ public partial class BoardController : Node2D
         return _tileViews
             .Where(tileView => tileView != draggedTile)
             .Where(tileView => tileView.Visible && !tileView.Data.Removed)
-            .Where(tileView => tileView.Data.Movable)
             .Where(tileView => tileView.Data.Type == draggedTile.Data.Type)
-            .OrderByDescending(tileView => tileView.ZIndex)
-            .FirstOrDefault(tileView => draggedRect.Intersects(tileView.GetGlobalRect()));
+            .Where(tileView => IsWithinContactTolerance(draggedRect, tileView.GetGlobalRect()))
+            .OrderBy(tileView => GetRectGapDistance(draggedRect, tileView.GetGlobalRect()))
+            .ThenByDescending(tileView => tileView.ZIndex)
+            .FirstOrDefault();
     }
 
     /// <summary>
@@ -630,22 +683,86 @@ public partial class BoardController : Node2D
     /// <summary>
     /// 移除一对成功匹配的牌，并刷新整桌状态。
     /// </summary>
-    private void RemoveMatchedPair(TileView a, TileView b)
+    private async void RemoveMatchedPair(TileView a, TileView b)
     {
+        var feedback = GetMatchFeedback();
+
+        _interactionLocked = true;
+        _selectedTile = null;
+        _pressedTile = null;
+        _draggingTile = null;
+
+        var rectA = a.GetGlobalRect();
+        var rectB = b.GetGlobalRect();
+        var centerA = GetRectCenter(rectA);
+        var centerB = GetRectCenter(rectB);
+        var collisionCenter = (centerA + centerB) * 0.5f;
+        var stageAxis = Vector2.Right;
+        var stageGap = ResolveStageGap(rectA, rectB, stageAxis, feedback.StageGapFactor);
+        var hoverOffset = new Vector2(0.0f, -feedback.StageLiftHeight);
+        var stageCenterA = collisionCenter - stageAxis * stageGap;
+        var stageCenterB = collisionCenter + stageAxis * stageGap;
+        var stagePositionA = stageCenterA - rectA.Size * 0.5f + hoverOffset;
+        var stagePositionB = stageCenterB - rectB.Size * 0.5f + hoverOffset;
+        var crashPositionA = collisionCenter - rectA.Size * 0.5f;
+        var crashPositionB = collisionCenter - rectB.Size * 0.5f;
+
+        // 第一段：两张牌各自悬浮到碰撞前的左右侧或前后侧预备位。
+        var stageTween = CreateTween();
+        stageTween.SetParallel(true);
+        stageTween.SetEase(Tween.EaseType.Out);
+        stageTween.SetTrans(Tween.TransitionType.Cubic);
+        stageTween.TweenProperty(a, "global_position", stagePositionA, feedback.StageMoveDuration);
+        stageTween.TweenProperty(b, "global_position", stagePositionB, feedback.StageMoveDuration);
+        stageTween.TweenProperty(a, "scale", Vector2.One * feedback.StageScale, feedback.StageMoveDuration);
+        stageTween.TweenProperty(b, "scale", Vector2.One * feedback.StageScale, feedback.StageMoveDuration);
+        await ToSignal(stageTween, Tween.SignalName.Finished);
+
+        await ToSignal(GetTree().CreateTimer(feedback.StageHoldDuration), SceneTreeTimer.SignalName.Timeout);
+
+        // 第二段：两张牌以可见速度飞向同一个中点，形成“碰撞”感。
+        var crashTween = CreateTween();
+        crashTween.SetParallel(true);
+        crashTween.SetEase(Tween.EaseType.In);
+        crashTween.SetTrans(Tween.TransitionType.Quart);
+        crashTween.TweenProperty(a, "global_position", crashPositionA, feedback.CrashDuration);
+        crashTween.TweenProperty(b, "global_position", crashPositionB, feedback.CrashDuration);
+        crashTween.TweenProperty(a, "scale", Vector2.One * feedback.ImpactScale, feedback.CrashDuration);
+        crashTween.TweenProperty(b, "scale", Vector2.One * feedback.ImpactScale, feedback.CrashDuration);
+        await ToSignal(crashTween, Tween.SignalName.Finished);
+
+        a.Modulate = feedback.ImpactTintColor;
+        b.Modulate = feedback.ImpactTintColor;
+        ShowImpactFlash(collisionCenter, feedback);
+        ShowScorePopup(collisionCenter, feedback.MatchScore, feedback);
+
         a.Data.Removed = true;
         b.Data.Removed = true;
-        _selectedTile = null;
         _matchCount += 1;
-        _score += 100;
+        _score += feedback.MatchScore;
+
+        // 第三段：碰撞之后两张牌一起收缩淡出。
+        var fadeTween = CreateTween();
+        fadeTween.SetParallel(true);
+        fadeTween.TweenProperty(a, "modulate", new Color(1f, 1f, 1f, 0f), feedback.FadeDuration);
+        fadeTween.TweenProperty(b, "modulate", new Color(1f, 1f, 1f, 0f), feedback.FadeDuration);
+        fadeTween.TweenProperty(a, "scale", Vector2.One * 0.54f, feedback.FadeDuration);
+        fadeTween.TweenProperty(b, "scale", Vector2.One * 0.54f, feedback.FadeDuration);
+        await ToSignal(fadeTween, Tween.SignalName.Finished);
 
         a.Visible = false;
         b.Visible = false;
+        a.Modulate = Colors.White;
+        b.Modulate = Colors.White;
+        a.Scale = Vector2.One;
+        b.Scale = Vector2.One;
 
         RefreshTileStates();
         RefreshVisibleLayers();
 
         LogBoard($"完成消除: a={DescribeTile(a.Data)}, b={DescribeTile(b.Data)}, score={_score}, matches={_matchCount}");
         EmitSignal(SignalName.BoardStateChanged, $"成功消除一对 {a.Data.Type}，当前已消除 {_matchCount} 对");
+        _interactionLocked = false;
     }
 
     /// <summary>清空当前点击选中状态。</summary>
@@ -744,6 +861,37 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>选择默认规则档案，若目录为空则退回最小空规则。</summary>
+    /// <summary>
+    /// 统一读取消除反馈资源。
+    /// 如果场景没有绑定资源，则回退到默认路径；再失败时则生成一份运行时默认值，
+    /// 保证表现资源缺失不会把核心配对流程直接打断。
+    /// </summary>
+    private MatchFeedbackConfig GetMatchFeedback()
+    {
+        if (MatchFeedbackConfig is not null)
+        {
+            return MatchFeedbackConfig;
+        }
+
+        MatchFeedbackConfig = GD.Load<MatchFeedbackConfig>(DefaultMatchFeedbackPath);
+        if (MatchFeedbackConfig is null)
+        {
+            GD.PushWarning($"[BoardController] 无法加载默认消除反馈配置，使用运行时默认值: {DefaultMatchFeedbackPath}");
+            MatchFeedbackConfig = new MatchFeedbackConfig();
+        }
+
+        return MatchFeedbackConfig;
+    }
+
+    /// <summary>
+    /// 在 _Ready 阶段提前准备反馈资源。
+    /// 这样如果 Inspector 里忘记绑定资源，会更早发现并回退，而不是等首次消除时才触发。
+    /// </summary>
+    private void EnsureMatchFeedbackLoaded()
+    {
+        _ = GetMatchFeedback();
+    }
+
     private void EnsureDefaultProfileSelected()
     {
         var profiles = GetProfiles();
@@ -779,5 +927,159 @@ public partial class BoardController : Node2D
     private static string DescribeTile(AppTileData tile)
     {
         return $"Tile#{tile.Id} {tile.Type} @ ({tile.GX},{tile.GY},{tile.GZ})";
+    }
+
+    /// <summary>返回矩形中心点。</summary>
+    private static Vector2 GetRectCenter(Rect2 rect)
+    {
+        return rect.Position + rect.Size * 0.5f;
+    }
+
+    /// <summary>
+     /// 计算两张牌在碰撞前应保留的展开间距。
+     /// </summary>
+    private static float ResolveStageGap(Rect2 rectA, Rect2 rectB, Vector2 axis, float stageGapFactor)
+    {
+        if (Mathf.Abs(axis.X) > Mathf.Abs(axis.Y))
+        {
+            return (rectA.Size.X + rectB.Size.X) * 0.5f * stageGapFactor;
+        }
+
+        return (rectA.Size.Y + rectB.Size.Y) * 0.5f * stageGapFactor;
+    }
+
+    /// <summary>
+    /// 在碰撞点附近生成一个“+分数”的轻量提示。
+    /// </summary>
+    /// <summary>
+    /// 在碰撞中点生成一个短促白闪。
+    /// </summary>
+    private void ShowImpactFlash(Vector2 globalCenter, MatchFeedbackConfig feedback)
+    {
+        var localCenter = ToLocal(globalCenter);
+        var flashSize = new Vector2(feedback.FlashSize, feedback.FlashSize);
+        var radius = (int)(feedback.FlashSize * 0.5f);
+        var flashStyle = new StyleBoxFlat
+        {
+            BgColor = feedback.FlashColor,
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomRight = radius,
+            CornerRadiusBottomLeft = radius,
+        };
+
+        var flash = new Panel
+        {
+            Position = localCenter - flashSize * 0.5f,
+            Size = flashSize,
+            ZIndex = SafeMaxDragZIndex,
+            Scale = Vector2.One * 0.35f,
+            Modulate = new Color(feedback.FlashColor.R, feedback.FlashColor.G, feedback.FlashColor.B, 0.0f),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        flash.AddThemeStyleboxOverride("panel", flashStyle);
+        flash.PivotOffset = flashSize * 0.5f;
+        AddChild(flash);
+
+        var flashTween = CreateTween();
+        flashTween.SetParallel(true);
+        flashTween.SetEase(Tween.EaseType.Out);
+        flashTween.SetTrans(Tween.TransitionType.Cubic);
+        flashTween.TweenProperty(
+            flash,
+            "modulate",
+            new Color(feedback.FlashColor.R, feedback.FlashColor.G, feedback.FlashColor.B, feedback.FlashMaxAlpha),
+            feedback.FlashDuration * 0.35).From(new Color(feedback.FlashColor.R, feedback.FlashColor.G, feedback.FlashColor.B, 0.0f));
+        flashTween.TweenProperty(flash, "scale", Vector2.One * feedback.FlashExpandScale, feedback.FlashDuration);
+        flashTween.Chain().TweenProperty(
+            flash,
+            "modulate",
+            new Color(feedback.FlashColor.R, feedback.FlashColor.G, feedback.FlashColor.B, 0.0f),
+            feedback.FlashDuration * 0.65);
+        flashTween.Finished += flash.QueueFree;
+    }
+
+    /// <summary>
+    /// 判断两个牌面主体矩形是否已经进入可接受的接触范围。
+    /// </summary>
+    /// <summary>
+    /// 在碰撞点附近生成更强的分数提示，强调“已经成功消除”。
+    /// </summary>
+    private void ShowScorePopup(Vector2 globalCenter, int scoreValue, MatchFeedbackConfig feedback)
+    {
+        var localCenter = ToLocal(globalCenter);
+        var popup = new Label
+        {
+            Text = $"+{scoreValue}",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            ZIndex = SafeMaxDragZIndex,
+            Scale = Vector2.One * feedback.ScoreStartScale,
+            Modulate = new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, 0.0f),
+        };
+        popup.AddThemeFontSizeOverride("font_size", feedback.ScoreFontSize);
+        popup.AddThemeColorOverride("font_color", feedback.ScoreFontColor);
+        popup.AddThemeColorOverride("font_outline_color", feedback.ScoreOutlineColor);
+        popup.AddThemeConstantOverride("outline_size", feedback.ScoreOutlineSize);
+        AddChild(popup);
+
+        popup.Size = popup.GetMinimumSize() + new Vector2(18.0f, 10.0f);
+        popup.PivotOffset = popup.Size * 0.5f;
+        popup.Position = localCenter - popup.Size * 0.5f + new Vector2(0.0f, -8.0f);
+
+        var popupTween = CreateTween();
+        popupTween.SetParallel(true);
+        popupTween.TweenProperty(
+            popup,
+            "position",
+            popup.Position + new Vector2(0.0f, -feedback.ScoreFloatDistance),
+            feedback.ScorePopupDuration);
+        popupTween.TweenProperty(popup, "scale", Vector2.One * feedback.ScorePeakScale, feedback.ScoreBounceUpDuration)
+            .From(Vector2.One * feedback.ScoreStartScale);
+        popupTween.Chain().TweenProperty(popup, "scale", Vector2.One * feedback.ScoreSettleScale, feedback.ScoreBounceDownDuration);
+        popupTween.TweenProperty(
+            popup,
+            "modulate",
+            new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, 0.0f),
+            feedback.ScorePopupDuration)
+            .From(new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, feedback.ScoreMaxAlpha));
+        popupTween.Finished += popup.QueueFree;
+    }
+
+    /// <summary>
+    /// 判定两张牌是否已经进入可接受的接触容差范围。
+    /// 这属于拖拽手感参数，因此走表现配置而不是业务规则配置。
+    /// </summary>
+    private bool IsWithinContactTolerance(Rect2 draggedRect, Rect2 targetRect)
+    {
+        return draggedRect.Grow(GetMatchFeedback().DragContactTolerance).Intersects(targetRect);
+    }
+
+    /// <summary>
+    /// 计算两个矩形之间的最小间距，用于在多个候选目标中选出最近的那一个。
+    /// </summary>
+    private static float GetRectGapDistance(Rect2 a, Rect2 b)
+    {
+        var dx = 0.0f;
+        if (a.End.X < b.Position.X)
+        {
+            dx = b.Position.X - a.End.X;
+        }
+        else if (b.End.X < a.Position.X)
+        {
+            dx = a.Position.X - b.End.X;
+        }
+
+        var dy = 0.0f;
+        if (a.End.Y < b.Position.Y)
+        {
+            dy = b.Position.Y - a.End.Y;
+        }
+        else if (b.End.Y < a.Position.Y)
+        {
+            dy = a.Position.Y - b.End.Y;
+        }
+
+        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 }

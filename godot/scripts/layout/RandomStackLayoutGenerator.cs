@@ -94,6 +94,9 @@ public static class RandomStackLayoutGenerator
             previousLayer = CreateTemporaryLayer(nextLayer, z, tileShape);
         }
 
+        var pairDeck = TileTypeDeckBuilder.BuildShuffledPairDeck(layers.Sum(layer => layer.Count), rng);
+        var typeIndex = 0;
+
         for (var z = 0; z < layers.Count; z++)
         {
             foreach (var position in layers[z])
@@ -101,7 +104,7 @@ public static class RandomStackLayoutGenerator
                 layout.Tiles.Add(new AppTileData
                 {
                     Id = nextId++,
-                    Type = PickTileType(rng),
+                    Type = pairDeck[typeIndex++],
                     GX = position.X,
                     GY = position.Y,
                     GZ = z,
@@ -275,25 +278,6 @@ public static class RandomStackLayoutGenerator
                 Shape = tileShape,
             })
             .ToList();
-    }
-
-    /// <summary>
-    /// 随机选择一个牌面类型。
-    /// </summary>
-    /// <remarks>
-    /// 当前只是调试数据，尚未保证成对分布或可解性。
-    /// </remarks>
-    private static string PickTileType(RandomNumberGenerator rng)
-    {
-        string[] tileTypes =
-        [
-            "1B", "2B", "3B", "4B", "5B", "6B",
-            "1D", "2D", "3D", "4D", "5D", "6D",
-            "1W", "2W", "3W", "4W", "5W", "6W",
-            "E", "S", "W", "N", "R", "G", "C",
-        ];
-
-        return tileTypes[rng.RandiRange(0, tileTypes.Length - 1)];
     }
 
     /// <summary>原地打乱列表。</summary>
