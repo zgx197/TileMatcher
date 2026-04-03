@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=4 uid="uid://csj5buw4bn8l"]
+[gd_scene load_steps=11 format=4 uid="uid://csj5buw4bn8l"]
 
 [ext_resource type="Script" path="res://scripts/game/GameScene.cs" id="1_te16v"]
 [ext_resource type="Script" path="res://scripts/board/BoardController.cs" id="2_qvnq0"]
@@ -55,6 +55,15 @@ border_color = Color(0.662745, 0.905882, 0.819608, 0.501961)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlaymask"]
 bg_color = Color(0, 0, 0, 0)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tipbox"]
+bg_color = Color(0.0313726, 0.0666667, 0.0588235, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.28)
+shadow_size = 10
+
 [node name="GameScene" type="Node2D"]
 script = ExtResource("1_te16v")
 
@@ -95,6 +104,29 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 10
 mouse_filter = 2
+
+[node name="InteractionTip" type="PanelContainer" parent="UI/Root"]
+visible = false
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -140.0
+offset_top = 100.0
+offset_right = 140.0
+offset_bottom = 146.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tipbox")
+modulate = Color(1, 1, 1, 0)
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="UI/Root/InteractionTip"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "被左右锁住"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Stats" type="HBoxContainer" parent="UI/Root/TopBar"]
 layout_mode = 2

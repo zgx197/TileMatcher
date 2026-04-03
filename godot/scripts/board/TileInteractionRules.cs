@@ -23,6 +23,60 @@ namespace TileMatcher.Board;
 public static class TileInteractionRules
 {
     /// <summary>
+    /// 统一验证两张牌是否满足一次合法配对，并返回结构化结果。
+    /// </summary>
+    public static MatchValidationResult ValidateMatchPair(
+        AppTileData first,
+        AppTileData second,
+        IReadOnlyCollection<AppTileData> activeTiles)
+    {
+        if (first.Removed || second.Removed)
+        {
+            return MatchValidationResult.Fail(
+                MatchFailureKind.Removed,
+                "目标已移除");
+        }
+
+        if (first.Id == second.Id)
+        {
+            return MatchValidationResult.Fail(
+                MatchFailureKind.SameTile,
+                "不能与自己配对");
+        }
+
+        if (first.Type != second.Type)
+        {
+            return MatchValidationResult.Fail(
+                MatchFailureKind.TypeMismatch,
+                "牌面不同，无法消除");
+        }
+
+        var firstState = Evaluate(first, activeTiles);
+        if (!firstState.CanParticipateInMatch)
+        {
+            return MatchValidationResult.Fail(
+                MatchFailureKind.SourceBlocked,
+                firstState.GetPlayerHintText(),
+                firstState.PrimaryBlockReason,
+                firstState);
+        }
+
+        var secondState = Evaluate(second, activeTiles);
+        if (!secondState.CanParticipateInMatch)
+        {
+            return MatchValidationResult.Fail(
+                MatchFailureKind.TargetBlocked,
+                secondState.GetPlayerHintText(),
+                TileBlockReason.None,
+                default,
+                secondState.PrimaryBlockReason,
+                secondState);
+        }
+
+        return MatchValidationResult.Success();
+    }
+
+    /// <summary>
     /// 评估一张牌在当前棋盘快照中的交互状态。
     /// </summary>
     public static TileInteractionState Evaluate(AppTileData tile, IReadOnlyCollection<AppTileData> activeTiles)
@@ -67,40 +121,76 @@ public static class TileInteractionRules
         IReadOnlyCollection<AppTileData> activeTiles,
         out string failureReason)
     {
-        if (first.Removed || second.Removed)
-        {
-            failureReason = "目标牌已被移除";
-            return false;
-        }
+        var result = ValidateMatchPair(first, second, activeTiles);
+        failureReason = result.PlayerMessage;
+        return result.IsValid;
+    }
+}
 
-        if (first.Id == second.Id)
-        {
-            failureReason = "不能与自己配对";
-            return false;
-        }
+/// <summary>
+/// 单张牌的主要锁定原因。
+/// </summary>
+public enum TileBlockReason
+{
+    None = 0,
+    Above = 1,
+    LeftRight = 2,
+    TopBottom = 3,
+}
 
-        if (first.Type != second.Type)
-        {
-            failureReason = "牌面不同";
-            return false;
-        }
+/// <summary>
+/// 一次配对尝试失败的原因类型。
+/// </summary>
+public enum MatchFailureKind
+{
+    None = 0,
+    Removed = 1,
+    SameTile = 2,
+    TypeMismatch = 3,
+    SourceBlocked = 4,
+    TargetBlocked = 5,
+}
 
-        var firstState = Evaluate(first, activeTiles);
-        if (!firstState.CanParticipateInMatch)
-        {
-            failureReason = $"发起牌当前不可参与消除：{firstState.BuildDebugSummary()}";
-            return false;
-        }
+/// <summary>
+/// 一次配对尝试的结构化校验结果。
+/// </summary>
+public readonly record struct MatchValidationResult(
+    bool IsValid,
+    MatchFailureKind FailureKind,
+    string PlayerMessage,
+    TileBlockReason SourceBlockReason,
+    TileInteractionState SourceState,
+    TileBlockReason TargetBlockReason,
+    TileInteractionState TargetState)
+{
+    public static MatchValidationResult Success()
+    {
+        return new MatchValidationResult(
+            true,
+            MatchFailureKind.None,
+            string.Empty,
+            TileBlockReason.None,
+            default,
+            TileBlockReason.None,
+            default);
+    }
 
-        var secondState = Evaluate(second, activeTiles);
-        if (!secondState.CanParticipateInMatch)
-        {
-            failureReason = $"目标牌当前不可参与消除：{secondState.BuildDebugSummary()}";
-            return false;
-        }
-
-        failureReason = string.Empty;
-        return true;
+    public static MatchValidationResult Fail(
+        MatchFailureKind failureKind,
+        string playerMessage,
+        TileBlockReason sourceBlockReason = TileBlockReason.None,
+        TileInteractionState sourceState = default,
+        TileBlockReason targetBlockReason = TileBlockReason.None,
+        TileInteractionState targetState = default)
+    {
+        return new MatchValidationResult(
+            false,
+            failureKind,
+            playerMessage,
+            sourceBlockReason,
+            sourceState,
+            targetBlockReason,
+            targetState);
     }
 }
 
@@ -152,6 +242,46 @@ public readonly struct TileInteractionState(
     /// 当前版本里，只要牌不自由，就不允许作为主动方或被动方参与配对。
     /// </summary>
     public bool CanParticipateInMatch => IsFree;
+
+    /// <summary>
+    /// 将阻塞状态归纳成一个最主要的玩家提示原因。
+    /// </summary>
+    public TileBlockReason PrimaryBlockReason
+    {
+        get
+        {
+            if (HasAboveOverlap)
+            {
+                return TileBlockReason.Above;
+            }
+
+            if (IsBlockedHorizontally)
+            {
+                return TileBlockReason.LeftRight;
+            }
+
+            if (IsBlockedVertically)
+            {
+                return TileBlockReason.TopBottom;
+            }
+
+            return TileBlockReason.None;
+        }
+    }
+
+    /// <summary>
+    /// 返回玩家能直接理解的锁定提示文案。
+    /// </summary>
+    public string GetPlayerHintText()
+    {
+        return PrimaryBlockReason switch
+        {
+            TileBlockReason.Above => "被上层压住",
+            TileBlockReason.LeftRight => "被左右锁住",
+            TileBlockReason.TopBottom => "被上下锁住",
+            _ => "当前不可移动",
+        };
+    }
 
     /// <summary>
     /// 为日志和调试面板生成可读摘要。

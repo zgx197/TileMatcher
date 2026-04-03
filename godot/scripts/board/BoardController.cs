@@ -161,6 +161,9 @@ public partial class BoardController : Node2D
     [Signal]
     public delegate void BoardStateChangedEventHandler(string message);
 
+    [Signal]
+    public delegate void InteractionTipRequestedEventHandler(string message);
+
     /// <summary>当前布局中的最大层号，不等于实际层数。</summary>
     public int MaxLayer => _currentLayout?.Tiles.Count > 0 ? _currentLayout.Tiles.Max(tile => tile.GZ) : 0;
 
@@ -480,6 +483,8 @@ public partial class BoardController : Node2D
         if (!tileView.Data.Movable)
         {
             LogBoard($"尝试开始拖拽失败，麻将不可移动: {DescribeTile(tileView.Data)}");
+            var interactionState = TileInteractionRules.Evaluate(tileView.Data, GetInteractionTiles());
+            ShowBlockedTileFeedback(tileView, interactionState);
             return;
         }
 
@@ -644,7 +649,7 @@ public partial class BoardController : Node2D
         if (!interactionState.CanBePicked)
         {
             LogBoard($"麻将不可移动，交互结束: {DescribeTile(tileView.Data)}");
-            EmitSignal(SignalName.BoardStateChanged, $"牌 {tileView.Data.Type} 已被卡住，当前不可移动");
+            ShowBlockedTileFeedback(tileView, interactionState);
             return;
         }
 
@@ -690,12 +695,13 @@ public partial class BoardController : Node2D
     private bool TryStartMatch(TileView firstTile, TileView secondTile, string sourceLabel)
     {
         var activeTiles = GetInteractionTiles();
-        if (!TileInteractionRules.TryValidateMatchPair(firstTile.Data, secondTile.Data, activeTiles, out var failureReason))
+        var validation = TileInteractionRules.ValidateMatchPair(firstTile.Data, secondTile.Data, activeTiles);
+        if (!validation.IsValid)
         {
             LogBoard(
                 $"配对校验失败: source={sourceLabel}, first={DescribeTile(firstTile.Data)}, " +
-                $"second={DescribeTile(secondTile.Data)}, reason={failureReason}");
-            EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{failureReason}");
+                $"second={DescribeTile(secondTile.Data)}, reason={validation.PlayerMessage}");
+            HandleMatchFailureFeedback(firstTile, secondTile, validation, sourceLabel);
             return false;
         }
 
@@ -704,6 +710,43 @@ public partial class BoardController : Node2D
             $"second={DescribeTile(secondTile.Data)}");
         RemoveMatchedPair(firstTile, secondTile);
         return true;
+    }
+
+    /// <summary>
+    /// 处理失败交互反馈。
+    /// </summary>
+    /// <remarks>
+    /// 这里统一分发顶部 tip 和牌面闪烁效果，避免点击、拖拽、配对失败各自写一套表现逻辑。
+    /// </remarks>
+    private void HandleMatchFailureFeedback(
+        TileView firstTile,
+        TileView secondTile,
+        MatchValidationResult validation,
+        string sourceLabel)
+    {
+        switch (validation.FailureKind)
+        {
+            case MatchFailureKind.SourceBlocked:
+                firstTile.PlayBlockedFeedback(validation.SourceBlockReason);
+                EmitInteractionTip(validation.PlayerMessage);
+                EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{validation.PlayerMessage}");
+                break;
+
+            case MatchFailureKind.TargetBlocked:
+                secondTile.PlayBlockedFeedback(validation.TargetBlockReason);
+                EmitInteractionTip(validation.PlayerMessage);
+                EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{validation.PlayerMessage}");
+                break;
+
+            case MatchFailureKind.TypeMismatch:
+                EmitInteractionTip(validation.PlayerMessage);
+                EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{validation.PlayerMessage}");
+                break;
+
+            default:
+                EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{validation.PlayerMessage}");
+                break;
+        }
     }
 
     /// <summary>
@@ -1014,6 +1057,29 @@ public partial class BoardController : Node2D
     private static string DescribeTile(AppTileData tile)
     {
         return $"Tile#{tile.Id} {tile.Type} @ ({tile.GX},{tile.GY},{tile.GZ})";
+    }
+
+    /// <summary>
+    /// 为被锁住的牌播放统一失败反馈。
+    /// </summary>
+    private void ShowBlockedTileFeedback(TileView tileView, TileInteractionState interactionState)
+    {
+        tileView.PlayBlockedFeedback(interactionState.PrimaryBlockReason);
+        EmitInteractionTip(interactionState.GetPlayerHintText());
+        EmitSignal(SignalName.BoardStateChanged, $"牌 {tileView.Data.Type} 当前不可移动：{interactionState.GetPlayerHintText()}");
+    }
+
+    /// <summary>
+    /// 统一发出顶部交互提示。
+    /// </summary>
+    private void EmitInteractionTip(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        EmitSignal(SignalName.InteractionTipRequested, message);
     }
 
     /// <summary>返回矩形中心点。</summary>

@@ -1,4 +1,5 @@
 using Godot;
+using TileMatcher.Board;
 using TileMatcher.Grid;
 using AppTileData = TileMatcher.Data.TileData;
 
@@ -56,6 +57,14 @@ public partial class TileView : Node2D
     private bool _initialized;
     private bool _isMovable = true;
     private bool _isSelected;
+    private float _feedbackOverlayAlpha;
+    private float _feedbackEdgeAlpha;
+    private Color _feedbackColor = Colors.Transparent;
+    private bool _flashLeftEdge;
+    private bool _flashRightEdge;
+    private bool _flashTopEdge;
+    private bool _flashBottomEdge;
+    private Tween? _blockedFeedbackTween;
 
     /// <summary>当前视图绑定的逻辑数据。</summary>
     public AppTileData Data { get; private set; } = null!;
@@ -97,6 +106,49 @@ public partial class TileView : Node2D
         _isSelected = isSelected;
         RefreshVisualState();
         QueueRedraw();
+    }
+
+    /// <summary>
+    /// 播放一次“牌被锁住”的失败反馈。
+    /// </summary>
+    /// <remarks>
+    /// 当前不使用锁图标，而是使用三种低成本但信息明确的视觉元素：
+    /// 1. 牌本体轻微回弹
+    /// 2. 半透明面闪
+    /// 3. 对应方向的边缘颜色闪烁
+    /// </remarks>
+    public void PlayBlockedFeedback(TileBlockReason blockReason)
+    {
+        EnsureInitialized();
+
+        _blockedFeedbackTween?.Kill();
+        Scale = Vector2.One;
+        ConfigureBlockedFeedbackEdges(blockReason);
+        _feedbackColor = ResolveBlockedFeedbackColor(blockReason);
+        _feedbackOverlayAlpha = 0.0f;
+        _feedbackEdgeAlpha = 0.0f;
+        QueueRedraw();
+
+        var tween = CreateTween();
+        _blockedFeedbackTween = tween;
+        tween.SetParallel(true);
+        tween.SetEase(Tween.EaseType.Out);
+        tween.SetTrans(Tween.TransitionType.Cubic);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), 0.0f, 0.22f, 0.10);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), 0.0f, 1.0f, 0.12);
+        tween.TweenProperty(this, "scale", Vector2.One * 1.04f, 0.10).From(Vector2.One);
+        tween.Chain().TweenProperty(this, "scale", Vector2.One, 0.14);
+        tween.Chain().TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), 0.22f, 0.0f, 0.18);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), 1.0f, 0.0f, 0.18);
+        tween.Finished += () =>
+        {
+            _feedbackOverlayAlpha = 0.0f;
+            _feedbackEdgeAlpha = 0.0f;
+            ClearBlockedFeedbackEdges();
+            Scale = Vector2.One;
+            QueueRedraw();
+            _blockedFeedbackTween = null;
+        };
     }
 
     /// <summary>
@@ -185,6 +237,38 @@ public partial class TileView : Node2D
         DrawStyleBox(_shadowStyle, new Rect2(9.0f, 10.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y));
+
+        if (_feedbackOverlayAlpha > 0.0f)
+        {
+            var overlayColor = new Color(_feedbackColor.R, _feedbackColor.G, _feedbackColor.B, _feedbackOverlayAlpha);
+            DrawRect(new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y), overlayColor, true);
+        }
+
+        if (_feedbackEdgeAlpha > 0.0f)
+        {
+            var edgeColor = new Color(_feedbackColor.R, _feedbackColor.G, _feedbackColor.B, _feedbackEdgeAlpha);
+            const float edgeThickness = 8.0f;
+
+            if (_flashLeftEdge)
+            {
+                DrawRect(new Rect2(0.0f, 0.0f, edgeThickness, tileSize.Y), edgeColor, true);
+            }
+
+            if (_flashRightEdge)
+            {
+                DrawRect(new Rect2(tileSize.X - edgeThickness, 0.0f, edgeThickness, tileSize.Y), edgeColor, true);
+            }
+
+            if (_flashTopEdge)
+            {
+                DrawRect(new Rect2(0.0f, 0.0f, tileSize.X, edgeThickness), edgeColor, true);
+            }
+
+            if (_flashBottomEdge)
+            {
+                DrawRect(new Rect2(0.0f, tileSize.Y - edgeThickness, tileSize.X, edgeThickness), edgeColor, true);
+            }
+        }
     }
 
     /// <summary>
@@ -256,5 +340,62 @@ public partial class TileView : Node2D
         }
 
         return new Color(0.15f, 0.22f, 0.55f, 1.0f);
+    }
+
+    /// <summary>设置失败反馈的面闪透明度。</summary>
+    private void SetFeedbackOverlayAlpha(float alpha)
+    {
+        _feedbackOverlayAlpha = alpha;
+        QueueRedraw();
+    }
+
+    /// <summary>设置失败反馈的边缘闪烁透明度。</summary>
+    private void SetFeedbackEdgeAlpha(float alpha)
+    {
+        _feedbackEdgeAlpha = alpha;
+        QueueRedraw();
+    }
+
+    /// <summary>根据锁定方向配置边缘高亮。</summary>
+    private void ConfigureBlockedFeedbackEdges(TileBlockReason blockReason)
+    {
+        ClearBlockedFeedbackEdges();
+        switch (blockReason)
+        {
+            case TileBlockReason.Above:
+                _flashTopEdge = true;
+                break;
+
+            case TileBlockReason.LeftRight:
+                _flashLeftEdge = true;
+                _flashRightEdge = true;
+                break;
+
+            case TileBlockReason.TopBottom:
+                _flashTopEdge = true;
+                _flashBottomEdge = true;
+                break;
+        }
+    }
+
+    /// <summary>清空边缘反馈标记。</summary>
+    private void ClearBlockedFeedbackEdges()
+    {
+        _flashLeftEdge = false;
+        _flashRightEdge = false;
+        _flashTopEdge = false;
+        _flashBottomEdge = false;
+    }
+
+    /// <summary>不同锁定方向使用不同颜色，帮助玩家快速理解“为什么不行”。</summary>
+    private static Color ResolveBlockedFeedbackColor(TileBlockReason blockReason)
+    {
+        return blockReason switch
+        {
+            TileBlockReason.Above => new Color(1.0f, 0.56f, 0.24f, 1.0f),
+            TileBlockReason.LeftRight => new Color(0.98f, 0.82f, 0.18f, 1.0f),
+            TileBlockReason.TopBottom => new Color(0.36f, 0.82f, 0.98f, 1.0f),
+            _ => new Color(0.95f, 0.72f, 0.26f, 1.0f),
+        };
     }
 }

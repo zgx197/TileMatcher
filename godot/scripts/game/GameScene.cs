@@ -29,6 +29,19 @@ public partial class GameScene : Node2D
     private Label _scoreValue = null!;
     private Label _matchValue = null!;
 
+    /// <summary>
+    /// 顶部短时交互提示。
+    /// </summary>
+    /// <remarks>
+    /// 它不是调试文本，而是面向玩家的轻量反馈层。
+    /// 当前主要用于说明：
+    /// - 为什么某张牌拖不起来
+    /// - 为什么拖过去后仍然不能消除
+    /// </remarks>
+    private Control _interactionTip = null!;
+    private Label _interactionTipLabel = null!;
+    private Tween? _interactionTipTween;
+
     /// <summary>调试悬浮层及其内部控件。</summary>
     private Control _debugOverlay = null!;
     private Control _debugPanel = null!;
@@ -62,6 +75,8 @@ public partial class GameScene : Node2D
         _levelValue = GetNode<Label>("UI/Root/TopBar/Stats/LevelBox/VBox/Value");
         _scoreValue = GetNode<Label>("UI/Root/TopBar/Stats/ScoreBox/VBox/Value");
         _matchValue = GetNode<Label>("UI/Root/TopBar/Stats/MatchBox/VBox/Value");
+        _interactionTip = GetNode<Control>("UI/Root/InteractionTip");
+        _interactionTipLabel = GetNode<Label>("UI/Root/InteractionTip/Label");
         _debugOverlay = GetNode<Control>("UI/Root/DebugOverlay");
         _debugPanel = GetNode<Control>("UI/Root/DebugOverlay/Panel");
         _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
@@ -86,6 +101,8 @@ public partial class GameScene : Node2D
         _layerFilterSlider.Editable = false;
         _layerFilterValue.Text = "<= L0";
         _debugOverlay.Visible = false;
+        _interactionTip.Visible = false;
+        _interactionTipLabel.Text = string.Empty;
 
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
@@ -96,6 +113,7 @@ public partial class GameScene : Node2D
         _profileSelector.ItemSelected += OnProfileSelected;
         _boardController.BoardGenerated += OnBoardGenerated;
         _boardController.BoardStateChanged += OnBoardStateChanged;
+        _boardController.InteractionTipRequested += OnInteractionTipRequested;
         GetViewport().SizeChanged += OnViewportSizeChanged;
 
         InitializeProfileSelector();
@@ -145,6 +163,12 @@ public partial class GameScene : Node2D
         _debugLabel.Text = message;
         _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
+    }
+
+    /// <summary>在顶部中央显示一次短时交互提示。</summary>
+    private void OnInteractionTipRequested(string message)
+    {
+        ShowInteractionTip(message);
     }
 
     /// <summary>响应层过滤滑杆变化。</summary>
@@ -385,5 +409,33 @@ public partial class GameScene : Node2D
 
         var tween = CreateTween();
         tween.TweenProperty(_debugLabel, "modulate", Colors.White, 0.35);
+    }
+
+    /// <summary>
+    /// 显示顶部交互提示，用于表达“为什么这次拖不动 / 为什么这次不能消除”。
+    /// </summary>
+    private void ShowInteractionTip(string message)
+    {
+        _interactionTipTween?.Kill();
+        _interactionTip.Visible = true;
+        _interactionTipLabel.Text = message;
+        _interactionTip.Modulate = new Color(1.0f, 1.0f, 1.0f, 0.0f);
+
+        var startPosition = new Vector2(_interactionTip.Position.X, 108.0f);
+        var settlePosition = new Vector2(_interactionTip.Position.X, 116.0f);
+        _interactionTip.Position = startPosition;
+
+        var tween = CreateTween();
+        _interactionTipTween = tween;
+        tween.SetParallel(true);
+        tween.TweenProperty(_interactionTip, "position", settlePosition, 0.12);
+        tween.TweenProperty(_interactionTip, "modulate", Colors.White, 0.12);
+        tween.Chain().TweenInterval(0.55);
+        tween.Chain().TweenProperty(_interactionTip, "modulate", new Color(1.0f, 1.0f, 1.0f, 0.0f), 0.18);
+        tween.Finished += () =>
+        {
+            _interactionTip.Visible = false;
+            _interactionTipTween = null;
+        };
     }
 }
