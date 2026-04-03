@@ -1,0 +1,9 @@
+<Project Sdk="Godot.NET.Sdk/4.6.1">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>TileMatcher</RootNamespace>
+    <AssemblyName>TileMatcher</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

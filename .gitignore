@@ -4,17 +4,21 @@
 export_presets.cfg
 *.translation
 *.import
+godot/logs/
 
 # Godot Mono / C#
 .mono/
 **/.mono/
 *.csproj
 *.sln
+!godot/TileMatcher.csproj
+!godot/TileMatcher.sln
 /.vs/
 /bin/
 /obj/
 **/bin/
 **/obj/
+**/.nuget/
 
 # User-specific
 *.user
