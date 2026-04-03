@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TileMatcher.Data;
 using TileMatcher.Grid;
+using TileMatcher.Layout;
 using TileMatcher.Tile;
 
 namespace TileMatcher.Board;
@@ -16,6 +17,7 @@ public partial class BoardController : Node2D
     private const int RowZStride = 8;
 
     private readonly List<TileView> _tileViews = [];
+    private readonly LayoutRules _layoutRules = GameLayoutProfiles.VitaMahjongSingleLevel;
     private LevelLayout? _currentLayout;
     private string _currentSourceName = "未加载";
     private int _visibleMaxLayer;
@@ -40,12 +42,12 @@ public partial class BoardController : Node2D
 
     public void LoadPrototype()
     {
-        ApplyLayout(LevelLayout.CreatePrototype(), "固定原型");
+        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(), "固定原型");
     }
 
     public void GenerateRandomBoard()
     {
-        ApplyLayout(LevelLayout.CreateRandomStack(), "随机布局");
+        ApplyLayout(RandomStackLayoutGenerator.Generate(1, _layoutRules), "随机布局");
     }
 
     public void SetVisibleMaxLayer(int visibleMaxLayer)
@@ -72,10 +74,10 @@ public partial class BoardController : Node2D
         _currentLayout = layout;
         _currentSourceName = sourceName;
 
-        var supportIssues = layout.GetStrictSupportIssues();
-        if (supportIssues.Count > 0)
+        var validation = LayoutValidator.Validate(layout, _layoutRules);
+        if (!validation.IsValid)
         {
-            GD.PushError($"[BoardController] 布局违反四点支撑规则: {string.Join(" | ", supportIssues)}");
+            GD.PushError($"[BoardController] 布局违反业务规则: {string.Join(" | ", validation.Errors)}");
         }
 
         var existingChildren = new List<Node>();
