@@ -1,0 +1,21 @@
+# Godot
+.godot/
+export_presets.cfg
+*.translation
+
+# Godot Mono / C#
+.mono/
+*.csproj
+*.sln
+/.vs/
+/bin/
+/obj/
+
+# User-specific
+*.user
+*.tmp
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
