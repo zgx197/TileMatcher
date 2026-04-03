@@ -3,8 +3,16 @@ using GridVector2I = Godot.Vector2I;
 
 namespace TileMatcher.Layout;
 
+/// <summary>
+/// 提供一份固定原型布局，用于快速人工观察堆叠关系。
+/// </summary>
+/// <remarks>
+/// 这份原型的目标不是生成真实关卡，而是稳定复现当前规则下的层间偏移效果。
+/// 它必须与当前 LayoutRules 保持一致，否则调试会出现两套标准。
+/// </remarks>
 public static class PrototypeLayoutFactory
 {
+    /// <summary>创建固定原型布局。</summary>
     public static LevelLayout CreateSingleLevelPrototype(LayoutRules? rules = null, int levelId = 1)
     {
         rules ??= new LayoutRules();
@@ -53,6 +61,13 @@ public static class PrototypeLayoutFactory
         return layout;
     }
 
+    /// <summary>
+    /// 计算某一层在原型布局中的累计原点。
+    /// </summary>
+    /// <remarks>
+    /// 这里使用逐层累积偏移，而不是每层相对世界原点的绝对偏移。
+    /// 这样可以保证高层一定建立在下层之上。
+    /// </remarks>
     private static GridVector2I GetPrototypeLayerOrigin(int layer, LayoutRules rules, TileShape tileShape)
     {
         var origin = GridVector2I.Zero;
@@ -65,6 +80,7 @@ public static class PrototypeLayoutFactory
         return origin;
     }
 
+    /// <summary>计算单次升层时应追加的偏移量。</summary>
     private static GridVector2I GetPrototypeLayerStepOffset(int layer, LayoutRules rules, TileShape tileShape)
     {
         var halfX = tileShape.WidthUnits / 2;

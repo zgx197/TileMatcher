@@ -4,8 +4,15 @@ using AppTileData = TileMatcher.Data.TileData;
 
 namespace TileMatcher.Tile;
 
+/// <summary>
+/// 单张麻将的可视化节点。
+/// </summary>
+/// <remarks>
+/// 当前主要服务调试和布局观察，不是完整交互组件。
+/// </remarks>
 public partial class TileView : Node2D
 {
+    /// <summary>不同层 body 的调试色板。</summary>
     private static readonly Color[] BodyPalette =
     [
         new(0.97f, 0.97f, 0.93f, 1.0f),
@@ -16,6 +23,7 @@ public partial class TileView : Node2D
         new(0.99f, 0.86f, 0.88f, 1.0f),
     ];
 
+    /// <summary>不同层侧边深色的调试色板。</summary>
     private static readonly Color[] DepthPalette =
     [
         new(0.80f, 0.82f, 0.88f, 1.0f),
@@ -26,6 +34,7 @@ public partial class TileView : Node2D
         new(0.86f, 0.60f, 0.67f, 1.0f),
     ];
 
+    /// <summary>不同层边框颜色的调试色板。</summary>
     private static readonly Color[] BorderPalette =
     [
         new(0.71f, 0.74f, 0.82f, 1.0f),
@@ -42,6 +51,7 @@ public partial class TileView : Node2D
     private StyleBoxFlat _shadowStyle = null!;
     private bool _initialized;
 
+    /// <summary>当前视图所绑定的逻辑数据。</summary>
     public AppTileData Data { get; private set; } = null!;
 
     public override void _Ready()
@@ -49,6 +59,7 @@ public partial class TileView : Node2D
         EnsureInitialized();
     }
 
+    /// <summary>把逻辑数据应用到当前视图。</summary>
     public void ApplyData(AppTileData tileData)
     {
         EnsureInitialized();
@@ -69,6 +80,7 @@ public partial class TileView : Node2D
         QueueRedraw();
     }
 
+    /// <summary>延迟初始化内部节点和样式对象。</summary>
     private void EnsureInitialized()
     {
         if (_initialized)
@@ -115,12 +127,14 @@ public partial class TileView : Node2D
 
     public override void _Draw()
     {
+        // Data 尚未绑定时退回标准牌尺寸，避免编辑器或初始化阶段 Draw 崩溃。
         var tileSize = Data is null ? GridConfig.TileSize : GridMath.GetWorldSize(Data);
         DrawStyleBox(_shadowStyle, new Rect2(9.0f, 10.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y));
     }
 
+    /// <summary>根据层级应用调试配色。</summary>
     private void ApplyLayerDebugStyle(int layer)
     {
         var paletteIndex = Mathf.PosMod(layer, BodyPalette.Length);
@@ -130,6 +144,7 @@ public partial class TileView : Node2D
         _depthStyle.BgColor = DepthPalette[paletteIndex];
     }
 
+    /// <summary>根据牌面类型选择文字颜色。</summary>
     private static Color ResolveTextColor(string type)
     {
         if (type.Contains('D') || type is "C" or "R")

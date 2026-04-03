@@ -8,8 +8,16 @@ using AppTileData = TileMatcher.Data.TileData;
 
 namespace TileMatcher.Layout;
 
+/// <summary>
+/// 基于当前规则生成随机堆叠布局。
+/// </summary>
+/// <remarks>
+/// 当前采用“自底向上 + 多次尝试 + 校验兜底”的策略。
+/// 这不是最终关卡生成器，但非常适合快速迭代阶段。
+/// </remarks>
 public static class RandomStackLayoutGenerator
 {
+    /// <summary>在允许的尝试次数内生成一份合法布局。</summary>
     public static LevelLayout Generate(int levelId, LayoutRules rules, int? seed = null)
     {
         for (var attempt = 1; attempt <= rules.GenerationMaxAttempts; attempt++)
@@ -25,6 +33,12 @@ public static class RandomStackLayoutGenerator
         throw new InvalidOperationException("未能在限定次数内生成符合业务规则的布局。");
     }
 
+    /// <summary>
+    /// 生成单次候选布局。
+    /// </summary>
+    /// <remarks>
+    /// 单次候选不保证一定合法，所以外层还需要 Validate 兜底。
+    /// </remarks>
     private static LevelLayout CreateCandidate(int levelId, LayoutRules rules, int? seed, int attempt)
     {
         var rng = new RandomNumberGenerator();
@@ -99,6 +113,12 @@ public static class RandomStackLayoutGenerator
         return layout;
     }
 
+    /// <summary>
+    /// 构造底层牌阵。
+    /// </summary>
+    /// <remarks>
+    /// 当前底层仍然使用按步长对齐的规则网格，而不是任意放置。
+    /// </remarks>
     private static List<Vector2I> BuildBottomLayer(RandomNumberGenerator rng, int width, int height, LayoutRules rules)
     {
         var bottomLayer = new List<Vector2I>();
@@ -131,6 +151,9 @@ public static class RandomStackLayoutGenerator
         return bottomLayer;
     }
 
+    /// <summary>
+    /// 根据下一层已有牌，枚举当前层全部合法候选点。
+    /// </summary>
     private static List<Vector2I> GetSupportedCandidates(
         IReadOnlyCollection<AppTileData> lowerLayer,
         TileShape tileShape,
@@ -166,6 +189,9 @@ public static class RandomStackLayoutGenerator
         return candidates.ToList();
     }
 
+    /// <summary>
+    /// 从候选点中挑选一组互不重叠的牌。
+    /// </summary>
     private static List<Vector2I> SelectNonOverlappingCandidates(
         IReadOnlyList<Vector2I> candidates,
         int targetCount,
@@ -189,6 +215,7 @@ public static class RandomStackLayoutGenerator
         return selected;
     }
 
+    /// <summary>判断两个锚点在给定牌形下是否会产生同层重叠。</summary>
     private static bool DoAnchorsOverlap(Vector2I a, Vector2I b, TileShape tileShape)
     {
         return a.X < b.X + tileShape.WidthUnits
@@ -197,6 +224,7 @@ public static class RandomStackLayoutGenerator
             && a.Y + tileShape.HeightUnits > b.Y;
     }
 
+    /// <summary>计算不小于 minValue 的第一个对齐坐标。</summary>
     private static int GetFirstAlignedCoordinate(int minValue, int step, int offset)
     {
         var value = offset;
@@ -208,6 +236,12 @@ public static class RandomStackLayoutGenerator
         return value;
     }
 
+    /// <summary>
+    /// 根据规则计算某层相对下层的对齐偏移。
+    /// </summary>
+    /// <remarks>
+    /// 当前约定偶数层回到对齐基线，奇数层应用配置的半步偏移。
+    /// </remarks>
     private static Vector2I ResolveLayerOffset(int layer, LayoutRules rules, TileShape tileShape)
     {
         if (layer % 2 == 0)
@@ -227,6 +261,9 @@ public static class RandomStackLayoutGenerator
         };
     }
 
+    /// <summary>
+    /// 把一层锚点列表包装成临时 TileData 集合。
+    /// </summary>
     private static List<AppTileData> CreateTemporaryLayer(IEnumerable<Vector2I> anchors, int layer, TileShape tileShape)
     {
         return anchors
@@ -240,6 +277,12 @@ public static class RandomStackLayoutGenerator
             .ToList();
     }
 
+    /// <summary>
+    /// 随机选择一个牌面类型。
+    /// </summary>
+    /// <remarks>
+    /// 当前只是调试数据，尚未保证成对分布或可解性。
+    /// </remarks>
     private static string PickTileType(RandomNumberGenerator rng)
     {
         string[] tileTypes =
@@ -253,6 +296,7 @@ public static class RandomStackLayoutGenerator
         return tileTypes[rng.RandiRange(0, tileTypes.Length - 1)];
     }
 
+    /// <summary>原地打乱列表。</summary>
     private static void Shuffle(RandomNumberGenerator rng, IList<Vector2I> items)
     {
         for (var i = items.Count - 1; i > 0; i--)

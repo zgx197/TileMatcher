@@ -5,13 +5,33 @@ using AppTileData = TileMatcher.Data.TileData;
 
 namespace TileMatcher.Grid;
 
+/// <summary>
+/// 逻辑网格与世界空间之间的几何计算工具集。
+/// </summary>
+/// <remarks>
+/// 这里承载第二代堆叠框架的几何核心：
+/// - footprint 计算
+/// - 同层重叠判定
+/// - 世界坐标换算
+/// - 上下层覆盖关系判定
+/// 
+/// 这些函数必须尽量保持纯计算，不依赖节点或场景状态。
+/// </remarks>
 public static class GridMath
 {
+    /// <summary>返回一张牌在逻辑平面上的矩形 footprint。</summary>
     public static Rect2I GetFootprint(AppTileData tile)
     {
         return new Rect2I(tile.GX, tile.GY, tile.FootprintWidth, tile.FootprintHeight);
     }
 
+    /// <summary>
+    /// 判断两张牌在二维投影上是否发生重叠。
+    /// </summary>
+    /// <remarks>
+    /// 这里只看 XY，不看层级。
+    /// 它既可以用于同层非法重叠检查，也可以用于层间投影分析。
+    /// </remarks>
     public static bool OverlapsXY(AppTileData a, AppTileData b)
     {
         var rectA = GetFootprint(a);
@@ -23,6 +43,9 @@ public static class GridMath
             && rectA.End.Y > rectB.Position.Y;
     }
 
+    /// <summary>
+    /// 将逻辑网格坐标映射到世界空间左上角位置。
+    /// </summary>
     public static Vector2 GridToWorld(int gx, int gy, int gz, Vector2 boardOrigin)
     {
         return boardOrigin
@@ -30,6 +53,7 @@ public static class GridMath
             + GridConfig.LayerVisualOffset * gz;
     }
 
+    /// <summary>根据牌的逻辑 footprint 计算它的世界空间绘制尺寸。</summary>
     public static Vector2 GetWorldSize(AppTileData tile)
     {
         return new Vector2(
@@ -37,6 +61,9 @@ public static class GridMath
             tile.FootprintHeight * GridConfig.CellHeight);
     }
 
+    /// <summary>
+    /// 判断某张牌上方是否还有任何投影重叠的牌。
+    /// </summary>
     public static bool HasAnyAboveOverlap(AppTileData tile, IEnumerable<AppTileData> allTiles)
     {
         foreach (var other in allTiles)
@@ -55,6 +82,13 @@ public static class GridMath
         return false;
     }
 
+    /// <summary>
+    /// 判断上层牌的整个底面是否被下一层完整覆盖。
+    /// </summary>
+    /// <remarks>
+    /// 这是第二代框架里最关键的几何规则：
+    /// 逐个微单元检查底面投影是否全部被下一层 footprint union 覆盖。
+    /// </remarks>
     public static bool HasFullSupportFromLowerLayer(AppTileData tile, IReadOnlyCollection<AppTileData> lowerLayerTiles)
     {
         if (tile.GZ <= 0)
@@ -81,6 +115,9 @@ public static class GridMath
         return true;
     }
 
+    /// <summary>
+    /// 计算所有未移除牌在世界空间中的整体包围盒。
+    /// </summary>
     public static Rect2 GetWorldBounds(IEnumerable<AppTileData> tiles)
     {
         var hasAny = false;
@@ -123,6 +160,7 @@ public static class GridMath
         return new Rect2(minX, minY, maxX - minX, maxY - minY);
     }
 
+    /// <summary>判断某个逻辑微单元是否被任意一张牌覆盖。</summary>
     private static bool IsCoveredByAnyTile(int x, int y, IReadOnlyCollection<AppTileData> tiles)
     {
         foreach (var tile in tiles)
@@ -136,6 +174,7 @@ public static class GridMath
         return false;
     }
 
+    /// <summary>判断某张牌的 footprint 是否包含指定微单元。</summary>
     private static bool ContainsCell(AppTileData tile, int x, int y)
     {
         var footprint = GetFootprint(tile);

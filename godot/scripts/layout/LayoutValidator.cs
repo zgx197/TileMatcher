@@ -5,8 +5,16 @@ using TileMatcher.Grid;
 
 namespace TileMatcher.Layout;
 
+/// <summary>
+/// 对布局结果执行业务规则校验。
+/// </summary>
+/// <remarks>
+/// 这里不负责生成布局，只负责对“生成器 / 固定原型 / 将来关卡导入”
+/// 提供统一的有效性判断。
+/// </remarks>
 public static class LayoutValidator
 {
+    /// <summary>按当前规则校验布局。</summary>
     public static LayoutValidationResult Validate(LevelLayout layout, LayoutRules rules)
     {
         var result = new LayoutValidationResult();
@@ -40,6 +48,7 @@ public static class LayoutValidator
         return result;
     }
 
+    /// <summary>检查层数是否落在允许区间内。</summary>
     private static void ValidateLayerCount(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutRules rules, LayoutValidationResult result)
     {
         if (tilesByLayer.Count < rules.MinLayerCount)
@@ -53,6 +62,7 @@ public static class LayoutValidator
         }
     }
 
+    /// <summary>检查底层牌数是否足够。</summary>
     private static void ValidateBottomLayer(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutRules rules, LayoutValidationResult result)
     {
         var bottomLayer = tilesByLayer.FirstOrDefault();
@@ -67,6 +77,7 @@ public static class LayoutValidator
         }
     }
 
+    /// <summary>检查上层牌数是否严格少于下层。</summary>
     private static void ValidateLayerShrink(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutValidationResult result)
     {
         for (var i = 1; i < tilesByLayer.Count; i++)
@@ -80,6 +91,12 @@ public static class LayoutValidator
         }
     }
 
+    /// <summary>
+    /// 检查同一层是否出现 footprint 重叠。
+    /// </summary>
+    /// <remarks>
+    /// 当前项目把“同层绝不重叠”视为硬约束。
+    /// </remarks>
     private static void ValidateNoSameLayerOverlap(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutValidationResult result)
     {
         foreach (var layer in tilesByLayer)
@@ -103,6 +120,12 @@ public static class LayoutValidator
         }
     }
 
+    /// <summary>
+    /// 检查相邻层之间是否出现完全重合。
+    /// </summary>
+    /// <remarks>
+    /// 以当前目标玩法和视觉要求来说，上层完全盖住下层一张牌是非法布局。
+    /// </remarks>
     private static void ValidateNoExactAdjacentLayerCover(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutValidationResult result)
     {
         var layerMap = tilesByLayer.ToDictionary(group => group.Key, group => group.ToList());
@@ -133,6 +156,7 @@ public static class LayoutValidator
         }
     }
 
+    /// <summary>检查所有上层牌是否都获得完整底面覆盖。</summary>
     private static void ValidateStrictSupport(IReadOnlyList<IGrouping<int, TileData>> tilesByLayer, LayoutValidationResult result)
     {
         var layerMap = tilesByLayer.ToDictionary(group => group.Key, group => (IReadOnlyCollection<TileData>)group.ToList());

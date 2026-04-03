@@ -5,16 +5,28 @@ using TileMatcher.Layout;
 
 namespace TileMatcher.Game;
 
+/// <summary>
+/// 当前游戏页主场景控制器。
+/// </summary>
+/// <remarks>
+/// 它负责绑定调试 UI，并把用户操作转成对 BoardController 的调用。
+/// </remarks>
 public partial class GameScene : Node2D
 {
+    // DEBUG 悬浮按钮和屏幕边缘的最小距离。
     private const float FloatingButtonMargin = 22.0f;
+    // 调试面板和屏幕边缘的最小距离。
     private const float FloatingPanelMargin = 18.0f;
 
+    // 游戏页里真正负责棋盘逻辑和布局刷新的控制器。
     private BoardController _boardController = null!;
+    // 牌桌背景，用于做闪烁反馈。
     private CanvasItem _boardBackground = null!;
+    // 顶部状态栏文本。
     private Label _levelValue = null!;
     private Label _scoreValue = null!;
     private Label _matchValue = null!;
+    // 调试浮窗及其子控件。
     private Control _debugOverlay = null!;
     private Control _debugPanel = null!;
     private Control _debugHeader = null!;
@@ -28,6 +40,7 @@ public partial class GameScene : Node2D
     private Button _debugCloseButton = null!;
     private OptionButton _profileSelector = null!;
 
+    // 以下状态用于区分“点击”和“拖拽”，避免浮动控件误触。
     private bool _debugButtonPressed;
     private bool _debugButtonDragged;
     private bool _debugPanelPressed;
@@ -39,6 +52,7 @@ public partial class GameScene : Node2D
 
     public override void _Ready()
     {
+        // 游戏页背景色在这里统一设置，避免依赖项目全局环境色。
         RenderingServer.SetDefaultClearColor(new Color(0.07f, 0.42f, 0.29f, 1.0f));
 
         _boardController = GetNode<BoardController>("BoardController");
@@ -88,6 +102,7 @@ public partial class GameScene : Node2D
         _boardController.LoadPrototype();
     }
 
+    /// <summary>响应“随机生成”按钮。</summary>
     private void OnGeneratePressed()
     {
         GD.Print("[GameScene] 点击了随机生成按钮");
@@ -98,6 +113,7 @@ public partial class GameScene : Node2D
         _boardController.GenerateRandomBoard();
     }
 
+    /// <summary>响应“固定原型”按钮。</summary>
     private void OnPrototypePressed()
     {
         GD.Print("[GameScene] 点击了固定原型按钮");
@@ -108,6 +124,7 @@ public partial class GameScene : Node2D
         _boardController.LoadPrototype();
     }
 
+    /// <summary>棋盘生成完成后，同步调试文本和层过滤控件。</summary>
     private void OnBoardGenerated(string summary)
     {
         GD.Print($"[GameScene] 布局生成完成: {summary}");
@@ -118,6 +135,7 @@ public partial class GameScene : Node2D
         FlashBoard(new Color(0.07f, 0.42f, 0.29f, 1.0f));
     }
 
+    /// <summary>响应层过滤滑杆变化。</summary>
     private void OnLayerFilterChanged(double value)
     {
         var visibleLayer = Mathf.RoundToInt((float)value);
@@ -127,6 +145,7 @@ public partial class GameScene : Node2D
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
     }
 
+    /// <summary>处理右上角 DEBUG 悬浮按钮的点击与拖拽。</summary>
     private void OnDebugToggleGuiInput(InputEvent inputEvent)
     {
         switch (inputEvent)
@@ -145,6 +164,7 @@ public partial class GameScene : Node2D
                     _debugButtonPressed = false;
                     _debugButtonDragged = false;
 
+                    // 没有发生真正拖拽时，松手才视为一次点击。
                     if (!wasDragged)
                     {
                         ToggleDebugOverlay();
@@ -154,6 +174,7 @@ public partial class GameScene : Node2D
 
             case InputEventMouseMotion mouseMotion when _debugButtonPressed:
                 var delta = mouseMotion.GlobalPosition - _debugButtonPressPosition;
+                // 只有移动距离超过阈值，才把这次输入认定为拖拽。
                 if (!_debugButtonDragged && delta.Length() > 8.0f)
                 {
                     _debugButtonDragged = true;
@@ -168,12 +189,14 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>切换调试浮窗显隐。</summary>
     private void ToggleDebugOverlay()
     {
         _debugOverlay.Visible = !_debugOverlay.Visible;
         _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
     }
 
+    /// <summary>关闭调试浮窗。</summary>
     private void OnDebugClosePressed()
     {
         if (_debugOverlay.Visible)
@@ -182,6 +205,7 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>切换规则档案并重新生成棋盘。</summary>
     private void OnProfileSelected(long index)
     {
         var profiles = _boardController.GetProfiles();
@@ -198,6 +222,7 @@ public partial class GameScene : Node2D
         _boardController.GenerateRandomBoard();
     }
 
+    /// <summary>视口变化时重新钳制浮动控件。</summary>
     private void OnViewportSizeChanged()
     {
         if (IsNodeReady())
@@ -207,6 +232,7 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>处理调试面板标题栏的拖拽。</summary>
     private void OnDebugPanelGuiInput(InputEvent inputEvent)
     {
         switch (inputEvent)
@@ -228,6 +254,7 @@ public partial class GameScene : Node2D
 
             case InputEventMouseMotion mouseMotion when _debugPanelPressed:
                 var delta = mouseMotion.GlobalPosition - _debugPanelPressPosition;
+                // 面板拖拽阈值略小于按钮，便于开发时快速调整位置。
                 if (!_debugPanelDragged && delta.Length() > 6.0f)
                 {
                     _debugPanelDragged = true;
@@ -242,6 +269,7 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>初始化 DEBUG 按钮位置。</summary>
     private void InitializeDebugButtonPosition()
     {
         var viewportSize = GetViewportRect().Size;
@@ -252,6 +280,7 @@ public partial class GameScene : Node2D
         ClampDebugPanel();
     }
 
+    /// <summary>限制 DEBUG 按钮始终留在屏幕内。</summary>
     private void ClampDebugToggleButton()
     {
         var viewportSize = GetViewportRect().Size;
@@ -263,6 +292,7 @@ public partial class GameScene : Node2D
             Mathf.Clamp(_debugToggleButton.Position.Y, FloatingButtonMargin, maxY));
     }
 
+    /// <summary>限制调试面板始终留在屏幕内。</summary>
     private void ClampDebugPanel()
     {
         var viewportSize = GetViewportRect().Size;
@@ -274,6 +304,7 @@ public partial class GameScene : Node2D
             Mathf.Clamp(_debugPanel.Position.Y, FloatingPanelMargin, maxY));
     }
 
+    /// <summary>根据当前棋盘层数刷新层过滤滑杆。</summary>
     private void SyncLayerInspector()
     {
         _layerFilterSlider.MinValue = 0;
@@ -284,6 +315,7 @@ public partial class GameScene : Node2D
         RefreshLayerFilterText();
     }
 
+    /// <summary>根据档案目录填充 profile 下拉框。</summary>
     private void InitializeProfileSelector()
     {
         _profileSelector.Clear();
@@ -300,12 +332,14 @@ public partial class GameScene : Node2D
         _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
     }
 
+    /// <summary>刷新“&lt;= Lx”文字。</summary>
     private void RefreshLayerFilterText()
     {
         var visibleLayer = Mathf.RoundToInt((float)_layerFilterSlider.Value);
         _layerFilterValue.Text = $"<= L{visibleLayer}";
     }
 
+    /// <summary>为按钮播放一次轻量缩放反馈。</summary>
     private void PlayButtonFeedback(Button button, Color accentColor)
     {
         button.PivotOffset = button.Size * 0.5f;
@@ -319,6 +353,7 @@ public partial class GameScene : Node2D
         tween.Chain().TweenProperty(button, "scale", Vector2.One, 0.12);
     }
 
+    /// <summary>让牌桌背景闪一下，强调一次重绘或刷新。</summary>
     private void FlashBoard(Color targetColor)
     {
         _boardBackground.Modulate = new Color(1.16f, 1.16f, 1.16f, 1.0f);
@@ -327,6 +362,7 @@ public partial class GameScene : Node2D
         tween.TweenProperty(_boardBackground, "modulate", targetColor, 0.28);
     }
 
+    /// <summary>让调试标签高亮后恢复。</summary>
     private void HighlightDebugLabel(Color color)
     {
         _debugLabel.Modulate = color;
