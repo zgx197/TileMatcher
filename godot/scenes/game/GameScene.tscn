@@ -1,0 +1,171 @@
+[gd_scene load_steps=5 format=4 uid="uid://csj5buw4bn8l"]
+
+[ext_resource type="Script" path="res://scripts/game/GameScene.cs" id="1_te16v"]
+[ext_resource type="Script" path="res://scripts/board/BoardController.cs" id="2_qvnq0"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_boardbg"]
+bg_color = Color(0.0588235, 0.32549, 0.231373, 0.780392)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.14902, 0.494118, 0.392157, 0.784314)
+shadow_color = Color(0, 0, 0, 0.141176)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbox"]
+bg_color = Color(0.101961, 0.388235, 0.290196, 0.627451)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[node name="GameScene" type="Node2D"]
+script = ExtResource("1_te16v")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Root" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BoardBackground" type="Panel" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = 116.0
+offset_right = -22.0
+offset_bottom = -150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_boardbg")
+mouse_filter = 2
+
+[node name="TopBar" type="MarginContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 18.0
+offset_bottom = 104.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 10
+mouse_filter = 2
+
+[node name="Stats" type="HBoxContainer" parent="UI/Root/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="LevelBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+custom_minimum_size = Vector2(140, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
+
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/LevelBox"]
+layout_mode = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/LevelBox/VBox"]
+layout_mode = 2
+text = "关卡"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/LevelBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "1"
+horizontal_alignment = 1
+
+[node name="ScoreBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+custom_minimum_size = Vector2(160, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
+
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/ScoreBox"]
+layout_mode = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/ScoreBox/VBox"]
+layout_mode = 2
+text = "分数"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/ScoreBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 1
+
+[node name="MatchBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+custom_minimum_size = Vector2(140, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
+
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/MatchBox"]
+layout_mode = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/MatchBox/VBox"]
+layout_mode = 2
+text = "匹配"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/MatchBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 1
+
+[node name="BottomBar" type="MarginContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 54
+theme_override_constants/margin_right = 54
+mouse_filter = 2
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Root/BottomBar"]
+layout_mode = 2
+theme_override_constants/separation = 36
+alignment = 1
+
+[node name="ShuffleButton" type="Button" parent="UI/Root/BottomBar/Buttons"]
+custom_minimum_size = Vector2(148, 74)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "洗牌"
+
+[node name="HintButton" type="Button" parent="UI/Root/BottomBar/Buttons"]
+custom_minimum_size = Vector2(148, 74)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "提示"
+
+[node name="BoardController" type="Node2D" parent="."]
+script = ExtResource("2_qvnq0")
