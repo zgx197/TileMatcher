@@ -1,21 +1,40 @@
 using Godot;
 using TileMatcher.Board;
+using TileMatcher.Layout;
 
 namespace TileMatcher.Game;
 
 public partial class GameScene : Node2D
 {
+    private const float FloatingButtonMargin = 22.0f;
+    private const float FloatingPanelMargin = 18.0f;
+
     private BoardController _boardController = null!;
     private CanvasItem _boardBackground = null!;
     private Label _levelValue = null!;
     private Label _scoreValue = null!;
     private Label _matchValue = null!;
+    private Control _debugOverlay = null!;
+    private Control _debugPanel = null!;
+    private Control _debugHeader = null!;
     private Label _debugLabel = null!;
+    private Label _rulesSummaryLabel = null!;
     private Button _generateButton = null!;
     private Button _prototypeButton = null!;
-    private Label _layerFilterLabel = null!;
     private HSlider _layerFilterSlider = null!;
     private Label _layerFilterValue = null!;
+    private Button _debugToggleButton = null!;
+    private Button _debugCloseButton = null!;
+    private OptionButton _profileSelector = null!;
+
+    private bool _debugButtonPressed;
+    private bool _debugButtonDragged;
+    private bool _debugPanelPressed;
+    private bool _debugPanelDragged;
+    private Vector2 _debugButtonPressPosition;
+    private Vector2 _debugButtonStartPosition;
+    private Vector2 _debugPanelPressPosition;
+    private Vector2 _debugPanelStartPosition;
 
     public override void _Ready()
     {
@@ -26,31 +45,45 @@ public partial class GameScene : Node2D
         _levelValue = GetNode<Label>("UI/Root/TopBar/Stats/LevelBox/VBox/Value");
         _scoreValue = GetNode<Label>("UI/Root/TopBar/Stats/ScoreBox/VBox/Value");
         _matchValue = GetNode<Label>("UI/Root/TopBar/Stats/MatchBox/VBox/Value");
-        _debugLabel = GetNode<Label>("UI/Root/BottomBar/FooterStack/DebugLabel");
-        _generateButton = GetNode<Button>("UI/Root/BottomBar/FooterStack/Buttons/ShuffleButton");
-        _prototypeButton = GetNode<Button>("UI/Root/BottomBar/FooterStack/Buttons/HintButton");
-        _layerFilterLabel = GetNode<Label>("UI/Root/BottomBar/FooterStack/LayerInspector/Title");
-        _layerFilterSlider = GetNode<HSlider>("UI/Root/BottomBar/FooterStack/LayerInspector/Controls/Slider");
-        _layerFilterValue = GetNode<Label>("UI/Root/BottomBar/FooterStack/LayerInspector/Controls/Value");
+        _debugOverlay = GetNode<Control>("UI/Root/DebugOverlay");
+        _debugPanel = GetNode<Control>("UI/Root/DebugOverlay/Panel");
+        _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
+        _debugLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/DebugLabel");
+        _rulesSummaryLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/RulesSummary");
+        _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
+        _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
+        _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
+        _layerFilterValue = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Value");
+        _debugToggleButton = GetNode<Button>("UI/Root/DebugToggleButton");
+        _debugCloseButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header/CloseButton");
+        _profileSelector = GetNode<OptionButton>("UI/Root/DebugOverlay/Panel/Margin/Stack/ProfileRow/ProfileSelector");
 
         _levelValue.Text = "1";
         _scoreValue.Text = "0";
         _matchValue.Text = "0";
         _generateButton.Text = "随机生成";
         _prototypeButton.Text = "固定原型";
-        _debugLabel.Text = "点击“随机生成”开始观察新的堆叠结构。";
-        _layerFilterLabel.Text = "显示层级";
+        _debugLabel.Text = "点击调试按钮后，可以查看布局摘要、规则档案和层级过滤。";
+        _rulesSummaryLabel.Text = string.Empty;
         _layerFilterSlider.MinValue = 0;
         _layerFilterSlider.MaxValue = 0;
         _layerFilterSlider.Step = 1;
         _layerFilterSlider.Editable = false;
         _layerFilterValue.Text = "<= L0";
+        _debugOverlay.Visible = false;
 
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
         _layerFilterSlider.ValueChanged += OnLayerFilterChanged;
+        _debugToggleButton.GuiInput += OnDebugToggleGuiInput;
+        _debugHeader.GuiInput += OnDebugPanelGuiInput;
+        _debugCloseButton.Pressed += OnDebugClosePressed;
+        _profileSelector.ItemSelected += OnProfileSelected;
         _boardController.BoardGenerated += OnBoardGenerated;
+        GetViewport().SizeChanged += OnViewportSizeChanged;
 
+        InitializeProfileSelector();
+        InitializeDebugButtonPosition();
         _boardController.LoadPrototype();
     }
 
@@ -79,6 +112,7 @@ public partial class GameScene : Node2D
         GD.Print($"[GameScene] 布局生成完成: {summary}");
         SyncLayerInspector();
         _debugLabel.Text = _boardController.GetCurrentSummary();
+        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
         HighlightDebugLabel(new Color(0.92f, 0.97f, 0.86f, 1.0f));
         FlashBoard(new Color(0.07f, 0.42f, 0.29f, 1.0f));
     }
@@ -92,6 +126,147 @@ public partial class GameScene : Node2D
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
     }
 
+    private void OnDebugToggleGuiInput(InputEvent inputEvent)
+    {
+        switch (inputEvent)
+        {
+            case InputEventMouseButton mouseButton when mouseButton.ButtonIndex == MouseButton.Left:
+                if (mouseButton.Pressed)
+                {
+                    _debugButtonPressed = true;
+                    _debugButtonDragged = false;
+                    _debugButtonPressPosition = mouseButton.GlobalPosition;
+                    _debugButtonStartPosition = _debugToggleButton.Position;
+                }
+                else
+                {
+                    var wasDragged = _debugButtonDragged;
+                    _debugButtonPressed = false;
+                    _debugButtonDragged = false;
+
+                    if (!wasDragged)
+                    {
+                        ToggleDebugOverlay();
+                    }
+                }
+                break;
+
+            case InputEventMouseMotion mouseMotion when _debugButtonPressed:
+                var delta = mouseMotion.GlobalPosition - _debugButtonPressPosition;
+                if (!_debugButtonDragged && delta.Length() > 8.0f)
+                {
+                    _debugButtonDragged = true;
+                }
+
+                if (_debugButtonDragged)
+                {
+                    _debugToggleButton.Position = _debugButtonStartPosition + delta;
+                    ClampDebugToggleButton();
+                }
+                break;
+        }
+    }
+
+    private void ToggleDebugOverlay()
+    {
+        _debugOverlay.Visible = !_debugOverlay.Visible;
+        _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
+    }
+
+    private void OnDebugClosePressed()
+    {
+        if (_debugOverlay.Visible)
+        {
+            ToggleDebugOverlay();
+        }
+    }
+
+    private void OnProfileSelected(long index)
+    {
+        var profile = GameLayoutProfiles.GetProfiles()[index];
+        _boardController.SetLayoutProfile(profile.Id);
+        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
+        _debugLabel.Text = $"已切换规则档案：{profile.Name}";
+        HighlightDebugLabel(new Color(0.77f, 0.92f, 1.0f, 1.0f));
+        _boardController.GenerateRandomBoard();
+    }
+
+    private void OnViewportSizeChanged()
+    {
+        if (IsNodeReady())
+        {
+            ClampDebugToggleButton();
+            ClampDebugPanel();
+        }
+    }
+
+    private void OnDebugPanelGuiInput(InputEvent inputEvent)
+    {
+        switch (inputEvent)
+        {
+            case InputEventMouseButton mouseButton when mouseButton.ButtonIndex == MouseButton.Left:
+                if (mouseButton.Pressed)
+                {
+                    _debugPanelPressed = true;
+                    _debugPanelDragged = false;
+                    _debugPanelPressPosition = mouseButton.GlobalPosition;
+                    _debugPanelStartPosition = _debugPanel.Position;
+                }
+                else
+                {
+                    _debugPanelPressed = false;
+                    _debugPanelDragged = false;
+                }
+                break;
+
+            case InputEventMouseMotion mouseMotion when _debugPanelPressed:
+                var delta = mouseMotion.GlobalPosition - _debugPanelPressPosition;
+                if (!_debugPanelDragged && delta.Length() > 6.0f)
+                {
+                    _debugPanelDragged = true;
+                }
+
+                if (_debugPanelDragged)
+                {
+                    _debugPanel.Position = _debugPanelStartPosition + delta;
+                    ClampDebugPanel();
+                }
+                break;
+        }
+    }
+
+    private void InitializeDebugButtonPosition()
+    {
+        var viewportSize = GetViewportRect().Size;
+        _debugToggleButton.Position = new Vector2(
+            viewportSize.X - _debugToggleButton.Size.X - FloatingButtonMargin,
+            FloatingButtonMargin);
+        ClampDebugToggleButton();
+        ClampDebugPanel();
+    }
+
+    private void ClampDebugToggleButton()
+    {
+        var viewportSize = GetViewportRect().Size;
+        var maxX = Mathf.Max(FloatingButtonMargin, viewportSize.X - _debugToggleButton.Size.X - FloatingButtonMargin);
+        var maxY = Mathf.Max(FloatingButtonMargin, viewportSize.Y - _debugToggleButton.Size.Y - FloatingButtonMargin);
+
+        _debugToggleButton.Position = new Vector2(
+            Mathf.Clamp(_debugToggleButton.Position.X, FloatingButtonMargin, maxX),
+            Mathf.Clamp(_debugToggleButton.Position.Y, FloatingButtonMargin, maxY));
+    }
+
+    private void ClampDebugPanel()
+    {
+        var viewportSize = GetViewportRect().Size;
+        var maxX = Mathf.Max(FloatingPanelMargin, viewportSize.X - _debugPanel.Size.X - FloatingPanelMargin);
+        var maxY = Mathf.Max(FloatingPanelMargin, viewportSize.Y - _debugPanel.Size.Y - FloatingPanelMargin);
+
+        _debugPanel.Position = new Vector2(
+            Mathf.Clamp(_debugPanel.Position.X, FloatingPanelMargin, maxX),
+            Mathf.Clamp(_debugPanel.Position.Y, FloatingPanelMargin, maxY));
+    }
+
     private void SyncLayerInspector()
     {
         _layerFilterSlider.MinValue = 0;
@@ -100,6 +275,22 @@ public partial class GameScene : Node2D
         _layerFilterSlider.Editable = _boardController.MaxLayer > 0;
         _layerFilterSlider.SetValueNoSignal(_boardController.VisibleMaxLayer);
         RefreshLayerFilterText();
+    }
+
+    private void InitializeProfileSelector()
+    {
+        _profileSelector.Clear();
+        var profiles = GameLayoutProfiles.GetProfiles();
+        for (var i = 0; i < profiles.Length; i++)
+        {
+            _profileSelector.AddItem(profiles[i].Name, i);
+            if (profiles[i].Id == _boardController.CurrentProfileId)
+            {
+                _profileSelector.Select(i);
+            }
+        }
+
+        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
     }
 
     private void RefreshLayerFilterText()

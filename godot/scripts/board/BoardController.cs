@@ -17,7 +17,8 @@ public partial class BoardController : Node2D
     private const int RowZStride = 8;
 
     private readonly List<TileView> _tileViews = [];
-    private readonly LayoutRules _layoutRules = GameLayoutProfiles.VitaMahjongSingleLevel;
+    private LayoutRules _layoutRules = GameLayoutProfiles.VitaMahjongSingleLevel;
+    private string _profileId = GameLayoutProfiles.StandardProfileId;
     private LevelLayout? _currentLayout;
     private string _currentSourceName = "未加载";
     private int _visibleMaxLayer;
@@ -31,6 +32,10 @@ public partial class BoardController : Node2D
     public int MaxLayer => _currentLayout?.Tiles.Count > 0 ? _currentLayout.Tiles.Max(tile => tile.GZ) : 0;
 
     public int VisibleMaxLayer => _visibleMaxLayer;
+
+    public string CurrentProfileId => _profileId;
+
+    public LayoutRules CurrentRules => _layoutRules;
 
     public override void _Ready()
     {
@@ -50,6 +55,12 @@ public partial class BoardController : Node2D
         ApplyLayout(RandomStackLayoutGenerator.Generate(1, _layoutRules), "随机布局");
     }
 
+    public void SetLayoutProfile(string profileId)
+    {
+        _profileId = profileId;
+        _layoutRules = GameLayoutProfiles.GetRulesById(profileId);
+    }
+
     public void SetVisibleMaxLayer(int visibleMaxLayer)
     {
         if (_currentLayout is null)
@@ -67,6 +78,11 @@ public partial class BoardController : Node2D
         return _currentLayout is null
             ? "尚未加载布局"
             : BuildSummary(_currentLayout, _currentSourceName, _visibleMaxLayer);
+    }
+
+    public string GetCurrentRulesSummary()
+    {
+        return $"规则配置 | 档案 {GameLayoutProfiles.GetDisplayName(_profileId)} | 层数 {CurrentRules.MinLayerCount}-{CurrentRules.MaxLayerCount} | 底层至少 {CurrentRules.MinBottomLayerTileCount} | 严格支撑 {(CurrentRules.RequireStrictSupport ? "开" : "关")} | 上层收缩 {(CurrentRules.RequireUpperLayerStrictlySmaller ? "开" : "关")}";
     }
 
     private void ApplyLayout(LevelLayout layout, string sourceName)
