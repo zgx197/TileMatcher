@@ -1,3 +1,6 @@
+using TileMatcher.Data;
+using TileMatcher.Grid;
+
 namespace TileMatcher.Layout;
 
 public sealed class LayoutRules
@@ -23,4 +26,34 @@ public sealed class LayoutRules
     public float BottomLayerHoleChance { get; init; } = 0.16f;
 
     public int GenerationMaxAttempts { get; init; } = 48;
+
+    public int TileWidthUnits { get; init; } = GridConfig.DefaultFootprintWidthUnits;
+
+    public int TileHeightUnits { get; init; } = GridConfig.DefaultFootprintHeightUnits;
+
+    public int BottomLayerStepX { get; init; } = GridConfig.BottomLayerStepX;
+
+    public int BottomLayerStepY { get; init; } = GridConfig.BottomLayerStepY;
+
+    public LayerOffsetMode UpperLayerOffsetMode { get; init; } = LayerOffsetMode.HalfXY;
+
+    public TileShape CreateTileShape()
+    {
+        return new TileShape
+        {
+            WidthUnits = TileWidthUnits,
+            HeightUnits = TileHeightUnits,
+        };
+    }
+
+    public string GetOffsetModeDisplayName()
+    {
+        return UpperLayerOffsetMode switch
+        {
+            LayerOffsetMode.HalfX => "半宽",
+            LayerOffsetMode.HalfY => "半高",
+            LayerOffsetMode.HalfXY => "半宽+半高",
+            _ => "对齐",
+        };
+    }
 }

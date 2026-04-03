@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using TileMatcher.Data;
+using TileMatcher.Grid;
 using AppTileData = TileMatcher.Data.TileData;
 
 namespace TileMatcher.Layout;
@@ -38,18 +39,20 @@ public static class RandomStackLayoutGenerator
 
         var layout = new LevelLayout { LevelId = levelId };
         var nextId = 1;
+        var tileShape = rules.CreateTileShape();
 
         var width = rng.RandiRange(rules.RandomWidthMin, rules.RandomWidthMax);
         var height = rng.RandiRange(rules.RandomHeightMin, rules.RandomHeightMax);
         var bottomLayer = BuildBottomLayer(rng, width, height, rules);
 
         var layers = new List<List<Vector2I>> { bottomLayer };
-        var previousLayer = bottomLayer;
+        var previousLayer = CreateTemporaryLayer(bottomLayer, 0, tileShape);
         var targetLayerCount = rng.RandiRange(rules.MinLayerCount, rules.MaxLayerCount);
 
         for (var z = 1; z < targetLayerCount; z++)
         {
-            var candidates = GetSupportedCandidates(previousLayer);
+            var layerOffset = ResolveLayerOffset(z, rules, tileShape);
+            var candidates = GetSupportedCandidates(previousLayer, tileShape, layerOffset);
             if (candidates.Count == 0)
             {
                 break;
@@ -64,14 +67,17 @@ public static class RandomStackLayoutGenerator
 
             var targetCount = rng.RandiRange(minCount, maxCount);
             Shuffle(rng, candidates);
-            var nextLayer = candidates.Take(targetCount).OrderBy(v => v.Y).ThenBy(v => v.X).ToList();
+            var nextLayer = SelectNonOverlappingCandidates(candidates, targetCount, tileShape)
+                .OrderBy(v => v.Y)
+                .ThenBy(v => v.X)
+                .ToList();
             if (nextLayer.Count == 0 || nextLayer.Count >= previousLayer.Count)
             {
                 break;
             }
 
             layers.Add(nextLayer);
-            previousLayer = nextLayer;
+            previousLayer = CreateTemporaryLayer(nextLayer, z, tileShape);
         }
 
         for (var z = 0; z < layers.Count; z++)
@@ -85,6 +91,7 @@ public static class RandomStackLayoutGenerator
                     GX = position.X,
                     GY = position.Y,
                     GZ = z,
+                    Shape = tileShape,
                 });
             }
         }
@@ -105,7 +112,7 @@ public static class RandomStackLayoutGenerator
                     continue;
                 }
 
-                bottomLayer.Add(new Vector2I(x * 2, y * 2));
+                bottomLayer.Add(new Vector2I(x * rules.BottomLayerStepX, y * rules.BottomLayerStepY));
             }
         }
 
@@ -116,7 +123,7 @@ public static class RandomStackLayoutGenerator
             {
                 for (var x = 0; x < width; x++)
                 {
-                    bottomLayer.Add(new Vector2I(x * 2, y * 2));
+                    bottomLayer.Add(new Vector2I(x * rules.BottomLayerStepX, y * rules.BottomLayerStepY));
                 }
             }
         }
@@ -124,24 +131,113 @@ public static class RandomStackLayoutGenerator
         return bottomLayer;
     }
 
-    private static List<Vector2I> GetSupportedCandidates(IReadOnlyCollection<Vector2I> lowerLayer)
+    private static List<Vector2I> GetSupportedCandidates(
+        IReadOnlyCollection<AppTileData> lowerLayer,
+        TileShape tileShape,
+        Vector2I layerOffset)
     {
-        var set = lowerLayer.ToHashSet();
         var candidates = new HashSet<Vector2I>();
+        var minX = lowerLayer.Min(tile => tile.GX);
+        var minY = lowerLayer.Min(tile => tile.GY);
+        var maxX = lowerLayer.Max(tile => tile.GX + tile.FootprintWidth);
+        var maxY = lowerLayer.Max(tile => tile.GY + tile.FootprintHeight);
+        var startX = GetFirstAlignedCoordinate(minX, tileShape.WidthUnits, layerOffset.X);
+        var startY = GetFirstAlignedCoordinate(minY, tileShape.HeightUnits, layerOffset.Y);
 
-        foreach (var tile in lowerLayer)
+        for (var y = startY; y <= maxY - tileShape.HeightUnits; y += tileShape.HeightUnits)
         {
-            var candidate = new Vector2I(tile.X + 1, tile.Y + 1);
-            if (set.Contains(new Vector2I(candidate.X - 1, candidate.Y - 1))
-                && set.Contains(new Vector2I(candidate.X + 1, candidate.Y - 1))
-                && set.Contains(new Vector2I(candidate.X - 1, candidate.Y + 1))
-                && set.Contains(new Vector2I(candidate.X + 1, candidate.Y + 1)))
+            for (var x = startX; x <= maxX - tileShape.WidthUnits; x += tileShape.WidthUnits)
             {
-                candidates.Add(candidate);
+                var candidate = new AppTileData
+                {
+                    GX = x,
+                    GY = y,
+                    GZ = lowerLayer.First().GZ + 1,
+                    Shape = tileShape,
+                };
+
+                if (GridMath.HasFullSupportFromLowerLayer(candidate, lowerLayer))
+                {
+                    candidates.Add(new Vector2I(x, y));
+                }
             }
         }
 
         return candidates.ToList();
+    }
+
+    private static List<Vector2I> SelectNonOverlappingCandidates(
+        IReadOnlyList<Vector2I> candidates,
+        int targetCount,
+        TileShape tileShape)
+    {
+        var selected = new List<Vector2I>();
+
+        foreach (var candidate in candidates)
+        {
+            if (selected.Count >= targetCount)
+            {
+                break;
+            }
+
+            if (selected.All(existing => !DoAnchorsOverlap(existing, candidate, tileShape)))
+            {
+                selected.Add(candidate);
+            }
+        }
+
+        return selected;
+    }
+
+    private static bool DoAnchorsOverlap(Vector2I a, Vector2I b, TileShape tileShape)
+    {
+        return a.X < b.X + tileShape.WidthUnits
+            && a.X + tileShape.WidthUnits > b.X
+            && a.Y < b.Y + tileShape.HeightUnits
+            && a.Y + tileShape.HeightUnits > b.Y;
+    }
+
+    private static int GetFirstAlignedCoordinate(int minValue, int step, int offset)
+    {
+        var value = offset;
+        while (value < minValue)
+        {
+            value += step;
+        }
+
+        return value;
+    }
+
+    private static Vector2I ResolveLayerOffset(int layer, LayoutRules rules, TileShape tileShape)
+    {
+        if (layer % 2 == 0)
+        {
+            return Vector2I.Zero;
+        }
+
+        var halfX = tileShape.WidthUnits / 2;
+        var halfY = tileShape.HeightUnits / 2;
+
+        return rules.UpperLayerOffsetMode switch
+        {
+            LayerOffsetMode.HalfX => new Vector2I(halfX, 0),
+            LayerOffsetMode.HalfY => new Vector2I(0, halfY),
+            LayerOffsetMode.HalfXY => new Vector2I(halfX, halfY),
+            _ => Vector2I.Zero,
+        };
+    }
+
+    private static List<AppTileData> CreateTemporaryLayer(IEnumerable<Vector2I> anchors, int layer, TileShape tileShape)
+    {
+        return anchors
+            .Select(anchor => new AppTileData
+            {
+                GX = anchor.X,
+                GY = anchor.Y,
+                GZ = layer,
+                Shape = tileShape,
+            })
+            .ToList();
     }
 
     private static string PickTileType(RandomNumberGenerator rng)

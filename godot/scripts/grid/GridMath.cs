@@ -9,22 +9,32 @@ public static class GridMath
 {
     public static Rect2I GetFootprint(AppTileData tile)
     {
-        return new Rect2I(tile.GX, tile.GY, 2, 2);
+        return new Rect2I(tile.GX, tile.GY, tile.FootprintWidth, tile.FootprintHeight);
     }
 
     public static bool OverlapsXY(AppTileData a, AppTileData b)
     {
-        return a.GX < b.GX + 2
-            && a.GX + 2 > b.GX
-            && a.GY < b.GY + 2
-            && a.GY + 2 > b.GY;
+        var rectA = GetFootprint(a);
+        var rectB = GetFootprint(b);
+
+        return rectA.Position.X < rectB.End.X
+            && rectA.End.X > rectB.Position.X
+            && rectA.Position.Y < rectB.End.Y
+            && rectA.End.Y > rectB.Position.Y;
     }
 
     public static Vector2 GridToWorld(int gx, int gy, int gz, Vector2 boardOrigin)
     {
         return boardOrigin
-            + new Vector2(gx * GridConfig.StepX, gy * GridConfig.StepY)
+            + new Vector2(gx * GridConfig.CellWidth, gy * GridConfig.CellHeight)
             + GridConfig.LayerVisualOffset * gz;
+    }
+
+    public static Vector2 GetWorldSize(AppTileData tile)
+    {
+        return new Vector2(
+            tile.FootprintWidth * GridConfig.CellWidth,
+            tile.FootprintHeight * GridConfig.CellHeight);
     }
 
     public static bool HasAnyAboveOverlap(AppTileData tile, IEnumerable<AppTileData> allTiles)
@@ -52,15 +62,23 @@ public static class GridMath
             return true;
         }
 
-        var lowerLayerPositions = lowerLayerTiles
+        var footprint = GetFootprint(tile);
+        var activeLowerTiles = lowerLayerTiles
             .Where(lowerTile => !lowerTile.Removed)
-            .Select(lowerTile => new Vector2I(lowerTile.GX, lowerTile.GY))
-            .ToHashSet();
+            .ToList();
 
-        return lowerLayerPositions.Contains(new Vector2I(tile.GX - 1, tile.GY - 1))
-            && lowerLayerPositions.Contains(new Vector2I(tile.GX + 1, tile.GY - 1))
-            && lowerLayerPositions.Contains(new Vector2I(tile.GX - 1, tile.GY + 1))
-            && lowerLayerPositions.Contains(new Vector2I(tile.GX + 1, tile.GY + 1));
+        for (var y = footprint.Position.Y; y < footprint.End.Y; y++)
+        {
+            for (var x = footprint.Position.X; x < footprint.End.X; x++)
+            {
+                if (!IsCoveredByAnyTile(x, y, activeLowerTiles))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public static Rect2 GetWorldBounds(IEnumerable<AppTileData> tiles)
@@ -79,7 +97,7 @@ public static class GridMath
             }
 
             var worldPos = GridToWorld(tile.GX, tile.GY, tile.GZ, Vector2.Zero);
-            var rect = new Rect2(worldPos, GridConfig.TileSize);
+            var rect = new Rect2(worldPos, GetWorldSize(tile));
 
             if (!hasAny)
             {
@@ -103,5 +121,28 @@ public static class GridMath
         }
 
         return new Rect2(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    private static bool IsCoveredByAnyTile(int x, int y, IReadOnlyCollection<AppTileData> tiles)
+    {
+        foreach (var tile in tiles)
+        {
+            if (ContainsCell(tile, x, y))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsCell(AppTileData tile, int x, int y)
+    {
+        var footprint = GetFootprint(tile);
+
+        return x >= footprint.Position.X
+            && x < footprint.End.X
+            && y >= footprint.Position.Y
+            && y < footprint.End.Y;
     }
 }

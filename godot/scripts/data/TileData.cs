@@ -12,6 +12,12 @@ public sealed class TileData
 
     public int GZ { get; init; }
 
+    public TileShape Shape { get; init; } = TileShape.StandardMahjong;
+
+    public int FootprintWidth => Shape.WidthUnits;
+
+    public int FootprintHeight => Shape.HeightUnits;
+
     public bool Removed { get; set; }
 
     public bool Movable { get; set; }

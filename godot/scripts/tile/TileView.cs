@@ -54,11 +54,12 @@ public partial class TileView : Node2D
         EnsureInitialized();
 
         Data = tileData;
+        var tileSize = GridMath.GetWorldSize(tileData);
         Name = $"Tile_{tileData.Id}_{tileData.Type}";
 
         _label.Text = tileData.Type;
         _label.Position = new Vector2(0.0f, 18.0f);
-        _label.Size = GridConfig.TileSize;
+        _label.Size = tileSize;
         _label.HorizontalAlignment = HorizontalAlignment.Center;
         _label.VerticalAlignment = VerticalAlignment.Center;
         _label.AddThemeFontSizeOverride("font_size", 36);
@@ -114,9 +115,10 @@ public partial class TileView : Node2D
 
     public override void _Draw()
     {
-        DrawStyleBox(_shadowStyle, new Rect2(9.0f, 10.0f, GridConfig.TileWidth, GridConfig.TileHeight));
-        DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, GridConfig.TileWidth, GridConfig.TileHeight));
-        DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, GridConfig.TileWidth, GridConfig.TileHeight));
+        var tileSize = Data is null ? GridConfig.TileSize : GridMath.GetWorldSize(Data);
+        DrawStyleBox(_shadowStyle, new Rect2(9.0f, 10.0f, tileSize.X, tileSize.Y));
+        DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, tileSize.X, tileSize.Y));
+        DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y));
     }
 
     private void ApplyLayerDebugStyle(int layer)
