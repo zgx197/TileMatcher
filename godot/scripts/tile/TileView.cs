@@ -8,11 +8,15 @@ namespace TileMatcher.Tile;
 /// 单张麻将的可视化节点。
 /// </summary>
 /// <remarks>
-/// 当前主要服务调试和布局观察，不是完整交互组件。
+/// 当前它仍然是一个偏渲染层的组件：
+/// - 负责把逻辑数据画出来
+/// - 负责把“可动 / 不可动 / 选中”这些运行态翻译成视觉反馈
+/// - 不直接决定玩法规则
+/// 这样后续无论是点击、拖拽还是自动测试，都可以复用同一套视觉状态更新。
 /// </remarks>
 public partial class TileView : Node2D
 {
-    /// <summary>不同层 body 的调试色板。</summary>
+    /// <summary>不同层牌面主体的调试色板。</summary>
     private static readonly Color[] BodyPalette =
     [
         new(0.97f, 0.97f, 0.93f, 1.0f),
@@ -23,7 +27,7 @@ public partial class TileView : Node2D
         new(0.99f, 0.86f, 0.88f, 1.0f),
     ];
 
-    /// <summary>不同层侧边深色的调试色板。</summary>
+    /// <summary>不同层侧边厚度区域的调试色板。</summary>
     private static readonly Color[] DepthPalette =
     [
         new(0.80f, 0.82f, 0.88f, 1.0f),
@@ -50,8 +54,10 @@ public partial class TileView : Node2D
     private StyleBoxFlat _depthStyle = null!;
     private StyleBoxFlat _shadowStyle = null!;
     private bool _initialized;
+    private bool _isMovable = true;
+    private bool _isSelected;
 
-    /// <summary>当前视图所绑定的逻辑数据。</summary>
+    /// <summary>当前视图绑定的逻辑数据。</summary>
     public AppTileData Data { get; private set; } = null!;
 
     public override void _Ready()
@@ -59,7 +65,9 @@ public partial class TileView : Node2D
         EnsureInitialized();
     }
 
-    /// <summary>把逻辑数据应用到当前视图。</summary>
+    /// <summary>
+    /// 把逻辑层 TileData 绑定到当前牌视图。
+    /// </summary>
     public void ApplyData(AppTileData tileData)
     {
         EnsureInitialized();
@@ -74,13 +82,58 @@ public partial class TileView : Node2D
         _label.HorizontalAlignment = HorizontalAlignment.Center;
         _label.VerticalAlignment = VerticalAlignment.Center;
         _label.AddThemeFontSizeOverride("font_size", 36);
-        _label.AddThemeColorOverride("font_color", ResolveTextColor(tileData.Type));
 
-        ApplyLayerDebugStyle(tileData.GZ);
+        RefreshVisualState();
         QueueRedraw();
     }
 
-    /// <summary>延迟初始化内部节点和样式对象。</summary>
+    /// <summary>
+    /// 更新当前牌的交互态展示。
+    /// </summary>
+    public void SetInteractionState(bool isMovable, bool isSelected)
+    {
+        EnsureInitialized();
+        _isMovable = isMovable;
+        _isSelected = isSelected;
+        RefreshVisualState();
+        QueueRedraw();
+    }
+
+    /// <summary>
+    /// 判断屏幕坐标是否命中当前牌主体区域。
+    /// </summary>
+    /// <remarks>
+    /// 当前点击检测以牌面的主矩形为准，不把阴影和厚度区域算作命中范围。
+    /// 这样用户点击的预期会更稳定，也更接近后续拖拽起手区域。
+    /// </remarks>
+    public bool ContainsScreenPoint(Vector2 screenPoint)
+    {
+        EnsureInitialized();
+
+        var tileSize = Data is null ? GridConfig.TileSize : GridMath.GetWorldSize(Data);
+        var origin = GetGlobalTransformWithCanvas().Origin;
+        return new Rect2(origin, tileSize).HasPoint(screenPoint);
+    }
+
+    /// <summary>
+    /// 返回当前牌面主体在全局空间中的矩形范围。
+    /// </summary>
+    /// <remarks>
+    /// 拖拽结束时，使用这个矩形和其他牌做相交检测，判断是否发生“触碰”。
+    /// 这里同样只使用牌面主体，不把阴影和厚度区域计算进去。
+    /// </remarks>
+    public Rect2 GetGlobalRect()
+    {
+        EnsureInitialized();
+
+        var tileSize = Data is null ? GridConfig.TileSize : GridMath.GetWorldSize(Data);
+        var origin = GetGlobalTransformWithCanvas().Origin;
+        return new Rect2(origin, tileSize);
+    }
+
+    /// <summary>
+    /// 延迟初始化内部节点和样式对象。
+    /// </summary>
     private void EnsureInitialized()
     {
         if (_initialized)
@@ -121,7 +174,7 @@ public partial class TileView : Node2D
             BorderWidthBottom = 2,
             BorderColor = new Color(0.76f, 0.77f, 0.9f, 1.0f),
         };
-        
+
         _initialized = true;
     }
 
@@ -134,7 +187,9 @@ public partial class TileView : Node2D
         DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y));
     }
 
-    /// <summary>根据层级应用调试配色。</summary>
+    /// <summary>
+    /// 根据层级应用调试配色。
+    /// </summary>
     private void ApplyLayerDebugStyle(int layer)
     {
         var paletteIndex = Mathf.PosMod(layer, BodyPalette.Length);
@@ -144,7 +199,50 @@ public partial class TileView : Node2D
         _depthStyle.BgColor = DepthPalette[paletteIndex];
     }
 
-    /// <summary>根据牌面类型选择文字颜色。</summary>
+    /// <summary>
+    /// 把逻辑状态翻译成牌面视觉反馈。
+    /// </summary>
+    private void RefreshVisualState()
+    {
+        var layer = Data?.GZ ?? 0;
+        ApplyLayerDebugStyle(layer);
+
+        var baseTextColor = Data is null ? Colors.Black : ResolveTextColor(Data.Type);
+        _label.AddThemeColorOverride("font_color", baseTextColor);
+        Modulate = Colors.White;
+
+        _bodyStyle.BorderWidthLeft = 2;
+        _bodyStyle.BorderWidthTop = 2;
+        _bodyStyle.BorderWidthRight = 2;
+        _bodyStyle.BorderWidthBottom = 2;
+        _shadowStyle.BgColor = new Color(0.11f, 0.06f, 0.22f, 0.35f);
+
+        if (_isSelected)
+        {
+            _bodyStyle.BorderWidthLeft = 5;
+            _bodyStyle.BorderWidthTop = 5;
+            _bodyStyle.BorderWidthRight = 5;
+            _bodyStyle.BorderWidthBottom = 5;
+            _bodyStyle.BorderColor = new Color(0.97f, 0.83f, 0.22f, 1.0f);
+            _shadowStyle.BgColor = new Color(0.95f, 0.76f, 0.16f, 0.42f);
+            return;
+        }
+
+        if (_isMovable)
+        {
+            return;
+        }
+
+        _bodyStyle.BorderColor = new Color(0.34f, 0.40f, 0.44f, 1.0f);
+        _bodyStyle.BgColor = _bodyStyle.BgColor.Darkened(0.12f);
+        _depthStyle.BgColor = _depthStyle.BgColor.Darkened(0.35f);
+        _label.AddThemeColorOverride("font_color", new Color(baseTextColor.R, baseTextColor.G, baseTextColor.B, 0.78f));
+        Modulate = new Color(0.78f, 0.78f, 0.80f, 0.72f);
+    }
+
+    /// <summary>
+    /// 根据牌面类型选择文字颜色。
+    /// </summary>
     private static Color ResolveTextColor(string type)
     {
         if (type.Contains('D') || type is "C" or "R")

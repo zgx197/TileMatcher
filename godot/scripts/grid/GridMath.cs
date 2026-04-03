@@ -83,6 +83,98 @@ public static class GridMath
     }
 
     /// <summary>
+    /// 判断是否存在紧贴当前牌左边缘的相邻牌。
+    /// </summary>
+    /// <remarks>
+    /// 这里要求“边接触且在垂直方向有有效重叠”，
+    /// 这样才能把它视为真正会阻挡横向拖出的邻接关系。
+    /// </remarks>
+    public static bool HasLeftNeighbor(AppTileData tile, IEnumerable<AppTileData> allTiles)
+    {
+        foreach (var other in allTiles)
+        {
+            if (other.Removed || other.Id == tile.Id || other.GZ != tile.GZ)
+            {
+                continue;
+            }
+
+            if (GetFootprint(other).End.X == GetFootprint(tile).Position.X
+                && RangesOverlap(GetFootprint(other).Position.Y, GetFootprint(other).End.Y, GetFootprint(tile).Position.Y, GetFootprint(tile).End.Y))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 判断是否存在紧贴当前牌右边缘的相邻牌。
+    /// </summary>
+    public static bool HasRightNeighbor(AppTileData tile, IEnumerable<AppTileData> allTiles)
+    {
+        foreach (var other in allTiles)
+        {
+            if (other.Removed || other.Id == tile.Id || other.GZ != tile.GZ)
+            {
+                continue;
+            }
+
+            if (GetFootprint(other).Position.X == GetFootprint(tile).End.X
+                && RangesOverlap(GetFootprint(other).Position.Y, GetFootprint(other).End.Y, GetFootprint(tile).Position.Y, GetFootprint(tile).End.Y))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 判断是否存在紧贴当前牌上边缘的相邻牌。
+    /// </summary>
+    public static bool HasTopNeighbor(AppTileData tile, IEnumerable<AppTileData> allTiles)
+    {
+        foreach (var other in allTiles)
+        {
+            if (other.Removed || other.Id == tile.Id || other.GZ != tile.GZ)
+            {
+                continue;
+            }
+
+            if (GetFootprint(other).End.Y == GetFootprint(tile).Position.Y
+                && RangesOverlap(GetFootprint(other).Position.X, GetFootprint(other).End.X, GetFootprint(tile).Position.X, GetFootprint(tile).End.X))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 判断是否存在紧贴当前牌下边缘的相邻牌。
+    /// </summary>
+    public static bool HasBottomNeighbor(AppTileData tile, IEnumerable<AppTileData> allTiles)
+    {
+        foreach (var other in allTiles)
+        {
+            if (other.Removed || other.Id == tile.Id || other.GZ != tile.GZ)
+            {
+                continue;
+            }
+
+            if (GetFootprint(other).Position.Y == GetFootprint(tile).End.Y
+                && RangesOverlap(GetFootprint(other).Position.X, GetFootprint(other).End.X, GetFootprint(tile).Position.X, GetFootprint(tile).End.X))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// 判断上层牌的整个底面是否被下一层完整覆盖。
     /// </summary>
     /// <remarks>
@@ -183,5 +275,13 @@ public static class GridMath
             && x < footprint.End.X
             && y >= footprint.Position.Y
             && y < footprint.End.Y;
+    }
+
+    /// <summary>
+    /// 判断两个一维开区间是否有重叠长度。
+    /// </summary>
+    private static bool RangesOverlap(int aMin, int aMax, int bMin, int bMax)
+    {
+        return aMin < bMax && aMax > bMin;
     }
 }
