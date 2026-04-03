@@ -11,12 +11,20 @@ config_version=5
 [application]
 
 config/name="TileMatcher"
+run/main_scene="res://scenes/game/GameScene.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [dotnet]
 
 project/assembly_name="TileMatcher"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [physics]
 
