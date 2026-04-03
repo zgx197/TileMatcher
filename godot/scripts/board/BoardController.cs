@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
+using TileMatcher.Config;
 using TileMatcher.Data;
 using TileMatcher.Grid;
 using TileMatcher.Layout;
@@ -10,6 +11,7 @@ namespace TileMatcher.Board;
 
 public partial class BoardController : Node2D
 {
+    private const string DefaultCatalogPath = "res://configs/layout_profiles/default_catalog.tres";
     private const float SidePadding = 36.0f;
     private const float TopReservedHeight = 132.0f;
     private const float BottomReservedHeight = 172.0f;
@@ -17,14 +19,18 @@ public partial class BoardController : Node2D
     private const int RowZStride = 8;
 
     private readonly List<TileView> _tileViews = [];
-    private LayoutRules _layoutRules = GameLayoutProfiles.VitaMahjongSingleLevel;
-    private string _profileId = GameLayoutProfiles.StandardProfileId;
+    private LayoutRules _layoutRules = new();
+    private string _profileId = string.Empty;
+    private string _profileDisplayName = "未配置";
     private LevelLayout? _currentLayout;
     private string _currentSourceName = "未加载";
     private int _visibleMaxLayer;
 
     [Export]
     public PackedScene TileScene { get; set; } = null!;
+
+    [Export]
+    public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
 
     [Signal]
     public delegate void BoardGeneratedEventHandler(string summary);
@@ -35,6 +41,8 @@ public partial class BoardController : Node2D
 
     public string CurrentProfileId => _profileId;
 
+    public string CurrentProfileDisplayName => _profileDisplayName;
+
     public LayoutRules CurrentRules => _layoutRules;
 
     public override void _Ready()
@@ -43,11 +51,14 @@ public partial class BoardController : Node2D
         {
             TileScene = GD.Load<PackedScene>("res://scenes/tile/Tile.tscn");
         }
+
+        EnsureProfileCatalogLoaded();
+        EnsureDefaultProfileSelected();
     }
 
     public void LoadPrototype()
     {
-        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(), "固定原型");
+        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), "固定原型");
     }
 
     public void GenerateRandomBoard()
@@ -57,8 +68,17 @@ public partial class BoardController : Node2D
 
     public void SetLayoutProfile(string profileId)
     {
-        _profileId = profileId;
-        _layoutRules = GameLayoutProfiles.GetRulesById(profileId);
+        var profile = FindProfile(profileId);
+        if (profile is null)
+        {
+            GD.PushWarning($"[BoardController] 未找到规则档案: {profileId}");
+            return;
+        }
+
+        // 运行时逻辑仍使用纯 C# 规则对象，便于保持校验与生成器的稳定性。
+        _profileId = profile.ProfileId;
+        _profileDisplayName = string.IsNullOrWhiteSpace(profile.DisplayName) ? profile.ProfileId : profile.DisplayName;
+        _layoutRules = profile.ToRuntimeRules();
     }
 
     public void SetVisibleMaxLayer(int visibleMaxLayer)
@@ -82,7 +102,19 @@ public partial class BoardController : Node2D
 
     public string GetCurrentRulesSummary()
     {
-        return $"规则配置 | 档案 {GameLayoutProfiles.GetDisplayName(_profileId)} | 层数 {CurrentRules.MinLayerCount}-{CurrentRules.MaxLayerCount} | 底层至少 {CurrentRules.MinBottomLayerTileCount} | 严格支撑 {(CurrentRules.RequireStrictSupport ? "开" : "关")} | 上层收缩 {(CurrentRules.RequireUpperLayerStrictlySmaller ? "开" : "关")}";
+        return $"规则配置 | 档案 {CurrentProfileDisplayName} | 牌形 {CurrentRules.TileWidthUnits}x{CurrentRules.TileHeightUnits} | 上层偏移 {CurrentRules.GetOffsetModeDisplayName()} | 层数 {CurrentRules.MinLayerCount}-{CurrentRules.MaxLayerCount} | 底层至少 {CurrentRules.MinBottomLayerTileCount} | 完整覆盖 {(CurrentRules.RequireStrictSupport ? "开" : "关")} | 上层收缩 {(CurrentRules.RequireUpperLayerStrictlySmaller ? "开" : "关")}";
+    }
+
+    public LayoutProfileConfig[] GetProfiles()
+    {
+        if (ProfileCatalog is null)
+        {
+            return [];
+        }
+
+        return ProfileCatalog.Profiles
+            .Where(static profile => profile is not null)
+            .ToArray()!;
     }
 
     private void ApplyLayout(LevelLayout layout, string sourceName)
@@ -165,5 +197,43 @@ public partial class BoardController : Node2D
             .ToArray();
 
         return $"{sourceName} | 总牌数 {layout.Tiles.Count} | 显示 <= L{visibleMaxLayer} | 总层数 {layerCounts.Length} | {string.Join(" / ", layerCounts)}";
+    }
+
+    private void EnsureProfileCatalogLoaded()
+    {
+        if (ProfileCatalog is not null)
+        {
+            return;
+        }
+
+        ProfileCatalog = GD.Load<LayoutProfileCatalog>(DefaultCatalogPath);
+        if (ProfileCatalog is null)
+        {
+            GD.PushError($"[BoardController] 无法加载默认档案目录: {DefaultCatalogPath}");
+        }
+    }
+
+    private void EnsureDefaultProfileSelected()
+    {
+        var profiles = GetProfiles();
+        if (profiles.Length == 0)
+        {
+            _layoutRules = new LayoutRules();
+            _profileId = "missing";
+            _profileDisplayName = "缺少档案";
+            return;
+        }
+
+        var defaultProfileId = string.IsNullOrWhiteSpace(ProfileCatalog.DefaultProfileId)
+            ? profiles[0].ProfileId
+            : ProfileCatalog.DefaultProfileId;
+
+        SetLayoutProfile(defaultProfileId);
+    }
+
+    private LayoutProfileConfig? FindProfile(string profileId)
+    {
+        return GetProfiles()
+            .FirstOrDefault(profile => profile.ProfileId == profileId);
     }
 }

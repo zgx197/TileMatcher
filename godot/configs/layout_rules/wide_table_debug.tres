@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LayoutRuleConfig" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/config/LayoutRuleConfig.cs" id="1_rule_script"]
+[ext_resource type="Resource" path="res://configs/shapes/standard_4x6.tres" id="2_shape"]
+
+[resource]
+script = ExtResource("1_rule_script")
+MinLayerCount = 4
+MaxLayerCount = 5
+MinBottomLayerTileCount = 14
+RequireStrictSupport = true
+RequireUpperLayerStrictlySmaller = true
+RandomWidthMin = 5
+RandomWidthMax = 6
+RandomHeightMin = 6
+RandomHeightMax = 7
+BottomLayerHoleChance = 0.2
+GenerationMaxAttempts = 80
+BottomLayerStepX = 4
+BottomLayerStepY = 6
+UpperLayerOffsetMode = 3
+TileShape = ExtResource("2_shape")

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LayoutProfileCatalog" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/config/LayoutProfileCatalog.cs" id="1_catalog_script"]
+[ext_resource type="Resource" path="res://configs/layout_profiles/standard_single_level.tres" id="2_profile"]
+[ext_resource type="Resource" path="res://configs/layout_profiles/strict_high_layer.tres" id="3_profile"]
+[ext_resource type="Resource" path="res://configs/layout_profiles/wide_table_debug.tres" id="4_profile"]
+
+[resource]
+script = ExtResource("1_catalog_script")
+DefaultProfileId = "standard"
+Profiles = [ExtResource("2_profile"), ExtResource("3_profile"), ExtResource("4_profile")]

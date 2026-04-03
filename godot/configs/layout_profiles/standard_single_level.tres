@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LayoutProfileConfig" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/config/LayoutProfileConfig.cs" id="1_profile_script"]
+[ext_resource type="Resource" path="res://configs/layout_rules/standard_single_level.tres" id="2_rules"]
+
+[resource]
+script = ExtResource("1_profile_script")
+ProfileId = "standard"
+DisplayName = "标准单关"
+Rules = ExtResource("2_rules")

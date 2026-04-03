@@ -1,5 +1,6 @@
 using Godot;
 using TileMatcher.Board;
+using TileMatcher.Config;
 using TileMatcher.Layout;
 
 namespace TileMatcher.Game;
@@ -183,10 +184,16 @@ public partial class GameScene : Node2D
 
     private void OnProfileSelected(long index)
     {
-        var profile = GameLayoutProfiles.GetProfiles()[index];
-        _boardController.SetLayoutProfile(profile.Id);
+        var profiles = _boardController.GetProfiles();
+        if (index < 0 || index >= profiles.Length)
+        {
+            return;
+        }
+
+        var profile = profiles[index];
+        _boardController.SetLayoutProfile(profile.ProfileId);
         _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
-        _debugLabel.Text = $"已切换规则档案：{profile.Name}";
+        _debugLabel.Text = $"已切换规则档案：{profile.DisplayName}";
         HighlightDebugLabel(new Color(0.77f, 0.92f, 1.0f, 1.0f));
         _boardController.GenerateRandomBoard();
     }
@@ -280,11 +287,11 @@ public partial class GameScene : Node2D
     private void InitializeProfileSelector()
     {
         _profileSelector.Clear();
-        var profiles = GameLayoutProfiles.GetProfiles();
+        var profiles = _boardController.GetProfiles();
         for (var i = 0; i < profiles.Length; i++)
         {
-            _profileSelector.AddItem(profiles[i].Name, i);
-            if (profiles[i].Id == _boardController.CurrentProfileId)
+            _profileSelector.AddItem(profiles[i].DisplayName, i);
+            if (profiles[i].ProfileId == _boardController.CurrentProfileId)
             {
                 _profileSelector.Select(i);
             }
