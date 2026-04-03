@@ -11,7 +11,7 @@
 
 - [游戏外围流程与页面架构设计](./游戏外围流程与页面架构设计.md)
   - 当前外围页面与流程主文档
-  - 说明 `AppRoot / HomePage / GameScene / LevelCompletePage` 的职责边界、页面流转和关卡配置接入方式
+  - 说明 `AppRoot / BootLoadingPage / HomePage / GameScene / LevelCompletePage / DailyRewardPage` 的职责边界、页面流转、进度持久化和关卡配置接入方式
 
 - [通用堆叠框架与第二代网格方案](./通用堆叠框架与第二代网格方案.md)
   - 当前堆叠系统主设计文档
