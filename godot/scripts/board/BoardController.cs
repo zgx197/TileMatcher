@@ -116,6 +116,16 @@ public partial class BoardController : Node2D
     /// <summary>当前正在被拖拽的牌。只有在真正越过拖拽阈值后才会赋值。</summary>
     private TileView? _draggingTile;
 
+    /// <summary>
+    /// 当前被临时从“交互快照”中摘掉的牌。
+    /// </summary>
+    /// <remarks>
+    /// 当一张牌被成功拿起拖拽后，它应该立刻不再阻塞其他牌。
+    /// 但这不等于把它真的从棋盘数据里删除，而是只在交互判定所使用的临时快照里排除它。
+    /// 这样可以让下层牌在拖拽期间立即刷新为新的可动 / 可配对状态，同时又不会把规则变成“每帧随鼠标重算拓扑”。
+    /// </remarks>
+    private AppTileData? _interactionSnapshotExcludedTile;
+
     /// <summary>鼠标按下时的屏幕坐标，用于计算是否超过拖拽阈值。</summary>
     private Vector2 _pointerPressScreenPosition;
 
@@ -173,7 +183,7 @@ public partial class BoardController : Node2D
     public int CurrentMatchCount => _matchCount;
 
     /// <summary>当前仍可移动的牌数。主要用于调试摘要和状态栏。</summary>
-    public int CurrentMovableCount => GetActiveTiles().Count(tile => tile.Movable);
+    public int CurrentMovableCount => GetInteractionTiles().Count(tile => tile.Movable);
 
     public override void _Ready()
     {
@@ -304,6 +314,7 @@ public partial class BoardController : Node2D
         _selectedTile = null;
         _matchCount = 0;
         _score = 0;
+        _interactionSnapshotExcludedTile = null;
         ResetPointerState();
 
         LogBoard($"开始应用布局: source={sourceName}, profile={CurrentProfileDisplayName}, tiles={layout.Tiles.Count}");
@@ -477,6 +488,7 @@ public partial class BoardController : Node2D
         var boostedZIndex = Mathf.Min(tileView.ZIndex + DragLiftZBoost, SafeMaxDragZIndex);
         tileView.ZIndex = boostedZIndex;
         tileView.Scale = new Vector2(1.04f, 1.04f);
+        BeginDragInteractionSnapshot(tileView.Data);
 
         LogBoard($"开始拖拽: {DescribeTile(tileView.Data)}, press=({_pointerPressScreenPosition.X:0.##}, {_pointerPressScreenPosition.Y:0.##}), current=({screenPosition.X:0.##}, {screenPosition.Y:0.##}), z={_dragTileOriginalZIndex}->{boostedZIndex}");
     }
@@ -517,44 +529,50 @@ public partial class BoardController : Node2D
         draggedTile.ZIndex = _dragTileOriginalZIndex;
         draggedTile.Scale = Vector2.One;
 
-        ResetPointerState();
-
         if (targetTile is null)
         {
+            EndDragInteractionSnapshot();
+            ResetPointerState();
             EmitSignal(SignalName.BoardStateChanged, $"拖拽结束，{draggedTile.Data.Type} 没有碰到可消除目标");
             return;
         }
 
-        LogBoard($"拖拽命中目标，开始消除动画: dragged={DescribeTile(draggedTile.Data)}, target={DescribeTile(targetTile.Data)}");
-        RemoveMatchedPair(draggedTile, targetTile);
+        LogBoard($"拖拽命中目标，准备进入统一配对规则校验: dragged={DescribeTile(draggedTile.Data)}, target={DescribeTile(targetTile.Data)}");
+        var matched = TryStartMatch(draggedTile, targetTile, "拖拽");
+        if (!matched)
+        {
+            EndDragInteractionSnapshot();
+        }
+
+        ResetPointerState();
     }
 
     /// <summary>
     /// 为被拖拽牌查找一个可作为消除目标的牌。
     /// </summary>
     /// <remarks>
-    /// 这里刻意允许跨层命中。
-    /// 也就是说，只要另一张牌当前仍然可见、未移除、同牌面，并且主体矩形在容差范围内发生接触，
-    /// 就允许被视为一次“触碰到目标”。
-    ///
-    /// 这样做是为了贴近当前参考玩法中的观感：
-    /// - 被拖拽牌可以去触碰其他层仍然露出的同牌面麻将
-    /// - 不强制要求目标牌本身也必须是可拖拽状态
+    /// 这里仍然允许跨层命中，但只负责“几何候选目标”筛选，不直接决定业务是否合法。
+    /// 最终是否允许消除，仍然需要满足统一的配对规则：
+    /// - 两张牌牌面相同
+    /// - 两张牌都未移除
+    /// - 两张牌当前都允许参与消除
     ///
     /// 当前的“触碰”不是严格矩形相交，而是：
     /// - 先把被拖拽牌矩形按容差向外扩张
     /// - 再检测是否与目标牌主体矩形相交
-    /// 这样拖拽手感会更接近参考游戏，不需要把两张牌完全压进彼此内部。
+    /// 这样拖拽手感会更接近参考游戏，同时不会再把“接触到目标”和“目标合法可消除”混为一谈。
     /// </remarks>
     private TileView? FindDragMatchTarget(TileView draggedTile)
     {
         var draggedRect = draggedTile.GetGlobalRect();
+        var activeTiles = GetInteractionTiles();
 
         return _tileViews
             .Where(tileView => tileView != draggedTile)
             .Where(tileView => tileView.Visible && !tileView.Data.Removed)
             .Where(tileView => tileView.Data.Type == draggedTile.Data.Type)
             .Where(tileView => IsWithinContactTolerance(draggedRect, tileView.GetGlobalRect()))
+            .Where(tileView => TileInteractionRules.TryValidateMatchPair(draggedTile.Data, tileView.Data, activeTiles, out _))
             .OrderBy(tileView => GetRectGapDistance(draggedRect, tileView.GetGlobalRect()))
             .ThenByDescending(tileView => tileView.ZIndex)
             .FirstOrDefault();
@@ -570,10 +588,11 @@ public partial class BoardController : Node2D
             return;
         }
 
-        var activeTiles = GetActiveTiles();
+        var activeTiles = GetInteractionTiles();
         foreach (var tile in activeTiles)
         {
-            tile.Movable = IsTileMovable(tile, activeTiles);
+            var interactionState = TileInteractionRules.Evaluate(tile, activeTiles);
+            tile.Movable = interactionState.CanBePicked;
         }
 
         LogBoard($"刷新可动状态: active={activeTiles.Count}, movable={activeTiles.Count(tile => tile.Movable)}, selected={(_selectedTile is null ? "none" : DescribeTile(_selectedTile.Data))}");
@@ -607,24 +626,7 @@ public partial class BoardController : Node2D
     /// </remarks>
     private static bool IsTileMovable(AppTileData tile, IReadOnlyCollection<AppTileData> activeTiles)
     {
-        if (tile.Removed)
-        {
-            return false;
-        }
-
-        if (GridMath.HasAnyAboveOverlap(tile, activeTiles))
-        {
-            return false;
-        }
-
-        var blockedLeftRight = GridMath.HasLeftNeighbor(tile, activeTiles) && GridMath.HasRightNeighbor(tile, activeTiles);
-        if (blockedLeftRight)
-        {
-            return false;
-        }
-
-        var blockedTopBottom = GridMath.HasTopNeighbor(tile, activeTiles) && GridMath.HasBottomNeighbor(tile, activeTiles);
-        return !blockedTopBottom;
+        return TileInteractionRules.Evaluate(tile, activeTiles).CanBePicked;
     }
 
     /// <summary>
@@ -632,18 +634,14 @@ public partial class BoardController : Node2D
     /// </summary>
     private void HandleTileClicked(TileView tileView)
     {
-        var activeTiles = GetActiveTiles();
-        var hasAboveOverlap = GridMath.HasAnyAboveOverlap(tileView.Data, activeTiles);
-        var hasLeftNeighbor = GridMath.HasLeftNeighbor(tileView.Data, activeTiles);
-        var hasRightNeighbor = GridMath.HasRightNeighbor(tileView.Data, activeTiles);
-        var hasTopNeighbor = GridMath.HasTopNeighbor(tileView.Data, activeTiles);
-        var hasBottomNeighbor = GridMath.HasBottomNeighbor(tileView.Data, activeTiles);
+        var activeTiles = GetInteractionTiles();
+        var interactionState = TileInteractionRules.Evaluate(tileView.Data, activeTiles);
 
         LogBoard(
             $"处理点击: {DescribeTile(tileView.Data)}, movable={tileView.Data.Movable}, " +
-            $"above={hasAboveOverlap}, left={hasLeftNeighbor}, right={hasRightNeighbor}, top={hasTopNeighbor}, bottom={hasBottomNeighbor}");
+            interactionState.BuildDebugSummary());
 
-        if (!tileView.Data.Movable)
+        if (!interactionState.CanBePicked)
         {
             LogBoard($"麻将不可移动，交互结束: {DescribeTile(tileView.Data)}");
             EmitSignal(SignalName.BoardStateChanged, $"牌 {tileView.Data.Type} 已被卡住，当前不可移动");
@@ -677,7 +675,35 @@ public partial class BoardController : Node2D
         }
 
         LogBoard($"牌面一致，准备消除: first={DescribeTile(_selectedTile.Data)}, second={DescribeTile(tileView.Data)}");
-        RemoveMatchedPair(_selectedTile, tileView);
+        TryStartMatch(_selectedTile, tileView, "点击");
+    }
+
+    /// <summary>
+    /// 统一的配对尝试入口。
+    /// </summary>
+    /// <remarks>
+    /// 无论本次输入来自点击还是拖拽，都必须先通过这里的业务规则校验，
+    /// 再进入真正的消除动画。这样可以保证：
+    /// - 点击消除和拖拽消除使用完全一致的合法性语义
+    /// - “碰到了目标”与“允许消除目标”不再混在同一个步骤里
+    /// </remarks>
+    private bool TryStartMatch(TileView firstTile, TileView secondTile, string sourceLabel)
+    {
+        var activeTiles = GetInteractionTiles();
+        if (!TileInteractionRules.TryValidateMatchPair(firstTile.Data, secondTile.Data, activeTiles, out var failureReason))
+        {
+            LogBoard(
+                $"配对校验失败: source={sourceLabel}, first={DescribeTile(firstTile.Data)}, " +
+                $"second={DescribeTile(secondTile.Data)}, reason={failureReason}");
+            EmitSignal(SignalName.BoardStateChanged, $"本次{sourceLabel}配对无效：{failureReason}");
+            return false;
+        }
+
+        LogBoard(
+            $"配对校验通过: source={sourceLabel}, first={DescribeTile(firstTile.Data)}, " +
+            $"second={DescribeTile(secondTile.Data)}");
+        RemoveMatchedPair(firstTile, secondTile);
+        return true;
     }
 
     /// <summary>
@@ -686,11 +712,19 @@ public partial class BoardController : Node2D
     private async void RemoveMatchedPair(TileView a, TileView b)
     {
         var feedback = GetMatchFeedback();
+        var originalZIndexA = a.ZIndex;
+        var originalZIndexB = b.ZIndex;
 
         _interactionLocked = true;
         _selectedTile = null;
         _pressedTile = null;
         _draggingTile = null;
+
+        // 消除动画必须始终显示在整桌最上层。
+        // 这里不再沿用原始层级，而是把两张参与动画的牌临时提升到安全最高层附近，
+        // 避免预备位移动、碰撞和淡出过程被其他尚未移除的麻将遮住。
+        a.ZIndex = SafeMaxDragZIndex - 2;
+        b.ZIndex = SafeMaxDragZIndex - 1;
 
         var rectA = a.GetGlobalRect();
         var rectB = b.GetGlobalRect();
@@ -756,7 +790,10 @@ public partial class BoardController : Node2D
         b.Modulate = Colors.White;
         a.Scale = Vector2.One;
         b.Scale = Vector2.One;
+        a.ZIndex = originalZIndexA;
+        b.ZIndex = originalZIndexB;
 
+        _interactionSnapshotExcludedTile = null;
         RefreshTileStates();
         RefreshVisibleLayers();
 
@@ -799,6 +836,56 @@ public partial class BoardController : Node2D
         return _currentLayout?.Tiles
             .Where(tile => !tile.Removed)
             .ToList() ?? [];
+    }
+
+    /// <summary>
+    /// 返回当前交互判定所使用的牌快照。
+    /// </summary>
+    /// <remarks>
+    /// 正常情况下它等于全部未移除牌。
+    /// 当某张牌已经成功进入拖拽态后，会临时把该牌从交互快照中排除，
+    /// 从而让下层或相邻牌立即按“这张牌已经被拿起”的状态重新评估。
+    /// </remarks>
+    private IReadOnlyCollection<AppTileData> GetInteractionTiles()
+    {
+        var activeTiles = GetActiveTiles();
+        if (_interactionSnapshotExcludedTile is null)
+        {
+            return activeTiles;
+        }
+
+        return activeTiles
+            .Where(tile => tile.Id != _interactionSnapshotExcludedTile.Id)
+            .ToList();
+    }
+
+    /// <summary>
+    /// 进入拖拽交互快照。
+    /// </summary>
+    /// <remarks>
+    /// 这一步不是实时改变棋盘数据，而是切换“交互判定使用的临时快照”。
+    /// 一旦牌被拿起，它会暂时不再压住其他牌，因此需要立刻刷新全场状态。
+    /// </remarks>
+    private void BeginDragInteractionSnapshot(AppTileData draggedTile)
+    {
+        _interactionSnapshotExcludedTile = draggedTile;
+        LogBoard($"进入拖拽交互快照，临时排除阻塞牌: {DescribeTile(draggedTile)}");
+        RefreshTileStates();
+    }
+
+    /// <summary>
+    /// 退出拖拽交互快照，恢复正常棋盘状态评估。
+    /// </summary>
+    private void EndDragInteractionSnapshot()
+    {
+        if (_interactionSnapshotExcludedTile is null)
+        {
+            return;
+        }
+
+        LogBoard($"退出拖拽交互快照，恢复阻塞判定: {DescribeTile(_interactionSnapshotExcludedTile)}");
+        _interactionSnapshotExcludedTile = null;
+        RefreshTileStates();
     }
 
     /// <summary>
@@ -1015,7 +1102,13 @@ public partial class BoardController : Node2D
             VerticalAlignment = VerticalAlignment.Center,
             ZIndex = SafeMaxDragZIndex,
             Scale = Vector2.One * feedback.ScoreStartScale,
-            Modulate = new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, 0.0f),
+            // 分数字样需要和碰撞白闪同帧出现，因此初始透明度直接使用峰值，
+            // 后续只做上浮、弹跳和淡出，不再先从 0 做淡入。
+            Modulate = new Color(
+                feedback.ScoreFontColor.R,
+                feedback.ScoreFontColor.G,
+                feedback.ScoreFontColor.B,
+                feedback.ScoreMaxAlpha),
         };
         popup.AddThemeFontSizeOverride("font_size", feedback.ScoreFontSize);
         popup.AddThemeColorOverride("font_color", feedback.ScoreFontColor);
@@ -1041,8 +1134,7 @@ public partial class BoardController : Node2D
             popup,
             "modulate",
             new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, 0.0f),
-            feedback.ScorePopupDuration)
-            .From(new Color(feedback.ScoreFontColor.R, feedback.ScoreFontColor.G, feedback.ScoreFontColor.B, feedback.ScoreMaxAlpha));
+            feedback.ScorePopupDuration);
         popupTween.Finished += popup.QueueFree;
     }
 
