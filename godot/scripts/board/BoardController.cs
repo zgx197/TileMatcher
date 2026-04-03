@@ -188,6 +188,12 @@ public partial class BoardController : Node2D
     /// <summary>当前仍可移动的牌数。主要用于调试摘要和状态栏。</summary>
     public int CurrentMovableCount => GetInteractionTiles().Count(tile => tile.Movable);
 
+    /// <summary>
+    /// 当前棋盘上仍未被移除的牌数量。
+    /// 页面流程层会用它判断一局是否已经清空，从而触发结算页切换。
+    /// </summary>
+    public int CurrentRemainingTileCount => GetActiveTiles().Count;
+
     public override void _Ready()
     {
         if (TileScene is null)
@@ -234,15 +240,15 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>加载固定原型布局。</summary>
-    public void LoadPrototype()
+    public void LoadPrototype(int levelId = 1, string sourceName = "固定原型")
     {
-        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), "固定原型");
+        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), sourceName);
     }
 
     /// <summary>按当前规则生成一份随机布局。</summary>
-    public void GenerateRandomBoard()
+    public void GenerateRandomBoard(int levelId = 1, int? seed = null, string sourceName = "随机布局")
     {
-        ApplyLayout(RandomStackLayoutGenerator.Generate(1, _layoutRules), "随机布局");
+        ApplyLayout(RandomStackLayoutGenerator.Generate(levelId, _layoutRules, seed), sourceName);
     }
 
     /// <summary>切换当前规则档案。</summary>

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/config/LevelConfig.cs" id="1_level_script"]
+
+[resource]
+script = ExtResource("1_level_script")
+LevelNumber = 2
+DisplayName = "第 2 关"
+LayoutProfileId = "standard"
+LayoutSourceMode = 1
+UseFixedSeed = true
+RandomSeed = 2002
+SourceNameOverride = "关卡 2 随机布局"

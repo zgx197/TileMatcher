@@ -1,0 +1,252 @@
+[gd_scene load_steps=4 format=4]
+
+[ext_resource type="Script" path="res://scripts/result/LevelCompletePage.cs" id="1_result_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.0703125, 0.0703125, 0.0585938, 0.9)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8125, 0.601562, 0.230469, 0.95)
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_statbox"]
+bg_color = Color(0.164062, 0.121094, 0.0820312, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.71875, 0.496094, 0.164062, 0.78)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_green_button"]
+bg_color = Color(0.359375, 0.691406, 0.222656, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.664062, 0.902344, 0.441406, 0.92)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_next_card"]
+bg_color = Color(0.113281, 0.160156, 0.128906, 0.95)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.414062, 0.644531, 0.421875, 0.82)
+
+[node name="LevelCompletePage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_result_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0117188, 0.0625, 0.0507812, 0.94)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="Root/Center"]
+custom_minimum_size = Vector2(560, 760)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="Stack" type="VBoxContainer" parent="Root/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Emblem" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 82
+modulate = Color(0.972656, 0.78125, 0.238281, 1)
+text = "✦"
+horizontal_alignment = 1
+
+[node name="Headline" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 56
+modulate = Color(0.964844, 0.753906, 0.316406, 1)
+text = "关卡 4 完成"
+horizontal_alignment = 1
+
+[node name="SubText" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+modulate = Color(0.960938, 0.910156, 0.710938, 0.82)
+text = "第一阶段外围流程骨架结算页"
+horizontal_alignment = 1
+
+[node name="Stats" type="HBoxContainer" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TimeBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.949219, 0.746094, 0.398438, 0.88)
+text = "时间"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.992188, 0.878906, 1)
+text = "05:32"
+horizontal_alignment = 1
+
+[node name="ScoreBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.949219, 0.746094, 0.398438, 0.88)
+text = "分数"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.992188, 0.878906, 1)
+text = "24760"
+horizontal_alignment = 1
+
+[node name="MatchBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.949219, 0.746094, 0.398438, 0.88)
+text = "匹配"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.992188, 0.878906, 1)
+text = "40"
+horizontal_alignment = 1
+
+[node name="Performance" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+modulate = Color(0.824219, 0.96875, 0.4375, 1)
+text = "主流程已打通，后续可继续扩展奖励与排行"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="NextCard" type="PanelContainer" parent="Root/Center/Card/Margin/Stack"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_next_card")
+
+[node name="Stack" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/NextCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NextLevel" type="Label" parent="Root/Center/Card/Margin/Stack/NextCard/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+modulate = Color(0.863281, 0.953125, 0.53125, 1)
+text = "下一关：关卡 5"
+horizontal_alignment = 1
+
+[node name="NextSummary" type="Label" parent="Root/Center/Card/Margin/Stack/NextCard/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+modulate = Color(0.898438, 0.945312, 0.851562, 0.86)
+text = "规则摘要待加载"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Buttons" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="ContinueButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxFlat_green_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_green_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_green_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_green_button")
+text = "关卡 5"
+
+[node name="HomeButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "返回主页"

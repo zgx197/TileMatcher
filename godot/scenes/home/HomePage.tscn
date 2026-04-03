@@ -1,0 +1,226 @@
+[gd_scene load_steps=5 format=4]
+
+[ext_resource type="Script" path="res://scripts/home/HomePage.cs" id="1_home_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header_chip"]
+bg_color = Color(0.480469, 0.242188, 0.0703125, 0.92)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.910156, 0.722656, 0.355469, 0.92)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_button"]
+bg_color = Color(0.902344, 0.421875, 0.0859375, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.800781, 0.367188, 0.95)
+shadow_color = Color(0.234375, 0.0898438, 0.015625, 0.35)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_avatar"]
+bg_color = Color(0.503906, 0.820312, 0.578125, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.867188, 0.660156, 0.351562, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_info_card"]
+bg_color = Color(0.996094, 0.957031, 0.867188, 0.96)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.824219, 0.628906, 0.257812, 0.9)
+
+[node name="HomePage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_home_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.941176, 0.862745, 0.729412, 1)
+
+[node name="Header" type="MarginContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 12
+
+[node name="Bar" type="HBoxContainer" parent="Root/Header"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Left" type="HBoxContainer" parent="Root/Header/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="Avatar" type="Panel" parent="Root/Header/Bar/Left"]
+custom_minimum_size = Vector2(84, 84)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_avatar")
+
+[node name="ProfileRow" type="VBoxContainer" parent="Root/Header/Bar/Left"]
+layout_mode = 2
+alignment = 1
+
+[node name="PlayerName" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "青蛙旅人"
+
+[node name="SubTitle" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.45, 0.23, 0.09, 0.8)
+text = "欢迎回来"
+
+[node name="Center" type="PanelContainer" parent="Root/Header/Bar"]
+custom_minimum_size = Vector2(170, 58)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header_chip")
+
+[node name="LeafRow" type="HBoxContainer" parent="Root/Header/Bar/Center"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="LeafIcon" type="Label" parent="Root/Header/Bar/Center/LeafRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+modulate = Color(0.636719, 0.972656, 0.390625, 1)
+text = "◥"
+
+[node name="LeafValue" type="Label" parent="Root/Header/Bar/Center/LeafRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+modulate = Color(1, 0.960938, 0.851562, 1)
+text = "x1"
+
+[node name="LogoBlock" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -360.0
+offset_right = 260.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LogoStack" type="VBoxContainer" parent="Root/LogoBlock"]
+layout_mode = 2
+alignment = 1
+
+[node name="Logo" type="Label" parent="Root/LogoBlock/LogoStack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 78
+modulate = Color(0.386719, 0.140625, 0.03125, 1)
+text = "Vita\nMAHJONG"
+horizontal_alignment = 1
+
+[node name="Caption" type="Label" parent="Root/LogoBlock/LogoStack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+modulate = Color(0.398438, 0.226562, 0.113281, 0.78)
+text = "纸门与木纹风格的主页面骨架"
+horizontal_alignment = 1
+
+[node name="Bottom" type="MarginContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -320.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 78
+theme_override_constants/margin_right = 78
+theme_override_constants/margin_bottom = 36
+
+[node name="BottomStack" type="VBoxContainer" parent="Root/Bottom"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="InfoCard" type="PanelContainer" parent="Root/Bottom/BottomStack"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_info_card")
+
+[node name="Stack" type="VBoxContainer" parent="Root/Bottom/BottomStack/InfoCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CurrentLevel" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+modulate = Color(0.363281, 0.175781, 0.0546875, 1)
+text = "当前将进入：关卡 1"
+horizontal_alignment = 1
+
+[node name="LevelSummary" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+modulate = Color(0.398438, 0.226562, 0.113281, 0.86)
+text = "规则摘要待加载"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="Root/Bottom/BottomStack"]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_start_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_start_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_start_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_start_button")
+text = "关卡 4"

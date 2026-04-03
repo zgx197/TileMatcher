@@ -1,5 +1,8 @@
+using System;
 using Godot;
+using TileMatcher.App;
 using TileMatcher.Board;
+using TileMatcher.Config;
 
 namespace TileMatcher.Game;
 
@@ -12,6 +15,21 @@ namespace TileMatcher.Game;
 /// </remarks>
 public partial class GameScene : Node2D
 {
+    private const string DefaultLevelCatalogPath = "res://configs/levels/default_levels.tres";
+
+    /// <summary>
+    /// 当游戏页被单独作为主场景运行时，是否在 `_Ready` 后自动加载一局默认牌桌。
+    /// 如果它被 AppRoot 作为子页面驱动，则应关闭这个开关并由外层调用 `StartLevel`。
+    /// </summary>
+    [Export]
+    public bool AutoStartPrototype { get; set; } = true;
+
+    /// <summary>
+    /// 关卡目录资源。
+    /// GameScene 只负责“按关卡号启动”，真正的关卡参数来源都收敛在这里。
+    /// </summary>
+    [Export]
+    public LevelCatalog LevelCatalog { get; set; } = null!;
     /// <summary>DEBUG 悬浮按钮距离屏幕边缘的安全间距。</summary>
     private const float FloatingButtonMargin = 22.0f;
 
@@ -48,6 +66,7 @@ public partial class GameScene : Node2D
     private Control _debugHeader = null!;
     private Label _debugLabel = null!;
     private Label _rulesSummaryLabel = null!;
+    private Button _backHomeButton = null!;
     private Button _generateButton = null!;
     private Button _prototypeButton = null!;
     private HSlider _layerFilterSlider = null!;
@@ -65,6 +84,15 @@ public partial class GameScene : Node2D
     private Vector2 _debugButtonStartPosition;
     private Vector2 _debugPanelPressPosition;
     private Vector2 _debugPanelStartPosition;
+    private int _currentLevelNumber = 1;
+    private ulong _levelStartTicksMsec;
+    private bool _levelCompleted;
+
+    /// <summary>页面流程层使用的普通 C# 事件，不走 Godot Signal 序列化约束。</summary>
+    public event Action<LevelCompleteResult>? LevelCompleted;
+
+    /// <summary>请求返回主页的页面层事件。</summary>
+    public event Action? BackToHomeRequested;
 
     public override void _Ready()
     {
@@ -82,6 +110,7 @@ public partial class GameScene : Node2D
         _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
         _debugLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/DebugLabel");
         _rulesSummaryLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/RulesSummary");
+        _backHomeButton = GetNode<Button>("UI/Root/BackHomeButton");
         _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
         _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
         _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
@@ -91,6 +120,7 @@ public partial class GameScene : Node2D
         _profileSelector = GetNode<OptionButton>("UI/Root/DebugOverlay/Panel/Margin/Stack/ProfileRow/ProfileSelector");
 
         _levelValue.Text = "1";
+        _backHomeButton.Text = "主页";
         _generateButton.Text = "随机生成";
         _prototypeButton.Text = "固定原型";
         _debugLabel.Text = "点击牌桌中的可移动麻将，可以先验证基础配对消除逻辑。";
@@ -104,6 +134,8 @@ public partial class GameScene : Node2D
         _interactionTip.Visible = false;
         _interactionTipLabel.Text = string.Empty;
 
+        EnsureLevelCatalogLoaded();
+        _backHomeButton.Pressed += OnBackHomePressed;
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
         _layerFilterSlider.ValueChanged += OnLayerFilterChanged;
@@ -119,10 +151,39 @@ public partial class GameScene : Node2D
         InitializeProfileSelector();
         InitializeDebugButtonPosition();
         SyncStats();
-        _boardController.LoadPrototype();
+        if (AutoStartPrototype)
+        {
+            StartLevel(_currentLevelNumber);
+        }
     }
 
     /// <summary>响应“随机生成”按钮。</summary>
+    /// <summary>
+    /// 由外围流程显式启动一局关卡。
+    /// 第一阶段先复用当前稳定的原型牌桌，确保 Home -> Game -> Result 的页面流转先跑通。
+    /// </summary>
+    public void StartLevel(int levelNumber)
+    {
+        _currentLevelNumber = Math.Max(1, levelNumber);
+        _levelCompleted = false;
+        _levelStartTicksMsec = Time.GetTicksMsec();
+        _levelValue.Text = _currentLevelNumber.ToString();
+
+        var levelConfig = FindLevelConfig(_currentLevelNumber);
+        if (levelConfig is null)
+        {
+            GD.PushWarning($"[GameScene] 未找到关卡配置，回退到固定原型: level={_currentLevelNumber}");
+            _debugLabel.Text = $"关卡 {_currentLevelNumber} 未配置，已回退到固定原型。";
+            _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 原型布局");
+            InitializeProfileSelector();
+            return;
+        }
+
+        ApplyLevelConfig(levelConfig);
+        _debugLabel.Text = $"已进入关卡 {_currentLevelNumber}，当前使用原型牌桌验证外围流程。";
+        return;
+    }
+
     private void OnGeneratePressed()
     {
         GD.Print("[GameScene] 点击了随机生成按钮");
@@ -130,7 +191,7 @@ public partial class GameScene : Node2D
         HighlightDebugLabel(new Color(0.98f, 0.92f, 0.55f, 1.0f));
         PlayButtonFeedback(_generateButton, new Color(0.95f, 0.78f, 0.32f, 1.0f));
         FlashBoard(new Color(0.20f, 0.54f, 0.40f, 1.0f));
-        _boardController.GenerateRandomBoard();
+        _boardController.GenerateRandomBoard(_currentLevelNumber, null, $"关卡 {_currentLevelNumber} 调试随机布局");
     }
 
     /// <summary>响应“固定原型”按钮。</summary>
@@ -141,7 +202,7 @@ public partial class GameScene : Node2D
         HighlightDebugLabel(new Color(0.60f, 0.92f, 0.82f, 1.0f));
         PlayButtonFeedback(_prototypeButton, new Color(0.42f, 0.84f, 0.67f, 1.0f));
         FlashBoard(new Color(0.14f, 0.46f, 0.34f, 1.0f));
-        _boardController.LoadPrototype();
+        _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 调试原型布局");
     }
 
     /// <summary>牌桌生成完成后，同步摘要、统计和调试控件。</summary>
@@ -163,6 +224,7 @@ public partial class GameScene : Node2D
         _debugLabel.Text = message;
         _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
+        TryEmitLevelCompleted();
     }
 
     /// <summary>在顶部中央显示一次短时交互提示。</summary>
@@ -230,6 +292,13 @@ public partial class GameScene : Node2D
         _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
     }
 
+    /// <summary>显式可见的返回主页入口，避免当前流程只依赖键盘 Esc。</summary>
+    private void OnBackHomePressed()
+    {
+        GD.Print("[GameScene] 点击了返回主页按钮");
+        BackToHomeRequested?.Invoke();
+    }
+
     /// <summary>关闭调试浮窗。</summary>
     private void OnDebugClosePressed()
     {
@@ -253,7 +322,7 @@ public partial class GameScene : Node2D
         _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
         _debugLabel.Text = $"已切换规则档案：{profile.DisplayName}";
         HighlightDebugLabel(new Color(0.77f, 0.92f, 1.0f, 1.0f));
-        _boardController.GenerateRandomBoard();
+        _boardController.GenerateRandomBoard(_currentLevelNumber, null, $"关卡 {_currentLevelNumber} 规则切换后随机布局");
     }
 
     /// <summary>视口大小变化时重新约束悬浮控件位置。</summary>
@@ -372,6 +441,84 @@ public partial class GameScene : Node2D
         _layerFilterValue.Text = $"<= L{visibleLayer}";
     }
 
+    /// <summary>
+    /// 若场景未在 Inspector 中显式绑定关卡目录，则从默认路径回退加载。
+    /// 这样 `GameScene` 既能被 AppRoot 驱动，也能单独运行调试。
+    /// </summary>
+    private void EnsureLevelCatalogLoaded()
+    {
+        if (LevelCatalog is not null)
+        {
+            return;
+        }
+
+        LevelCatalog = GD.Load<LevelCatalog>(DefaultLevelCatalogPath);
+        if (LevelCatalog is null)
+        {
+            GD.PushError($"[GameScene] 无法加载默认关卡目录: {DefaultLevelCatalogPath}");
+        }
+    }
+
+    /// <summary>按关卡号查找配置，找不到时再按目录默认关卡回退一次。</summary>
+    private LevelConfig? FindLevelConfig(int levelNumber)
+    {
+        if (LevelCatalog is null)
+        {
+            return null;
+        }
+
+        foreach (var level in LevelCatalog.Levels)
+        {
+            if (level is not null && level.LevelNumber == levelNumber)
+            {
+                return level;
+            }
+        }
+
+        foreach (var level in LevelCatalog.Levels)
+        {
+            if (level is not null && level.LevelNumber == LevelCatalog.DefaultLevelNumber)
+            {
+                return level;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 把关卡配置真正应用到当前游戏页。
+    /// 当前版本会先切换规则档案，再决定是加载原型还是生成正式随机布局。
+    /// </summary>
+    private void ApplyLevelConfig(LevelConfig levelConfig)
+    {
+        if (!string.IsNullOrWhiteSpace(levelConfig.LayoutProfileId))
+        {
+            _boardController.SetLayoutProfile(levelConfig.LayoutProfileId);
+        }
+
+        InitializeProfileSelector();
+
+        var sourceName = string.IsNullOrWhiteSpace(levelConfig.SourceNameOverride)
+            ? $"关卡 {levelConfig.LevelNumber} {(levelConfig.LayoutSourceMode == LevelLayoutSourceMode.Prototype ? "原型布局" : "随机布局")}"
+            : levelConfig.SourceNameOverride;
+
+        _debugLabel.Text = $"已进入关卡 {levelConfig.LevelNumber}：{levelConfig.DisplayName}";
+
+        switch (levelConfig.LayoutSourceMode)
+        {
+            case LevelLayoutSourceMode.Prototype:
+                _boardController.LoadPrototype(levelConfig.LevelNumber, sourceName);
+                break;
+
+            case LevelLayoutSourceMode.RandomGenerated:
+            default:
+                int? seed = levelConfig.UseFixedSeed ? levelConfig.RandomSeed : null;
+                _boardController.GenerateRandomBoard(levelConfig.LevelNumber, seed, sourceName);
+                break;
+        }
+    }
+
     /// <summary>同步顶部 Score / Match 数值。</summary>
     private void SyncStats()
     {
@@ -437,5 +584,58 @@ public partial class GameScene : Node2D
             _interactionTip.Visible = false;
             _interactionTipTween = null;
         };
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventKey keyEvent &&
+            keyEvent.Pressed &&
+            !keyEvent.Echo &&
+            keyEvent.Keycode == Key.Escape)
+        {
+            GD.Print("[GameScene] 收到返回主页请求：Esc");
+            BackToHomeRequested?.Invoke();
+            GetViewport().SetInputAsHandled();
+        }
+    }
+
+    /// <summary>
+    /// 当棋盘剩余牌数归零时，向外围流程发出一次通关事件。
+    /// 这里保持在页面层判断，避免把结算页流转逻辑耦合进 BoardController。
+    /// </summary>
+    private void TryEmitLevelCompleted()
+    {
+        if (_levelCompleted)
+        {
+            return;
+        }
+
+        if (_boardController.CurrentRemainingTileCount > 0)
+        {
+            return;
+        }
+
+        _levelCompleted = true;
+        var result = new LevelCompleteResult
+        {
+            LevelNumber = _currentLevelNumber,
+            Score = _boardController.CurrentScore,
+            MatchCount = _boardController.CurrentMatchCount,
+            ElapsedText = BuildElapsedText(),
+        };
+
+        GD.Print($"[GameScene] 关卡完成：level={result.LevelNumber}, score={result.Score}, matches={result.MatchCount}, elapsed={result.ElapsedText}");
+        LevelCompleted?.Invoke(result);
+    }
+
+    /// <summary>
+    /// 把本局已用时格式化成结算页可直接显示的文本。
+    /// 当前版本先统一使用 mm:ss。
+    /// </summary>
+    private string BuildElapsedText()
+    {
+        var elapsedMilliseconds = Time.GetTicksMsec() - _levelStartTicksMsec;
+        var elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+        return $"{(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}";
     }
 }
