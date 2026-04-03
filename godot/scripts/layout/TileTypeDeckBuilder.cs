@@ -96,6 +96,21 @@ public static class TileTypeDeckBuilder
         return deck;
     }
 
+    /// <summary>
+    /// 为“已知可解的移除步骤”生成一串成对牌面。
+    /// 这里每一步只需要一个牌面类型，调用方会把同一种类型赋给这一对被选中的牌。
+    /// </summary>
+    public static IReadOnlyList<string> BuildPairTypeSequence(int pairCount, RandomNumberGenerator rng)
+    {
+        var pairTypes = new List<string>(pairCount);
+        for (var i = 0; i < pairCount; i++)
+        {
+            pairTypes.Add(MatchableTypes[rng.RandiRange(0, MatchableTypes.Length - 1)]);
+        }
+
+        return pairTypes;
+    }
+
     /// <summary>原地打乱牌面序列。</summary>
     private static void Shuffle(RandomNumberGenerator rng, IList<string> items)
     {

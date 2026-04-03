@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using TileMatcher.Board;
 using TileMatcher.Data;
 using TileMatcher.Grid;
 using AppTileData = TileMatcher.Data.TileData;
@@ -10,19 +11,28 @@ namespace TileMatcher.Layout;
 
 /// <summary>
 /// 基于当前规则生成随机堆叠布局。
+/// 当前版本把“几何布局生成”和“可解牌面分配”合并在同一个入口里，
+/// 目标不是追求最强随机性，而是优先保证每一关都有至少一条可通关路径。
 /// </summary>
-/// <remarks>
-/// 当前采用“自底向上 + 多次尝试 + 校验兜底”的策略。
-/// 这不是最终关卡生成器，但非常适合快速迭代阶段。
-/// </remarks>
 public static class RandomStackLayoutGenerator
 {
-    /// <summary>在允许的尝试次数内生成一份合法布局。</summary>
+    /// <summary>
+    /// 对同一份几何布局，最多尝试多少次随机移除顺序搜索。
+    /// 只要能找到一条完整移空的顺序，就按这条顺序为牌面成对赋值。
+    /// </summary>
+    private const int SolvableAssignmentMaxAttempts = 96;
+
+    /// <summary>在允许的尝试次数内生成一份合法且可解的布局。</summary>
     public static LevelLayout Generate(int levelId, LayoutRules rules, int? seed = null)
     {
         for (var attempt = 1; attempt <= rules.GenerationMaxAttempts; attempt++)
         {
             var candidate = CreateCandidate(levelId, rules, seed, attempt);
+            if (candidate is null)
+            {
+                continue;
+            }
+
             var validation = LayoutValidator.Validate(candidate, rules);
             if (validation.IsValid)
             {
@@ -30,16 +40,14 @@ public static class RandomStackLayoutGenerator
             }
         }
 
-        throw new InvalidOperationException("未能在限定次数内生成符合业务规则的布局。");
+        throw new InvalidOperationException("未能在限定次数内生成符合业务规则且可通关的布局。");
     }
 
     /// <summary>
     /// 生成单次候选布局。
+    /// 如果几何布局生成成功但找不到可解牌面分配，则返回 null，让外层继续重试。
     /// </summary>
-    /// <remarks>
-    /// 单次候选不保证一定合法，所以外层还需要 Validate 兜底。
-    /// </remarks>
-    private static LevelLayout CreateCandidate(int levelId, LayoutRules rules, int? seed, int attempt)
+    private static LevelLayout? CreateCandidate(int levelId, LayoutRules rules, int? seed, int attempt)
     {
         var rng = new RandomNumberGenerator();
         if (seed.HasValue)
@@ -51,10 +59,7 @@ public static class RandomStackLayoutGenerator
             rng.Randomize();
         }
 
-        var layout = new LevelLayout { LevelId = levelId };
-        var nextId = 1;
         var tileShape = rules.CreateTileShape();
-
         var width = rng.RandiRange(rules.RandomWidthMin, rules.RandomWidthMax);
         var height = rng.RandiRange(rules.RandomHeightMin, rules.RandomHeightMax);
         var bottomLayer = BuildBottomLayer(rng, width, height, rules);
@@ -94,17 +99,16 @@ public static class RandomStackLayoutGenerator
             previousLayer = CreateTemporaryLayer(nextLayer, z, tileShape);
         }
 
-        var pairDeck = TileTypeDeckBuilder.BuildShuffledPairDeck(layers.Sum(layer => layer.Count), rng);
-        var typeIndex = 0;
-
+        var generatedTiles = new List<AppTileData>();
+        var nextId = 1;
         for (var z = 0; z < layers.Count; z++)
         {
             foreach (var position in layers[z])
             {
-                layout.Tiles.Add(new AppTileData
+                generatedTiles.Add(new AppTileData
                 {
                     Id = nextId++,
-                    Type = pairDeck[typeIndex++],
+                    Type = string.Empty,
                     GX = position.X,
                     GY = position.Y,
                     GZ = z,
@@ -113,15 +117,115 @@ public static class RandomStackLayoutGenerator
             }
         }
 
+        // 先得到纯几何布局，再尝试分配一组保证可解的牌面顺序。
+        if (!TryAssignSolvablePairs(generatedTiles, rng, out var typeByTileId))
+        {
+            return null;
+        }
+
+        var layout = new LevelLayout { LevelId = levelId };
+        foreach (var tile in generatedTiles)
+        {
+            layout.Tiles.Add(new AppTileData
+            {
+                Id = tile.Id,
+                Type = typeByTileId[tile.Id],
+                GX = tile.GX,
+                GY = tile.GY,
+                GZ = tile.GZ,
+                Shape = tile.Shape,
+            });
+        }
+
         return layout;
     }
 
     /// <summary>
-    /// 构造底层牌阵。
+    /// 给一份纯几何布局分配可解牌面。
+    /// 方法是先随机搜索一条完整的移除顺序，再为顺序中的每一对牌赋同一种类型。
     /// </summary>
-    /// <remarks>
-    /// 当前底层仍然使用按步长对齐的规则网格，而不是任意放置。
-    /// </remarks>
+    private static bool TryAssignSolvablePairs(
+        IReadOnlyList<AppTileData> tiles,
+        RandomNumberGenerator rng,
+        out Dictionary<int, string> typeByTileId)
+    {
+        typeByTileId = [];
+
+        for (var attempt = 0; attempt < SolvableAssignmentMaxAttempts; attempt++)
+        {
+            var simulationTiles = tiles
+                .Select(tile => new AppTileData
+                {
+                    Id = tile.Id,
+                    Type = string.Empty,
+                    GX = tile.GX,
+                    GY = tile.GY,
+                    GZ = tile.GZ,
+                    Shape = tile.Shape,
+                })
+                .ToList();
+
+            var removedPairs = new List<(int FirstId, int SecondId)>();
+            // 使用与运行时一致的“可参与消除”判定来做纯数据模拟，
+            // 让生成结果和真实对局规则尽量保持一致。
+            if (!TryBuildRemovalSequence(simulationTiles, rng, removedPairs))
+            {
+                continue;
+            }
+
+            var pairTypes = TileTypeDeckBuilder.BuildPairTypeSequence(removedPairs.Count, rng);
+            for (var i = 0; i < removedPairs.Count; i++)
+            {
+                var pairType = pairTypes[i];
+                typeByTileId[removedPairs[i].FirstId] = pairType;
+                typeByTileId[removedPairs[i].SecondId] = pairType;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 在当前布局上构造一条完整的可移除顺序。
+    /// 每一步只要求找到两张当前自由牌即可，因为牌面还未分配，
+    /// 后续会让这两张牌拥有相同类型。
+    /// </summary>
+    private static bool TryBuildRemovalSequence(
+        List<AppTileData> simulationTiles,
+        RandomNumberGenerator rng,
+        List<(int FirstId, int SecondId)> removedPairs)
+    {
+        while (simulationTiles.Count > 0)
+        {
+            var activeTiles = simulationTiles
+                .Where(tile => !tile.Removed)
+                .ToList();
+            var movableTiles = activeTiles
+                .Where(tile => TileInteractionRules.CanParticipateInMatch(tile, activeTiles))
+                .ToList();
+
+            if (movableTiles.Count < 2)
+            {
+                // 只要某一步找不到两张自由牌，这条顺序就作废，交给外层重新随机尝试。
+                return false;
+            }
+
+            Shuffle(rng, movableTiles);
+            var first = movableTiles[0];
+            var second = movableTiles[1];
+            removedPairs.Add((first.Id, second.Id));
+            simulationTiles.RemoveAll(tile => tile.Id == first.Id || tile.Id == second.Id);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 构造底层牌阵。
+    /// 当前底层仍使用按步长对齐的规则网格，而不是任意放置。
+    /// </summary>
     private static List<Vector2I> BuildBottomLayer(RandomNumberGenerator rng, int width, int height, LayoutRules rules)
     {
         var bottomLayer = new List<Vector2I>();
@@ -242,9 +346,6 @@ public static class RandomStackLayoutGenerator
     /// <summary>
     /// 根据规则计算某层相对下层的对齐偏移。
     /// </summary>
-    /// <remarks>
-    /// 当前约定偶数层回到对齐基线，奇数层应用配置的半步偏移。
-    /// </remarks>
     private static Vector2I ResolveLayerOffset(int layer, LayoutRules rules, TileShape tileShape)
     {
         if (layer % 2 == 0)
@@ -281,7 +382,7 @@ public static class RandomStackLayoutGenerator
     }
 
     /// <summary>原地打乱列表。</summary>
-    private static void Shuffle(RandomNumberGenerator rng, IList<Vector2I> items)
+    private static void Shuffle<T>(RandomNumberGenerator rng, IList<T> items)
     {
         for (var i = items.Count - 1; i > 0; i--)
         {
