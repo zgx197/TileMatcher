@@ -5,8 +5,7 @@ namespace TileMatcher.Result;
 
 /// <summary>
 /// 详细通关页。
-/// 当前版本除了展示本局成绩，还会展示“下一关预告”，
-/// 让“继续”按钮更像正式手游里的下一关推进，而不是单纯跳页。
+/// 当前除了展示本局成绩，还会在存在每日奖励时给出明确提示，让玩家知道“继续”之后还会进入奖励页。
 /// </summary>
 public partial class LevelCompletePage : Control
 {
@@ -14,6 +13,7 @@ public partial class LevelCompletePage : Control
     private Label _timeValueLabel = null!;
     private Label _scoreValueLabel = null!;
     private Label _matchValueLabel = null!;
+    private Label _rewardHintLabel = null!;
     private Label _nextLevelLabel = null!;
     private Label _nextLevelSummaryLabel = null!;
     private Button _continueButton = null!;
@@ -33,6 +33,7 @@ public partial class LevelCompletePage : Control
         _timeValueLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Stats/TimeBox/VBox/Value");
         _scoreValueLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Stats/ScoreBox/VBox/Value");
         _matchValueLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox/Value");
+        _rewardHintLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/RewardHint");
         _nextLevelLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/NextCard/Stack/NextLevel");
         _nextLevelSummaryLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/NextCard/Stack/NextSummary");
         _continueButton = GetNode<Button>("Root/Center/Card/Margin/Stack/Buttons/ContinueButton");
@@ -43,7 +44,6 @@ public partial class LevelCompletePage : Control
         RefreshTexts();
     }
 
-    /// <summary>由外围流程注入本局结算信息和下一关预告。</summary>
     public void Configure(LevelCompleteResult result)
     {
         _result = result;
@@ -60,6 +60,11 @@ public partial class LevelCompletePage : Control
         _scoreValueLabel.Text = _result.Score.ToString();
         _matchValueLabel.Text = _result.MatchCount.ToString();
 
+        _rewardHintLabel.Visible = _result.HasDailyReward;
+        _rewardHintLabel.Text = _result.HasDailyReward
+            ? $"今日首胜奖励待领取：+{_result.DailyRewardLeafCount} 叶子"
+            : "本次继续将直接进入下一关";
+
         _nextLevelLabel.Text = string.IsNullOrWhiteSpace(_result.NextLevelName)
             ? $"下一关：关卡 {_result.NextLevelNumber}"
             : $"下一关：{_result.NextLevelName}";
@@ -67,7 +72,9 @@ public partial class LevelCompletePage : Control
             ? "下一关规则摘要待加载"
             : _result.NextLevelSummary;
 
-        _continueButton.Text = $"继续前往 {_result.NextLevelNumber}";
+        _continueButton.Text = _result.HasDailyReward
+            ? "继续领取奖励"
+            : $"继续前往 {_result.NextLevelNumber}";
     }
 
     private void OnContinuePressed()

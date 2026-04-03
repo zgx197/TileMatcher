@@ -112,7 +112,7 @@ alignment = 1
 [node name="PlayerName" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "青蛙旅人"
+text = "青瓷旅人"
 
 [node name="SubTitle" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
 layout_mode = 2
@@ -134,7 +134,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 modulate = Color(0.636719, 0.972656, 0.390625, 1)
-text = "◥"
+text = "●"
 
 [node name="LeafValue" type="Label" parent="Root/Header/Bar/Center/LeafRow"]
 layout_mode = 2
@@ -171,7 +171,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 modulate = Color(0.398438, 0.226562, 0.113281, 0.78)
-text = "纸门与木纹风格的主页面骨架"
+text = "主页已接入正式进度与关卡流转"
 horizontal_alignment = 1
 
 [node name="Bottom" type="MarginContainer" parent="Root"]
@@ -180,7 +180,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -320.0
+offset_top = -360.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/margin_left = 78
@@ -192,13 +192,20 @@ layout_mode = 2
 theme_override_constants/separation = 18
 
 [node name="InfoCard" type="PanelContainer" parent="Root/Bottom/BottomStack"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_info_card")
 
 [node name="Stack" type="VBoxContainer" parent="Root/Bottom/BottomStack/InfoCard"]
 layout_mode = 2
 theme_override_constants/separation = 8
+
+[node name="ProgressSummary" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+modulate = Color(0.410156, 0.257812, 0.128906, 0.86)
+text = "最高解锁 L1 · 已通关 0 局"
+horizontal_alignment = 1
 
 [node name="CurrentLevel" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
 layout_mode = 2
@@ -223,4 +230,4 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_start_button")
-text = "关卡 4"
+text = "进入关卡 1"

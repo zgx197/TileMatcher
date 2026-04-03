@@ -87,7 +87,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Card" type="PanelContainer" parent="Root/Center"]
-custom_minimum_size = Vector2(560, 760)
+custom_minimum_size = Vector2(560, 800)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
@@ -106,21 +106,21 @@ theme_override_constants/separation = 24
 layout_mode = 2
 theme_override_font_sizes/font_size = 82
 modulate = Color(0.972656, 0.78125, 0.238281, 1)
-text = "✦"
+text = "★"
 horizontal_alignment = 1
 
 [node name="Headline" type="Label" parent="Root/Center/Card/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 56
 modulate = Color(0.964844, 0.753906, 0.316406, 1)
-text = "关卡 4 完成"
+text = "关卡 1 完成"
 horizontal_alignment = 1
 
 [node name="SubText" type="Label" parent="Root/Center/Card/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 modulate = Color(0.960938, 0.910156, 0.710938, 0.82)
-text = "第一阶段外围流程骨架结算页"
+text = "外围主流程已接入正式结算"
 horizontal_alignment = 1
 
 [node name="Stats" type="HBoxContainer" parent="Root/Center/Card/Margin/Stack"]
@@ -189,7 +189,7 @@ alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 modulate = Color(0.949219, 0.746094, 0.398438, 0.88)
-text = "匹配"
+text = "配对"
 horizontal_alignment = 1
 
 [node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox"]
@@ -203,7 +203,15 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 modulate = Color(0.824219, 0.96875, 0.4375, 1)
-text = "主流程已打通，后续可继续扩展奖励与排行"
+text = "当前外围流程已可承接正式通关反馈"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="RewardHint" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+modulate = Color(0.992188, 0.867188, 0.453125, 0.96)
+text = "今日首胜奖励待领取：+3 叶子"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -220,7 +228,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 modulate = Color(0.863281, 0.953125, 0.53125, 1)
-text = "下一关：关卡 5"
+text = "下一关：关卡 2"
 horizontal_alignment = 1
 
 [node name="NextSummary" type="Label" parent="Root/Center/Card/Margin/Stack/NextCard/Stack"]
@@ -243,7 +251,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_green_button")
-text = "关卡 5"
+text = "继续领取奖励"
 
 [node name="HomeButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
 custom_minimum_size = Vector2(0, 68)
