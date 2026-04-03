@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using AppTileData = TileMatcher.Data.TileData;
 
@@ -19,9 +20,11 @@ public static class GridMath
             && a.GY + 2 > b.GY;
     }
 
-    public static Vector2 GridToWorld(int gx, int gy, Vector2 boardOrigin)
+    public static Vector2 GridToWorld(int gx, int gy, int gz, Vector2 boardOrigin)
     {
-        return boardOrigin + new Vector2(gx * GridConfig.StepX, gy * GridConfig.StepY);
+        return boardOrigin
+            + new Vector2(gx * GridConfig.StepX, gy * GridConfig.StepY)
+            + GridConfig.LayerVisualOffset * gz;
     }
 
     public static bool HasAnyAboveOverlap(AppTileData tile, IEnumerable<AppTileData> allTiles)
@@ -42,6 +45,24 @@ public static class GridMath
         return false;
     }
 
+    public static bool HasFullSupportFromLowerLayer(AppTileData tile, IReadOnlyCollection<AppTileData> lowerLayerTiles)
+    {
+        if (tile.GZ <= 0)
+        {
+            return true;
+        }
+
+        var lowerLayerPositions = lowerLayerTiles
+            .Where(lowerTile => !lowerTile.Removed)
+            .Select(lowerTile => new Vector2I(lowerTile.GX, lowerTile.GY))
+            .ToHashSet();
+
+        return lowerLayerPositions.Contains(new Vector2I(tile.GX - 1, tile.GY - 1))
+            && lowerLayerPositions.Contains(new Vector2I(tile.GX + 1, tile.GY - 1))
+            && lowerLayerPositions.Contains(new Vector2I(tile.GX - 1, tile.GY + 1))
+            && lowerLayerPositions.Contains(new Vector2I(tile.GX + 1, tile.GY + 1));
+    }
+
     public static Rect2 GetWorldBounds(IEnumerable<AppTileData> tiles)
     {
         var hasAny = false;
@@ -57,7 +78,7 @@ public static class GridMath
                 continue;
             }
 
-            var worldPos = GridToWorld(tile.GX, tile.GY, Vector2.Zero);
+            var worldPos = GridToWorld(tile.GX, tile.GY, tile.GZ, Vector2.Zero);
             var rect = new Rect2(worldPos, GridConfig.TileSize);
 
             if (!hasAny)

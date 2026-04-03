@@ -46,7 +46,7 @@ anchor_bottom = 1.0
 offset_left = 22.0
 offset_top = 116.0
 offset_right = -22.0
-offset_bottom = -150.0
+offset_bottom = -170.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_boardbg")
@@ -142,30 +142,69 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -128.0
+offset_top = -160.0
 offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/margin_left = 54
-theme_override_constants/margin_right = 54
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
 mouse_filter = 2
 
-[node name="Buttons" type="HBoxContainer" parent="UI/Root/BottomBar"]
+[node name="FooterStack" type="VBoxContainer" parent="UI/Root/BottomBar"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="DebugLabel" type="Label" parent="UI/Root/BottomBar/FooterStack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "调试信息"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="LayerInspector" type="VBoxContainer" parent="UI/Root/BottomBar/FooterStack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="UI/Root/BottomBar/FooterStack/LayerInspector"]
+layout_mode = 2
+text = "显示层级"
+horizontal_alignment = 1
+
+[node name="Controls" type="HBoxContainer" parent="UI/Root/BottomBar/FooterStack/LayerInspector"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Slider" type="HSlider" parent="UI/Root/BottomBar/FooterStack/LayerInspector/Controls"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 3.0
+step = 1.0
+value = 0.0
+
+[node name="Value" type="Label" parent="UI/Root/BottomBar/FooterStack/LayerInspector/Controls"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "<= L0"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Root/BottomBar/FooterStack"]
 layout_mode = 2
 theme_override_constants/separation = 36
 alignment = 1
 
-[node name="ShuffleButton" type="Button" parent="UI/Root/BottomBar/Buttons"]
-custom_minimum_size = Vector2(148, 74)
+[node name="ShuffleButton" type="Button" parent="UI/Root/BottomBar/FooterStack/Buttons"]
+custom_minimum_size = Vector2(148, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "洗牌"
+text = "随机生成"
 
-[node name="HintButton" type="Button" parent="UI/Root/BottomBar/Buttons"]
-custom_minimum_size = Vector2(148, 74)
+[node name="HintButton" type="Button" parent="UI/Root/BottomBar/FooterStack/Buttons"]
+custom_minimum_size = Vector2(148, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "提示"
+text = "固定原型"
 
 [node name="BoardController" type="Node2D" parent="."]
 script = ExtResource("2_qvnq0")
