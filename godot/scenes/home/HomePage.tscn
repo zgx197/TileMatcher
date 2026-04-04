@@ -405,10 +405,12 @@ modulate = Color(0.269531, 0.398438, 0.285156, 0.76)
 text = "Earn coins to adopt new pets."
 autowrap_mode = 2
 
-[node name="PetParkList" type="HFlowContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body"]
+[node name="PetParkList" type="Control" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body"]
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
-theme_override_constants/h_separation = 14
-theme_override_constants/v_separation = 14
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="BottomCard" type="PanelContainer" parent="Root/Content/MainStack"]
 layout_mode = 2

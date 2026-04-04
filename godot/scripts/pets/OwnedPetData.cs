@@ -9,6 +9,9 @@ public sealed class OwnedPetData
     /// <summary>对应的宠物定义标识。</summary>
     public string PetId { get; set; } = string.Empty;
 
+    /// <summary>领养时生成并保存的宠物昵称。</summary>
+    public string PetName { get; set; } = string.Empty;
+
     /// <summary>领养时间的 UTC 时间戳文本。</summary>
     public string AdoptedAtUtc { get; set; } = string.Empty;
 

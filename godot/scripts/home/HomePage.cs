@@ -48,7 +48,7 @@ public partial class HomePage : Control
     private Label _parkEmptyStateLabel = null!;
 
     /// <summary>宠物乐园动态列表容器。</summary>
-    private HFlowContainer _petParkList = null!;
+    private Control _petParkList = null!;
 
     /// <summary>底部玩法标题。</summary>
     private Label _sectionTitleLabel = null!;
@@ -202,7 +202,7 @@ public partial class HomePage : Control
         _mobileCoinValueLabel = GetNode<Label>("Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/CoinChip/CoinRow/CoinValue");
         _parkSummaryLabel = GetNode<Label>("Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body/ParkSummary");
         _parkEmptyStateLabel = GetNode<Label>("Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body/EmptyState");
-        _petParkList = GetNode<HFlowContainer>("Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body/PetParkList");
+        _petParkList = GetNode<Control>("Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body/PetParkList");
         _sectionTitleLabel = GetNode<Label>("Root/Content/MainStack/BottomCard/Margin/Stack/SectionTitle");
         _progressSummaryLabel = GetNode<Label>("Root/Content/MainStack/BottomCard/Margin/Stack/ProgressSummary");
         _currentLevelLabel = GetNode<Label>("Root/Content/MainStack/BottomCard/Margin/Stack/CurrentLevel");
@@ -380,7 +380,8 @@ public partial class HomePage : Control
             var ownedPet = _pendingOwnedPets[index];
             var definition = ResolvePetDefinition(ownedPet.PetId);
             var actorView = _petActorScene.Instantiate<PetActorView>();
-            actorView.Configure(definition, ownedPet, index);
+            actorView.Configure(definition, ownedPet, index, _pendingOwnedPets.Count);
+            actorView.ZIndex = 10 + index;
             _petParkList.AddChild(actorView);
         }
     }

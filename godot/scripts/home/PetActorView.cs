@@ -5,10 +5,10 @@ using TileMatcher.Pets;
 namespace TileMatcher.Home;
 
 /// <summary>
-/// 首页宠物乐园中的单只宠物组件。
-/// 负责展示宠物卡片、生活状态切换、气泡出现节奏以及轻微移动表现。
+/// 宠物乐园中的单只宠物视图。
+/// 当前阶段统一用彩色圆角矩形承载宠物，再配合轻微巡游和气泡文案表现状态。
 /// </summary>
-public partial class PetActorView : PanelContainer
+public partial class PetActorView : Control
 {
     private enum PetLifeState
     {
@@ -18,70 +18,95 @@ public partial class PetActorView : PanelContainer
         Playing,
     }
 
+    private static readonly string[] RestingTexts = ["正在晒太阳", "正趴着打盹", "正在懒洋洋休息"];
+    private static readonly string[] WanderingTexts = ["正在慢慢散步", "正在巡逻乐园", "正在找舒服的角落"];
+    private static readonly string[] WatchingTexts = ["正在四处张望", "正在观察新朋友", "正在悄悄看你"];
+    private static readonly string[] PlayingTexts = ["正在开心玩耍", "正在追着空气跑", "正在原地蹦跶"];
+
+    private const float ActorWidth = 112.0f;
+    private const float ActorHeight = 132.0f;
+    private const float BodyWidth = 88.0f;
+    private const float BodyHeight = 66.0f;
+
+    /// <summary>状态气泡面板。</summary>
+    private PanelContainer _bubblePanel = null!;
+
     /// <summary>状态气泡文本。</summary>
     private Label _bubbleLabel = null!;
 
-    /// <summary>宠物名称文本。</summary>
+    /// <summary>宠物主体圆角矩形。</summary>
+    private PanelContainer _actorBody = null!;
+
+    /// <summary>宠物名字文本。</summary>
     private Label _nameLabel = null!;
 
-    /// <summary>宠物物种文本。</summary>
-    private Label _speciesLabel = null!;
-
-    /// <summary>宠物补充描述文本。</summary>
-    private Label _detailLabel = null!;
-
-    /// <summary>承载轻微移动与呼吸效果的视觉根节点。</summary>
-    private Control _motionRoot = null!;
-
-    /// <summary>生活状态切换定时器。</summary>
+    /// <summary>状态切换定时器。</summary>
     private Godot.Timer _stateTimer = null!;
 
-    /// <summary>控制气泡显示时长的定时器。</summary>
+    /// <summary>巡游换目标定时器。</summary>
+    private Godot.Timer _wanderTimer = null!;
+
+    /// <summary>气泡显示定时器。</summary>
     private Godot.Timer _bubbleTimer = null!;
 
-    /// <summary>当前气泡的淡入淡出补间。</summary>
-    private Tween? _bubbleTween;
-
-    /// <summary>当前状态位移的补间。</summary>
-    private Tween? _movementTween;
-
-    /// <summary>运行时随机数发生器。</summary>
+    /// <summary>运行时随机数生成器。</summary>
     private readonly RandomNumberGenerator _random = new();
 
-    /// <summary>当前组件绑定的宠物定义。</summary>
+    /// <summary>当前绑定的宠物定义。</summary>
     private PetDefinition? _definition;
 
-    /// <summary>当前组件绑定的宠物存档。</summary>
+    /// <summary>当前绑定的宠物存档。</summary>
     private OwnedPetData? _ownedPet;
 
     /// <summary>当前宠物在乐园中的顺序索引。</summary>
     private int _parkIndex;
 
+    /// <summary>乐园中的宠物总数。</summary>
+    private int _parkCount = 1;
+
     /// <summary>当前生活状态。</summary>
     private PetLifeState _currentLifeState;
 
-    /// <summary>状态位移的当前目标偏移。</summary>
-    private Vector2 _stateOffset = Vector2.Zero;
+    /// <summary>宠物在乐园中的基准位置。</summary>
+    private Vector2 _homePosition;
 
-    /// <summary>呼吸和轻微漂浮使用的时间累积器。</summary>
+    /// <summary>当前巡游目标位置。</summary>
+    private Vector2 _targetPosition;
+
+    /// <summary>父容器上一次尺寸。</summary>
+    private Vector2 _lastParentSize = Vector2.Zero;
+
+    /// <summary>是否已经完成过初始摆放。</summary>
+    private bool _placementInitialized;
+
+    /// <summary>轻微漂浮与呼吸的时间累积。</summary>
     private float _motionClock;
 
-    /// <summary>初始化组件节点、定时器与初始表现。</summary>
+    /// <summary>气泡动画。</summary>
+    private Tween? _bubbleTween;
+
     public override void _Ready()
     {
-        _motionRoot = GetNode<Control>("MotionRoot");
-        _bubbleLabel = GetNode<Label>("MotionRoot/Margin/Stack/Bubble");
-        _nameLabel = GetNode<Label>("MotionRoot/Margin/Stack/Name");
-        _speciesLabel = GetNode<Label>("MotionRoot/Margin/Stack/Species");
-        _detailLabel = GetNode<Label>("MotionRoot/Margin/Stack/Detail");
-        _stateTimer = GetNode<Godot.Timer>("StateTimer");
-        _bubbleTimer = GetNode<Godot.Timer>("BubbleTimer");
-        _stateTimer.Timeout += OnStateTimerTimeout;
-        _bubbleTimer.Timeout += OnBubbleTimerTimeout;
-        _random.Randomize();
+        CustomMinimumSize = new Vector2(ActorWidth, ActorHeight);
+        MouseFilter = MouseFilterEnum.Ignore;
 
-        _bubbleLabel.Modulate = new Color(0.18f, 0.29f, 0.24f, 0.0f);
-        _bubbleLabel.Scale = new Vector2(0.96f, 0.96f);
+        _bubblePanel = GetNode<PanelContainer>("BubblePanel");
+        _bubbleLabel = GetNode<Label>("BubblePanel/Margin/BubbleLabel");
+        _actorBody = GetNode<PanelContainer>("ActorBody");
+        _nameLabel = GetNode<Label>("NameLabel");
+        _stateTimer = GetNode<Godot.Timer>("StateTimer");
+        _wanderTimer = GetNode<Godot.Timer>("WanderTimer");
+        _bubbleTimer = GetNode<Godot.Timer>("BubbleTimer");
+
+        _stateTimer.Timeout += OnStateTimerTimeout;
+        _wanderTimer.Timeout += OnWanderTimerTimeout;
+        _bubbleTimer.Timeout += OnBubbleTimerTimeout;
+
+        _random.Randomize();
+        _bubblePanel.Visible = false;
+        _bubblePanel.ZIndex = 20;
+        _actorBody.ZIndex = 10;
+        _bubblePanel.AddThemeStyleboxOverride("panel", CreateBubbleStyle());
 
         if (_definition is not null && _ownedPet is not null)
         {
@@ -90,24 +115,43 @@ public partial class PetActorView : PanelContainer
         }
     }
 
-    /// <summary>持续给宠物卡片增加轻微的呼吸和漂浮感。</summary>
     public override void _Process(double delta)
     {
+        if (_definition is null || _ownedPet is null)
+        {
+            return;
+        }
+
+        UpdatePlacementIfNeeded();
+
         _motionClock += (float)delta;
+        Position = Position.MoveToward(_targetPosition, ResolveMoveSpeed(_currentLifeState) * (float)delta);
 
-        var breatheAmount = Mathf.Sin(_motionClock * 2.1f + (_parkIndex * 0.65f)) * 0.012f;
-        var bobAmount = Mathf.Sin(_motionClock * 1.7f + (_parkIndex * 0.9f)) * 1.8f;
+        var moveDistance = Position.DistanceTo(_targetPosition);
+        var moveBlend = Mathf.Clamp(moveDistance / 28.0f, 0.1f, 1.0f);
+        var bob = Mathf.Sin(_motionClock * 4.1f + (_parkIndex * 0.73f)) * 3.2f;
+        var breathe = Mathf.Sin(_motionClock * 2.2f + (_parkIndex * 0.47f)) * 0.035f;
+        var tilt = Mathf.Sin(_motionClock * 3.0f + (_parkIndex * 0.39f)) * 0.04f * moveBlend;
 
-        _motionRoot.Position = _stateOffset + new Vector2(0.0f, bobAmount);
-        _motionRoot.Scale = Vector2.One * (1.0f + breatheAmount);
+        _actorBody.Position = new Vector2((Size.X - BodyWidth) * 0.5f, 28.0f + bob);
+        _actorBody.Scale = Vector2.One * (1.0f + breathe);
+        _actorBody.Rotation = tilt;
+
+        if (moveDistance < 2.0f && _wanderTimer.IsStopped())
+        {
+            StartNextWanderTimer(initialRefresh: false);
+        }
     }
 
-    /// <summary>把宠物定义、存档和顺序索引写入组件。</summary>
-    public void Configure(PetDefinition definition, OwnedPetData ownedPet, int parkIndex)
+    /// <summary>
+    /// 写入宠物定义、存档和乐园位置上下文。
+    /// </summary>
+    public void Configure(PetDefinition definition, OwnedPetData ownedPet, int parkIndex, int parkCount)
     {
         _definition = definition;
         _ownedPet = ownedPet;
         _parkIndex = parkIndex;
+        _parkCount = Math.Max(1, parkCount);
         _currentLifeState = ResolveInitialState(ownedPet, parkIndex);
 
         if (IsNodeReady())
@@ -117,7 +161,6 @@ public partial class PetActorView : PanelContainer
         }
     }
 
-    /// <summary>根据当前定义和状态刷新组件上的文本与样式。</summary>
     private void RefreshView()
     {
         if (_definition is null || _ownedPet is null)
@@ -125,14 +168,36 @@ public partial class PetActorView : PanelContainer
             return;
         }
 
-        AddThemeStyleboxOverride("panel", CreateCardStyle(_definition.ColorHex));
-        _nameLabel.Text = _definition.DisplayName;
-        _speciesLabel.Text = _definition.Species;
-        _detailLabel.Text = BuildDetailText(_definition, _parkIndex);
+        var petName = ResolvePetName();
+        var baseColor = ResolvePetColor();
+        _nameLabel.Text = petName;
+        _nameLabel.Modulate = baseColor.Darkened(0.55f);
+        _actorBody.AddThemeStyleboxOverride("panel", CreateBodyStyle(baseColor));
         UpdateBubbleText();
     }
 
-    /// <summary>状态定时器触发时切换到下一种生活状态，并重新播放气泡与移动节奏。</summary>
+    private void ApplyLifeStatePresentation(bool immediate)
+    {
+        if (_definition is null || _ownedPet is null)
+        {
+            return;
+        }
+
+        UpdateBubbleText();
+        _ownedPet.CurrentParkState = BuildPersistentStateText(_currentLifeState);
+
+        if (immediate)
+        {
+            UpdatePlacementIfNeeded(forceReset: true);
+        }
+
+        ChooseNextTarget();
+        ShowBubble();
+        StartNextBubbleTimer();
+        StartNextStateTimer(immediate);
+        StartNextWanderTimer(immediate);
+    }
+
     private void OnStateTimerTimeout()
     {
         if (_definition is null || _ownedPet is null)
@@ -141,33 +206,75 @@ public partial class PetActorView : PanelContainer
         }
 
         _currentLifeState = PickNextLifeState(_currentLifeState);
-        _ownedPet.CurrentParkState = BuildPersistentStateText(_definition, _currentLifeState);
-        ApplyLifeStatePresentation(false);
+        ApplyLifeStatePresentation(immediate: false);
     }
 
-    /// <summary>气泡显示时长结束后自动隐藏，让气泡以节奏化的方式出现。</summary>
+    private void OnWanderTimerTimeout()
+    {
+        ChooseNextTarget();
+        StartNextWanderTimer(initialRefresh: false);
+    }
+
     private void OnBubbleTimerTimeout()
     {
         HideBubble();
     }
 
-    /// <summary>根据当前状态统一刷新文本、位移和气泡出现节奏。</summary>
-    private void ApplyLifeStatePresentation(bool immediate)
+    private void UpdatePlacementIfNeeded(bool forceReset = false)
     {
-        if (_definition is null)
+        if (GetParent() is not Control parent)
         {
             return;
         }
 
-        UpdateBubbleText();
-        _detailLabel.Text = BuildDetailText(_definition, _parkIndex);
-        AnimateToStateOffset(ResolveStateOffset(_currentLifeState), immediate);
-        ShowBubble();
-        StartNextBubbleTimer();
-        StartNextStateTimer(immediate);
+        if (!forceReset && _placementInitialized && parent.Size == _lastParentSize)
+        {
+            return;
+        }
+
+        _lastParentSize = parent.Size;
+        var safeWidth = Mathf.Max(parent.Size.X, ActorWidth + 32.0f);
+        var safeHeight = Mathf.Max(parent.Size.Y, ActorHeight + 32.0f);
+        var columns = Math.Max(1, Mathf.CeilToInt(Mathf.Sqrt(_parkCount)));
+        var rows = Math.Max(1, Mathf.CeilToInt((float)_parkCount / columns));
+        var column = _parkIndex % columns;
+        var row = _parkIndex / columns;
+        var xSpacing = safeWidth / (columns + 1.0f);
+        var ySpacing = (safeHeight - 36.0f) / (rows + 1.0f);
+        var desiredCenter = new Vector2(
+            xSpacing * (column + 1),
+            26.0f + ySpacing * (row + 1));
+
+        _homePosition = ClampToParent(desiredCenter - (Size * 0.5f));
+        _targetPosition = _homePosition;
+        Position = _homePosition;
+        _placementInitialized = true;
     }
 
-    /// <summary>刷新气泡文本。</summary>
+    private void ChooseNextTarget()
+    {
+        var radius = ResolveRoamingRadius(_currentLifeState);
+        var offset = new Vector2(
+            _random.RandfRange(-radius.X, radius.X),
+            _random.RandfRange(-radius.Y, radius.Y));
+
+        _targetPosition = ClampToParent(_homePosition + offset);
+    }
+
+    private Vector2 ClampToParent(Vector2 desiredPosition)
+    {
+        if (GetParent() is not Control parent)
+        {
+            return desiredPosition;
+        }
+
+        var maxX = Mathf.Max(0.0f, parent.Size.X - Size.X);
+        var maxY = Mathf.Max(0.0f, parent.Size.Y - Size.Y);
+        return new Vector2(
+            Mathf.Clamp(desiredPosition.X, 0.0f, maxX),
+            Mathf.Clamp(desiredPosition.Y, 0.0f, maxY));
+    }
+
     private void UpdateBubbleText()
     {
         if (_definition is null)
@@ -175,71 +282,88 @@ public partial class PetActorView : PanelContainer
             return;
         }
 
-        _bubbleLabel.Text = $"状态气泡：{BuildBubbleText(_definition, _currentLifeState)}";
+        _bubbleLabel.Text = BuildBubbleText(ResolvePetName(), _currentLifeState);
     }
 
-    /// <summary>显示状态气泡并做轻微淡入。</summary>
     private void ShowBubble()
     {
         _bubbleTween?.Kill();
-        _bubbleLabel.Visible = true;
+        _bubblePanel.Visible = true;
+        _bubblePanel.Scale = new Vector2(0.92f, 0.92f);
+        _bubblePanel.Modulate = new Color(1, 1, 1, 0);
+
         _bubbleTween = CreateTween();
-        _bubbleTween.SetTrans(Tween.TransitionType.Sine);
-        _bubbleTween.SetEase(Tween.EaseType.Out);
-        _bubbleTween.TweenProperty(_bubbleLabel, "modulate", new Color(0.18f, 0.29f, 0.24f, 0.92f), 0.22f);
-        _bubbleTween.Parallel().TweenProperty(_bubbleLabel, "scale", Vector2.One, 0.22f);
+        _bubbleTween.SetParallel(true);
+        _bubbleTween.TweenProperty(_bubblePanel, "scale", Vector2.One, 0.22f)
+            .SetTrans(Tween.TransitionType.Back)
+            .SetEase(Tween.EaseType.Out);
+        _bubbleTween.TweenProperty(_bubblePanel, "modulate", Colors.White, 0.18f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.Out);
     }
 
-    /// <summary>隐藏状态气泡，让下一个状态刷新时再重新出现。</summary>
     private void HideBubble()
     {
         _bubbleTween?.Kill();
         _bubbleTween = CreateTween();
-        _bubbleTween.SetTrans(Tween.TransitionType.Sine);
-        _bubbleTween.SetEase(Tween.EaseType.In);
-        _bubbleTween.TweenProperty(_bubbleLabel, "modulate", new Color(0.18f, 0.29f, 0.24f, 0.0f), 0.20f);
-        _bubbleTween.Parallel().TweenProperty(_bubbleLabel, "scale", new Vector2(0.96f, 0.96f), 0.20f);
+        _bubbleTween.SetParallel(true);
+        _bubbleTween.TweenProperty(_bubblePanel, "scale", new Vector2(0.94f, 0.94f), 0.18f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.In);
+        _bubbleTween.TweenProperty(_bubblePanel, "modulate", new Color(1, 1, 1, 0), 0.16f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.In);
+        _bubbleTween.Finished += () => _bubblePanel.Visible = false;
     }
 
-    /// <summary>把视觉根节点移动到当前状态对应的轻微偏移位置。</summary>
-    private void AnimateToStateOffset(Vector2 targetOffset, bool immediate)
+    private void StartNextStateTimer(bool initialRefresh)
     {
-        _movementTween?.Kill();
-        _stateOffset = targetOffset;
+        var waitTime = initialRefresh
+            ? _random.RandfRange(1.8f, 2.8f)
+            : _random.RandfRange(4.4f, 6.8f);
+        _stateTimer.Start(waitTime);
+    }
 
-        if (immediate)
+    private void StartNextWanderTimer(bool initialRefresh)
+    {
+        var waitTime = initialRefresh
+            ? _random.RandfRange(0.8f, 1.2f)
+            : _random.RandfRange(1.4f, 2.6f);
+        _wanderTimer.Start(waitTime);
+    }
+
+    private void StartNextBubbleTimer()
+    {
+        _bubbleTimer.Start(_random.RandfRange(2.0f, 3.4f));
+    }
+
+    private string ResolvePetName()
+    {
+        if (_ownedPet is null)
         {
-            _motionRoot.Position = targetOffset;
-            return;
+            return _definition?.DisplayName ?? "宠物";
         }
 
-        _movementTween = CreateTween();
-        _movementTween.SetTrans(Tween.TransitionType.Sine);
-        _movementTween.SetEase(Tween.EaseType.Out);
-        _movementTween.TweenProperty(_motionRoot, "position", targetOffset, _random.RandfRange(0.65f, 1.10f));
+        return string.IsNullOrWhiteSpace(_ownedPet.PetName)
+            ? _definition?.DisplayName ?? "宠物"
+            : _ownedPet.PetName;
     }
 
-    /// <summary>根据当前状态选择下一种状态，尽量避免连续停在同一状态。</summary>
-    private PetLifeState PickNextLifeState(PetLifeState currentState)
+    private Color ResolvePetColor()
     {
-        var candidates = new[]
+        if (_ownedPet is null)
         {
-            PetLifeState.Resting,
-            PetLifeState.Wandering,
-            PetLifeState.Watching,
-            PetLifeState.Playing,
-        };
-
-        var nextState = currentState;
-        while (nextState == currentState)
-        {
-            nextState = candidates[_random.RandiRange(0, candidates.Length - 1)];
+            return Color.FromString(_definition?.ColorHex ?? "#D9C4A0", new Color(0.82f, 0.66f, 0.48f, 1.0f));
         }
 
-        return nextState;
+        var seedText = $"{_ownedPet.PetId}|{_ownedPet.PetName}|{_ownedPet.AdoptedAtUtc}";
+        var hash = (uint)seedText.GetHashCode();
+        var hue = (hash % 360u) / 360.0f;
+        var saturation = 0.38f + (((hash >> 9) % 26u) / 100.0f);
+        var value = 0.82f + (((hash >> 17) % 12u) / 100.0f);
+        return Color.FromHsv(hue, saturation, value, 1.0f);
     }
 
-    /// <summary>根据存档里的初始状态文案决定一个较稳定的初始生活状态。</summary>
     private static PetLifeState ResolveInitialState(OwnedPetData ownedPet, int parkIndex)
     {
         var stateText = ownedPet.CurrentParkState ?? string.Empty;
@@ -258,93 +382,112 @@ public partial class PetActorView : PanelContainer
             return PetLifeState.Watching;
         }
 
-        return parkIndex % 2 == 0 ? PetLifeState.Resting : PetLifeState.Playing;
+        return parkIndex % 2 == 0 ? PetLifeState.Wandering : PetLifeState.Playing;
     }
 
-    /// <summary>按当前状态生成玩家可见的气泡文案。</summary>
-    private static string BuildBubbleText(PetDefinition definition, PetLifeState state)
+    private PetLifeState PickNextLifeState(PetLifeState currentState)
+    {
+        var nextState = currentState;
+        while (nextState == currentState)
+        {
+            nextState = (PetLifeState)_random.RandiRange(0, 3);
+        }
+
+        return nextState;
+    }
+
+    private Vector2 ResolveRoamingRadius(PetLifeState state)
     {
         return state switch
         {
-            PetLifeState.Resting => $"{definition.DisplayName} 正在{definition.ParkActivityText}",
-            PetLifeState.Wandering => $"{definition.DisplayName} 在乐园里慢慢散步",
-            PetLifeState.Watching => $"{definition.DisplayName} 正在四处观察新朋友",
-            PetLifeState.Playing => $"{definition.DisplayName} 想和你一起玩一会",
-            _ => $"{definition.DisplayName} 正在熟悉新家",
+            PetLifeState.Resting => new Vector2(8.0f, 6.0f),
+            PetLifeState.Watching => new Vector2(16.0f, 12.0f),
+            PetLifeState.Playing => new Vector2(38.0f, 22.0f),
+            _ => new Vector2(26.0f, 18.0f),
         };
     }
 
-    /// <summary>生成写回运行时宠物对象的状态文案。</summary>
-    private static string BuildPersistentStateText(PetDefinition definition, PetLifeState state)
+    private float ResolveMoveSpeed(PetLifeState state)
     {
         return state switch
         {
-            PetLifeState.Resting => definition.ParkActivityText,
+            PetLifeState.Resting => 12.0f,
+            PetLifeState.Watching => 22.0f,
+            PetLifeState.Playing => 42.0f,
+            _ => 30.0f,
+        };
+    }
+
+    private string BuildBubbleText(string petName, PetLifeState state)
+    {
+        var action = PickStateText(state);
+        return $"{petName}{action}";
+    }
+
+    private string BuildPersistentStateText(PetLifeState state)
+    {
+        return state switch
+        {
+            PetLifeState.Resting => "休息中",
             PetLifeState.Wandering => "散步中",
-            PetLifeState.Watching => "观察四周",
-            PetLifeState.Playing => "想玩球",
-            _ => definition.ParkActivityText,
+            PetLifeState.Watching => "观察中",
+            PetLifeState.Playing => "玩耍中",
+            _ => "休息中",
         };
     }
 
-    /// <summary>按入住顺序生成一段轻量补充说明。</summary>
-    private static string BuildDetailText(PetDefinition definition, int parkIndex)
+    private string PickStateText(PetLifeState state)
     {
-        return parkIndex switch
+        var candidates = state switch
         {
-            0 => $"{definition.DisplayName} 是第一位入住伙伴，最先把乐园热闹起来。",
-            1 => $"{definition.DisplayName} 已经开始和其他伙伴互相熟悉了。",
-            _ => $"{definition.DisplayName} 正在慢慢形成自己的生活节奏。",
+            PetLifeState.Resting => RestingTexts,
+            PetLifeState.Watching => WatchingTexts,
+            PetLifeState.Playing => PlayingTexts,
+            _ => WanderingTexts,
         };
+
+        return candidates[_random.RandiRange(0, candidates.Length - 1)];
     }
 
-    /// <summary>根据当前状态生成一个轻微位移目标，让宠物看起来在乐园中活动。</summary>
-    private Vector2 ResolveStateOffset(PetLifeState state)
+    private static StyleBoxFlat CreateBubbleStyle()
     {
-        return state switch
-        {
-            PetLifeState.Resting => new Vector2(_random.RandfRange(-2.0f, 2.0f), _random.RandfRange(2.0f, 5.0f)),
-            PetLifeState.Wandering => new Vector2(_random.RandfRange(-10.0f, 10.0f), _random.RandfRange(-1.0f, 4.0f)),
-            PetLifeState.Watching => new Vector2(_random.RandfRange(-4.0f, 4.0f), _random.RandfRange(-6.0f, -2.0f)),
-            PetLifeState.Playing => new Vector2(_random.RandfRange(-12.0f, 12.0f), _random.RandfRange(-3.0f, 3.0f)),
-            _ => Vector2.Zero,
-        };
-    }
-
-    /// <summary>启动下一次状态切换计时，让每只宠物有自己的刷新节奏。</summary>
-    private void StartNextStateTimer(bool initialRefresh)
-    {
-        var waitTime = initialRefresh
-            ? _random.RandfRange(1.4f, 2.4f)
-            : _random.RandfRange(3.2f, 5.0f);
-
-        _stateTimer.Start(waitTime);
-    }
-
-    /// <summary>启动气泡隐藏计时，让气泡出现一段时间后自动收起。</summary>
-    private void StartNextBubbleTimer()
-    {
-        _bubbleTimer.Start(_random.RandfRange(1.6f, 2.4f));
-    }
-
-    /// <summary>根据宠物主色创建统一的卡片样式。</summary>
-    private static StyleBoxFlat CreateCardStyle(string colorHex)
-    {
-        var baseColor = Color.FromString(colorHex, new Color(0.92f, 0.85f, 0.72f, 1.0f));
         return new StyleBoxFlat
         {
-            BgColor = baseColor.Lightened(0.12f),
-            BorderColor = baseColor.Darkened(0.18f),
-            CornerRadiusTopLeft = 24,
-            CornerRadiusTopRight = 24,
-            CornerRadiusBottomRight = 24,
-            CornerRadiusBottomLeft = 24,
+            BgColor = new Color(1.0f, 0.99f, 0.95f, 0.97f),
+            BorderColor = new Color(0.86f, 0.75f, 0.57f, 1.0f),
+            CornerRadiusTopLeft = 16,
+            CornerRadiusTopRight = 16,
+            CornerRadiusBottomRight = 16,
+            CornerRadiusBottomLeft = 16,
             BorderWidthLeft = 2,
             BorderWidthTop = 2,
             BorderWidthRight = 2,
             BorderWidthBottom = 2,
-            ShadowColor = new Color(0, 0, 0, 0.10f),
+            ShadowColor = new Color(0, 0, 0, 0.12f),
+            ShadowSize = 4,
+        };
+    }
+
+    private static StyleBoxFlat CreateBodyStyle(Color baseColor)
+    {
+        return new StyleBoxFlat
+        {
+            BgColor = baseColor,
+            BorderColor = baseColor.Darkened(0.22f),
+            CornerRadiusTopLeft = 24,
+            CornerRadiusTopRight = 24,
+            CornerRadiusBottomRight = 24,
+            CornerRadiusBottomLeft = 24,
+            BorderWidthLeft = 3,
+            BorderWidthTop = 3,
+            BorderWidthRight = 3,
+            BorderWidthBottom = 3,
+            ShadowColor = new Color(0, 0, 0, 0.16f),
             ShadowSize = 6,
+            ContentMarginLeft = 12,
+            ContentMarginTop = 12,
+            ContentMarginRight = 12,
+            ContentMarginBottom = 12,
         };
     }
 }

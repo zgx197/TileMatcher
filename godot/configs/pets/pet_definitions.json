@@ -3,27 +3,30 @@
     "pet_id": "cream_cat",
     "display_name": "奶油猫",
     "species": "猫咪",
-    "description": "喜欢午后暖阳和软垫子，会慢吞吞地在乐园里打盹。",
+    "description": "喜欢午后晒太阳和软垫子，会慢吞吞地在乐园里打盹。",
     "cost": 1,
     "color_hex": "#F3C6AF",
+    "visual_shape_id": "cat",
     "park_activity_text": "晒太阳"
   },
   {
     "pet_id": "chestnut_dog",
     "display_name": "栗子狗",
-    "species": "狗狗",
+    "species": "小狗",
     "description": "总想拉着你散步，进了乐园以后很适合做第一个会动的伙伴。",
     "cost": 3,
     "color_hex": "#9FD1FB",
+    "visual_shape_id": "dog",
     "park_activity_text": "散步中"
   },
   {
     "pet_id": "snow_bunny",
-    "display_name": "雪团兔",
+    "display_name": "雪球兔",
     "species": "兔兔",
     "description": "胆子有点小，偶尔会发呆，但靠近以后会安静地陪着你。",
     "cost": 5,
     "color_hex": "#BDE4A1",
+    "visual_shape_id": "bunny",
     "park_activity_text": "发呆中"
   },
   {
@@ -33,6 +36,7 @@
     "description": "最爱把零食偷偷存起来，是乐园里最忙碌的小收藏家。",
     "cost": 4,
     "color_hex": "#F6D28A",
+    "visual_shape_id": "hamster",
     "park_activity_text": "藏零食"
   },
   {
@@ -42,6 +46,7 @@
     "description": "机灵又好奇，总喜欢在角落里观察新来的朋友。",
     "cost": 6,
     "color_hex": "#AEE6D5",
+    "visual_shape_id": "fox",
     "park_activity_text": "四处观察"
   }
 ]

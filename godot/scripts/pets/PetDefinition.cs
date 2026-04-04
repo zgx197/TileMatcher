@@ -24,6 +24,9 @@ public sealed class PetDefinition
     /// <summary>用于首页色块显示的主色。</summary>
     public string ColorHex { get; init; } = "#E7C59D";
 
+    /// <summary>用于首页乐园实体表现的外形标识。</summary>
+    public string VisualShapeId { get; init; } = string.Empty;
+
     /// <summary>宠物在乐园中的默认活动文案。</summary>
     public string ParkActivityText { get; init; } = "熟悉新家";
 }

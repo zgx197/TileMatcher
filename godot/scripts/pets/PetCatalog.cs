@@ -65,6 +65,7 @@ public sealed class PetCatalog
                     Description = string.IsNullOrWhiteSpace(entry.Description) ? "等待被带回家的小伙伴。" : entry.Description,
                     Cost = Math.Max(0, entry.Cost),
                     ColorHex = string.IsNullOrWhiteSpace(entry.ColorHex) ? "#E7C59D" : entry.ColorHex,
+                    VisualShapeId = string.IsNullOrWhiteSpace(entry.VisualShapeId) ? entry.PetId : entry.VisualShapeId,
                     ParkActivityText = string.IsNullOrWhiteSpace(entry.ParkActivityText) ? "熟悉新家" : entry.ParkActivityText,
                 });
             }
@@ -124,6 +125,9 @@ public sealed class PetCatalog
 
         [JsonPropertyName("color_hex")]
         public string ColorHex { get; init; } = string.Empty;
+
+        [JsonPropertyName("visual_shape_id")]
+        public string VisualShapeId { get; init; } = string.Empty;
 
         [JsonPropertyName("park_activity_text")]
         public string ParkActivityText { get; init; } = string.Empty;

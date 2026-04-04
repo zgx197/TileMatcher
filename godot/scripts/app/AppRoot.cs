@@ -24,6 +24,13 @@ public partial class AppRoot : Node
     private const int DefaultStarterCoinCount = 10;
     private const int DailyRewardCoinCount = 3;
     private const int RescueRefreshMinutes = 10;
+    private static readonly string[] PetNamePrefixes = ["小", "奶糖", "糯米", "团子", "布丁", "豆包", "泡芙", "栗栗"];
+    private static readonly string[] CatNameSuffixes = ["喵", "球", "酱", "宝", "咪"];
+    private static readonly string[] DogNameSuffixes = ["汪", "豆", "宝", "卷", "仔"];
+    private static readonly string[] BunnyNameSuffixes = ["兔", "团", "饼", "耳", "啾"];
+    private static readonly string[] HamsterNameSuffixes = ["仓", "球", "团", "豆", "粒"];
+    private static readonly string[] FoxNameSuffixes = ["狐", "尾", "团", "灵", "宝"];
+    private static readonly string[] DefaultNameSuffixes = ["宝", "团", "球", "仔", "咪"];
 
     [Export]
     public PackedScene BootLoadingPageScene { get; set; } = null!;
@@ -54,9 +61,11 @@ public partial class AppRoot : Node
     private PlayerProgressData _progress = new();
     private PetCatalog _petCatalog = PetCatalog.Empty;
     private DailyRewardSummary? _pendingDailyRewardSummary;
+    private readonly RandomNumberGenerator _random = new();
 
     public override void _Ready()
     {
+        _random.Randomize();
         ApplyMobilePortraitOrientation();
 
         BootLoadingPageScene ??= GD.Load<PackedScene>("res://scenes/boot/BootLoadingPage.tscn");
@@ -295,9 +304,11 @@ public partial class AppRoot : Node
         }
 
         _progress.CoinCount -= definition.Cost;
+        var generatedPetName = GenerateRandomPetName(definition);
         _progress.OwnedPets.Add(new OwnedPetData
         {
             PetId = definition.PetId,
+            PetName = generatedPetName,
             AdoptedAtUtc = DateTime.UtcNow.ToString("O"),
             CurrentParkState = definition.ParkActivityText,
         });
@@ -476,13 +487,86 @@ public partial class AppRoot : Node
             _progress.OwnedPets.Insert(0, new OwnedPetData
             {
                 PetId = starterPet.PetId,
+                PetName = GenerateRandomPetName(starterPet),
                 AdoptedAtUtc = DateTime.UtcNow.ToString("O"),
                 CurrentParkState = starterPet.ParkActivityText,
             });
         }
 
+        EnsureOwnedPetNames();
         EnsureRescueCenterReady(forceRefresh: _progress.RescueCenterPetIds.Count == 0);
         SaveProgress();
+    }
+
+    private void EnsureOwnedPetNames()
+    {
+        foreach (var ownedPet in _progress.OwnedPets)
+        {
+            if (ownedPet is null || !string.IsNullOrWhiteSpace(ownedPet.PetName))
+            {
+                continue;
+            }
+
+            if (_petCatalog.TryGetDefinition(ownedPet.PetId, out var definition))
+            {
+                ownedPet.PetName = GenerateRandomPetName(definition);
+                continue;
+            }
+
+            ownedPet.PetName = GenerateFallbackPetName();
+        }
+    }
+
+    private string GenerateRandomPetName(PetDefinition definition)
+    {
+        var suffixes = ResolvePetNameSuffixes(definition);
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            var candidate = $"{PetNamePrefixes[_random.RandiRange(0, PetNamePrefixes.Length - 1)]}{suffixes[_random.RandiRange(0, suffixes.Length - 1)]}";
+            if (!HasOwnedPetName(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return $"{GenerateFallbackPetName()}{_progress.OwnedPets.Count + 1}";
+    }
+
+    private bool HasOwnedPetName(string petName)
+    {
+        foreach (var ownedPet in _progress.OwnedPets)
+        {
+            if (ownedPet is null)
+            {
+                continue;
+            }
+
+            if (string.Equals(ownedPet.PetName, petName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private string GenerateFallbackPetName()
+    {
+        return $"{PetNamePrefixes[_random.RandiRange(0, PetNamePrefixes.Length - 1)]}{DefaultNameSuffixes[_random.RandiRange(0, DefaultNameSuffixes.Length - 1)]}";
+    }
+
+    private static string[] ResolvePetNameSuffixes(PetDefinition definition)
+    {
+        var petId = definition.PetId?.ToLowerInvariant() ?? string.Empty;
+        return petId switch
+        {
+            var id when id.Contains("cat", StringComparison.Ordinal) => CatNameSuffixes,
+            var id when id.Contains("dog", StringComparison.Ordinal) => DogNameSuffixes,
+            var id when id.Contains("bunny", StringComparison.Ordinal) || id.Contains("rabbit", StringComparison.Ordinal) => BunnyNameSuffixes,
+            var id when id.Contains("hamster", StringComparison.Ordinal) => HamsterNameSuffixes,
+            var id when id.Contains("fox", StringComparison.Ordinal) => FoxNameSuffixes,
+            _ => DefaultNameSuffixes,
+        };
     }
 
     private bool EnsureRescueCenterReady(bool forceRefresh)
