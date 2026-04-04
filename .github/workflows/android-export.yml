@@ -178,9 +178,10 @@ jobs:
           New-Item -ItemType Directory -Path $keystoreDirectory -Force | Out-Null
 
           $keystorePath = Join-Path $keystoreDirectory "debug.keystore"
+          $keystoreBase64 = $env:ANDROID_DEBUG_KEYSTORE_BASE64.Trim() -replace '\s', ''
           [System.IO.File]::WriteAllBytes(
             $keystorePath,
-            [System.Convert]::FromBase64String($env:ANDROID_DEBUG_KEYSTORE_BASE64))
+            [System.Convert]::FromBase64String($keystoreBase64))
 
           "path=$keystorePath" >> $env:GITHUB_OUTPUT
 
