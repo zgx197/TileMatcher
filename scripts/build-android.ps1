@@ -124,8 +124,10 @@ function Ensure-AndroidExportResources {
     Write-Step "Prepare Android export resources"
 
     $valuesDirectory = Join-Path $ProjectDir "android/build/res/values"
+    $mipmapDirectory = Join-Path $ProjectDir "android/build/res/mipmap"
     $projectNamePath = Join-Path $valuesDirectory "godot_project_name_string.xml"
     $themesPath = Join-Path $valuesDirectory "themes.xml"
+    $iconBackgroundPath = Join-Path $mipmapDirectory "icon_background.xml"
 
     # In clean CI checkouts these generated files do not exist yet, but the
     # Android source template still references them during Gradle packaging.
@@ -157,8 +159,16 @@ function Ensure-AndroidExportResources {
 </resources>
 "@
 
+    $iconBackgroundXml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#000000" />
+</shape>
+"@
+
     Write-Utf8NoBomFile -Path $projectNamePath -Content $projectNameXml
     Write-Utf8NoBomFile -Path $themesPath -Content $themesXml
+    Write-Utf8NoBomFile -Path $iconBackgroundPath -Content $iconBackgroundXml
 }
 
 function Resolve-BuildTool {
