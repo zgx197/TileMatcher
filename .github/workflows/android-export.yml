@@ -44,17 +44,39 @@ concurrency:
   group: android-release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  GODOT_VERSION: 4.6.1
+  GODOT_RELEASE_STATUS: stable
+  ANDROID_PLATFORM: android-35
+  ANDROID_BUILD_TOOLS: 35.0.1
+
 jobs:
   export-android:
-    runs-on:
-      - self-hosted
-      - windows
+    runs-on: windows-2022
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: pwsh
+        run: |
+          1..20 | ForEach-Object { "y" } | sdkmanager --licenses | Out-Null
+          sdkmanager `
+            "platform-tools" `
+            "platforms;${{ env.ANDROID_PLATFORM }}" `
+            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}"
 
       - name: Resolve build metadata
         id: meta
@@ -135,30 +157,91 @@ jobs:
           "release_name=Android $tagName" >> $env:GITHUB_OUTPUT
           "apk_name=TileMatcher-$versionName-android-debug.apk" >> $env:GITHUB_OUTPUT
 
+      - name: Install Godot editor and export templates
+        shell: pwsh
+        run: >
+          .\scripts\install-godot-ci.ps1
+          -Version "${{ env.GODOT_VERSION }}"
+          -ReleaseStatus "${{ env.GODOT_RELEASE_STATUS }}"
+
+      - name: Restore debug keystore
+        id: keystore
+        shell: pwsh
+        env:
+          ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:ANDROID_DEBUG_KEYSTORE_BASE64)) {
+            throw "Missing secret: ANDROID_DEBUG_KEYSTORE_BASE64"
+          }
+
+          $keystoreDirectory = Join-Path $env:RUNNER_TEMP "android-keystore"
+          New-Item -ItemType Directory -Path $keystoreDirectory -Force | Out-Null
+
+          $keystorePath = Join-Path $keystoreDirectory "debug.keystore"
+          [System.IO.File]::WriteAllBytes(
+            $keystorePath,
+            [System.Convert]::FromBase64String($env:ANDROID_DEBUG_KEYSTORE_BASE64))
+
+          "path=$keystorePath" >> $env:GITHUB_OUTPUT
+
+      - name: Write Godot editor settings
+        shell: pwsh
+        env:
+          ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
+        run: |
+          $androidSdkRoot = if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_SDK_ROOT)) {
+            $env:ANDROID_SDK_ROOT
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:ANDROID_HOME)) {
+            $env:ANDROID_HOME
+          } else {
+            throw "ANDROID_SDK_ROOT and ANDROID_HOME are both empty after Android SDK setup."
+          }
+
+          .\scripts\write-godot-editor-settings.ps1 `
+            -JavaHome "$env:JAVA_HOME" `
+            -AndroidSdkRoot $androidSdkRoot `
+            -DebugKeystorePath "${{ steps.keystore.outputs.path }}" `
+            -DebugKeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD"
+
+      - name: Resolve Godot executable path
+        id: godot
+        shell: pwsh
+        run: |
+          $godotExePath = Join-Path $env:RUNNER_TEMP "godot\editor\Godot_v${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE_STATUS }}_mono_win64.exe"
+          if (-not (Test-Path -LiteralPath $godotExePath)) {
+            throw "Godot executable not found: $godotExePath"
+          }
+
+          "path=$godotExePath" >> $env:GITHUB_OUTPUT
+
       - name: Export Android APK
         shell: pwsh
         env:
-          GODOT_EXE: ${{ vars.GODOT_EXE }}
-          ANDROID_SDK_ROOT: ${{ vars.ANDROID_SDK_ROOT }}
-          JAVA_HOME: ${{ vars.JAVA_HOME }}
-          ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
           ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
           ANDROID_DEBUG_KEY_ALIAS: ${{ secrets.ANDROID_DEBUG_KEY_ALIAS }}
           ANDROID_DEBUG_KEY_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEY_PASSWORD }}
-        run: >
-          .\scripts\build-android.ps1
-          -GodotExe "$env:GODOT_EXE"
-          -AndroidSdkRoot "$env:ANDROID_SDK_ROOT"
-          -JavaHome "$env:JAVA_HOME"
-          -KeystorePath "$env:ANDROID_DEBUG_KEYSTORE"
-          -KeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD"
-          -KeyAlias "$env:ANDROID_DEBUG_KEY_ALIAS"
-          -KeyPassword "$env:ANDROID_DEBUG_KEY_PASSWORD"
-          -PackageName "${{ steps.meta.outputs.package_name }}"
-          -VersionName "${{ steps.meta.outputs.version_name }}"
-          -VersionCode ${{ steps.meta.outputs.version_code }}
-          -ManifestOrientation "${{ steps.meta.outputs.orientation }}"
-          -OutputName "${{ steps.meta.outputs.apk_name }}"
+        run: |
+          $androidSdkRoot = if (-not [string]::IsNullOrWhiteSpace($env:ANDROID_SDK_ROOT)) {
+            $env:ANDROID_SDK_ROOT
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:ANDROID_HOME)) {
+            $env:ANDROID_HOME
+          } else {
+            throw "ANDROID_SDK_ROOT and ANDROID_HOME are both empty after Android SDK setup."
+          }
+
+          .\scripts\build-android.ps1 `
+            -GodotExe "${{ steps.godot.outputs.path }}" `
+            -AndroidSdkRoot $androidSdkRoot `
+            -JavaHome "$env:JAVA_HOME" `
+            -KeystorePath "${{ steps.keystore.outputs.path }}" `
+            -KeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD" `
+            -KeyAlias "$env:ANDROID_DEBUG_KEY_ALIAS" `
+            -KeyPassword "$env:ANDROID_DEBUG_KEY_PASSWORD" `
+            -PackageName "${{ steps.meta.outputs.package_name }}" `
+            -VersionName "${{ steps.meta.outputs.version_name }}" `
+            -VersionCode ${{ steps.meta.outputs.version_code }} `
+            -ManifestOrientation "${{ steps.meta.outputs.orientation }}" `
+            -OutputName "${{ steps.meta.outputs.apk_name }}"
 
       - name: Collect APK metadata
         id: apk
@@ -207,6 +290,7 @@ jobs:
           @"
           ## Android release summary
 
+          - Runner: `windows-2022`
           - Trigger: `${{ github.event_name }}`
           - Version: `${{ steps.meta.outputs.version_name }}`
           - Version code: `${{ steps.meta.outputs.version_code }}`
@@ -217,4 +301,7 @@ jobs:
           - Release tag: `${{ steps.meta.outputs.tag_name }}`
           - Publish release: `${{ steps.meta.outputs.publish_release }}`
           - Prerelease: `${{ steps.meta.outputs.prerelease }}`
+          - Godot: `${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE_STATUS }} mono`
+          - Android platform: `${{ env.ANDROID_PLATFORM }}`
+          - Android build-tools: `${{ env.ANDROID_BUILD_TOOLS }}`
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
