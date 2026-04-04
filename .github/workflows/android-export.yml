@@ -207,11 +207,13 @@ jobs:
         id: godot
         shell: pwsh
         run: |
-          $godotExePath = Join-Path $env:RUNNER_TEMP "godot\editor\Godot_v${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE_STATUS }}_mono_win64.exe"
-          if (-not (Test-Path -LiteralPath $godotExePath)) {
-            throw "Godot executable not found: $godotExePath"
+          $godotRoot = Join-Path $env:RUNNER_TEMP "godot\editor"
+          $godotExe = Get-ChildItem -LiteralPath $godotRoot -Recurse -Filter "Godot_v${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE_STATUS }}_mono_win64.exe" -File | Select-Object -First 1
+          if ($null -eq $godotExe) {
+            throw "Godot executable not found under: $godotRoot"
           }
 
+          $godotExePath = $godotExe.FullName
           "path=$godotExePath" >> $env:GITHUB_OUTPUT
 
       - name: Export Android APK

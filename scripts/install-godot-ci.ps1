@@ -73,10 +73,11 @@ Get-DownloadFile -Url $templatesDownloadUrl -Path $templatesArchivePath
 Write-Step "Extract Godot editor"
 Expand-ZipArchive -ArchivePath $editorArchivePath -DestinationPath $editorExtractRoot
 
-$godotExePath = Join-Path $editorExtractRoot ("Godot_v$Version-$ReleaseStatus" + "_mono_win64.exe")
-if (-not (Test-Path -LiteralPath $godotExePath)) {
-    throw "Godot executable not found after extraction: $godotExePath"
+$godotExe = Get-ChildItem -LiteralPath $editorExtractRoot -Recurse -Filter ("Godot_v$Version-$ReleaseStatus" + "_mono_win64.exe") -File | Select-Object -First 1
+if ($null -eq $godotExe) {
+    throw "Godot executable not found after extraction under: $editorExtractRoot"
 }
+$godotExePath = $godotExe.FullName
 
 Write-Step "Install Godot export templates"
 Expand-ZipArchive -ArchivePath $templatesArchivePath -DestinationPath $templatesExtractRoot
@@ -90,10 +91,11 @@ Get-ChildItem -LiteralPath $templatesExtractRoot -Force | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $exportTemplatesRoot -Recurse -Force
 }
 
-$versionFilePath = Join-Path $exportTemplatesRoot "version.txt"
-if (-not (Test-Path -LiteralPath $versionFilePath)) {
-    throw "Godot export templates version file not found: $versionFilePath"
+$versionFile = Get-ChildItem -LiteralPath $exportTemplatesRoot -Recurse -Filter "version.txt" -File | Select-Object -First 1
+if ($null -eq $versionFile) {
+    throw "Godot export templates version file not found under: $exportTemplatesRoot"
 }
+$versionFilePath = $versionFile.FullName
 
 $versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
 if ($versionFileContent -ne $godotVersionLabel) {
