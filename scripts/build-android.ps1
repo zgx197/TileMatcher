@@ -303,7 +303,11 @@ function Invoke-GodotExport {
         [string]$ProjectDir,
         [string]$ExportPreset,
         [string]$UnsignedApkPath,
-        [string]$FallbackApkPath
+        [string]$FallbackApkPath,
+        [int]$PollIntervalSeconds = 2,
+        [int]$ArtifactStableSeconds = 8,
+        [int]$HeartbeatSeconds = 15,
+        [int]$MaxWaitSeconds = 900
     )
 
     $stdoutLogPath = Join-Path $env:TEMP "tilematcher-godot-export-stdout.log"
@@ -323,28 +327,82 @@ function Invoke-GodotExport {
 
     $artifactStableSince = $null
     $artifactFingerprint = $null
+    $stableArtifactPath = $null
     $completedByFreshFallbackArtifact = $false
+    $timedOut = $false
+    $lastHeartbeatAt = Get-Date
+
+    function Get-FreshArtifactCandidate {
+        param(
+            [string[]]$Paths,
+            [datetime]$StartedAt
+        )
+
+        foreach ($path in $Paths) {
+            if ([string]::IsNullOrWhiteSpace($path)) {
+                continue
+            }
+
+            if (-not (Test-Path -LiteralPath $path)) {
+                continue
+            }
+
+            $item = Get-Item -LiteralPath $path
+            if (($item.LastWriteTime -lt $StartedAt) -or ($item.Length -le 0)) {
+                continue
+            }
+
+            return $item
+        }
+
+        return $null
+    }
 
     while (-not $process.HasExited) {
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds $PollIntervalSeconds
 
-        if ([string]::IsNullOrWhiteSpace($FallbackApkPath) -or (-not (Test-Path -LiteralPath $FallbackApkPath))) {
+        $now = Get-Date
+        $elapsedSeconds = [int](($now - $exportStartedAt).TotalSeconds)
+        if (($now - $lastHeartbeatAt).TotalSeconds -ge $HeartbeatSeconds) {
+            $artifactStatus = "none"
+            $artifactCandidate = Get-FreshArtifactCandidate `
+                -Paths @($UnsignedApkPath, $FallbackApkPath) `
+                -StartedAt $exportStartedAt
+            if ($null -ne $artifactCandidate) {
+                $artifactStatus = "$($artifactCandidate.FullName) ($([math]::Round($artifactCandidate.Length / 1MB, 2)) MB)"
+            }
+
+            Write-Host "Godot export is still running... elapsed ${elapsedSeconds}s, latest artifact: $artifactStatus" -ForegroundColor DarkGray
+            $lastHeartbeatAt = $now
+        }
+
+        if ($elapsedSeconds -ge $MaxWaitSeconds) {
+            try {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            catch {
+            }
+
+            $timedOut = $true
+            break
+        }
+
+        $artifactCandidate = Get-FreshArtifactCandidate `
+            -Paths @($UnsignedApkPath, $FallbackApkPath) `
+            -StartedAt $exportStartedAt
+        if ($null -eq $artifactCandidate) {
             continue
         }
 
-        $fallbackItem = Get-Item -LiteralPath $FallbackApkPath
-        if (($fallbackItem.LastWriteTime -lt $exportStartedAt) -or ($fallbackItem.Length -le 0)) {
-            continue
-        }
-
-        $currentFingerprint = "$($fallbackItem.Length)|$($fallbackItem.LastWriteTimeUtc.Ticks)"
+        $currentFingerprint = "$($artifactCandidate.FullName)|$($artifactCandidate.Length)|$($artifactCandidate.LastWriteTimeUtc.Ticks)"
         if ($currentFingerprint -ne $artifactFingerprint) {
             $artifactFingerprint = $currentFingerprint
-            $artifactStableSince = Get-Date
+            $stableArtifactPath = $artifactCandidate.FullName
+            $artifactStableSince = $now
             continue
         }
 
-        if (($null -ne $artifactStableSince) -and (((Get-Date) - $artifactStableSince).TotalSeconds -ge 8)) {
+        if (($null -ne $artifactStableSince) -and (($now - $artifactStableSince).TotalSeconds -ge $ArtifactStableSeconds)) {
             try {
                 Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             }
@@ -360,13 +418,27 @@ function Invoke-GodotExport {
         $process.WaitForExit()
     }
 
+    if ($timedOut) {
+        Write-Warning "Godot export exceeded the wait limit (${MaxWaitSeconds}s). The process was stopped so the script can surface the current logs instead of appearing hung."
+        return [pscustomobject]@{
+            ExitCode = 1
+            StdoutLogPath = $stdoutLogPath
+            StderrLogPath = $stderrLogPath
+            CompletedByFreshFallbackArtifact = $false
+            StableArtifactPath = $stableArtifactPath
+            TimedOut = $true
+        }
+    }
+
     if ($completedByFreshFallbackArtifact) {
-        Write-Warning "Godot export did not exit cleanly after producing a fresh Gradle APK. The process was stopped and the build will continue from the generated artifact."
+        Write-Warning "Godot export did not exit cleanly after producing a stable APK artifact. The process was stopped and the build will continue from: $stableArtifactPath"
         return [pscustomobject]@{
             ExitCode = 0
             StdoutLogPath = $stdoutLogPath
             StderrLogPath = $stderrLogPath
             CompletedByFreshFallbackArtifact = $true
+            StableArtifactPath = $stableArtifactPath
+            TimedOut = $false
         }
     }
 
@@ -375,6 +447,8 @@ function Invoke-GodotExport {
         StdoutLogPath = $stdoutLogPath
         StderrLogPath = $stderrLogPath
         CompletedByFreshFallbackArtifact = $false
+        StableArtifactPath = $stableArtifactPath
+        TimedOut = $false
     }
 }
 
