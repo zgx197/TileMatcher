@@ -291,28 +291,7 @@ public partial class AppRoot : Node
 
     private LevelConfig? GetLevelOrFallback(int levelNumber)
     {
-        if (LevelCatalog is null)
-        {
-            return null;
-        }
-
-        foreach (var level in LevelCatalog.Levels)
-        {
-            if (level is not null && level.LevelNumber == levelNumber)
-            {
-                return level;
-            }
-        }
-
-        foreach (var level in LevelCatalog.Levels)
-        {
-            if (level is not null && level.LevelNumber == LevelCatalog.DefaultLevelNumber)
-            {
-                return level;
-            }
-        }
-
-        return null;
+        return LevelCatalog?.ResolveLevelOrFallback(levelNumber);
     }
 
     private static string BuildLevelTitle(LevelConfig? level, int fallbackLevelNumber)

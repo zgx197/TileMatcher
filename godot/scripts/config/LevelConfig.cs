@@ -52,4 +52,32 @@ public partial class LevelConfig : Resource
     /// </summary>
     [Export(PropertyHint.File, "*.json")]
     public string OfflineCatalogJsonPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否把这份关卡配置当作“离线目录模板”使用。
+    /// 启用后，未显式配置的关卡号可以复用这份配置，并在运行时覆盖 LevelNumber。
+    /// </summary>
+    [Export]
+    public bool UseAsOfflineCatalogTemplate { get; set; }
+
+    public LevelConfig CreateResolvedCopy(int resolvedLevelNumber)
+    {
+        return new LevelConfig
+        {
+            LevelNumber = resolvedLevelNumber,
+            DisplayName = string.IsNullOrWhiteSpace(DisplayName) || UseAsOfflineCatalogTemplate
+                ? $"第 {resolvedLevelNumber} 关"
+                : DisplayName,
+            LayoutProfileId = LayoutProfileId,
+            LayoutSourceMode = LayoutSourceMode,
+            UseFixedSeed = UseFixedSeed,
+            RandomSeed = RandomSeed,
+            SourceNameOverride = string.IsNullOrWhiteSpace(SourceNameOverride) || UseAsOfflineCatalogTemplate
+                ? $"关卡 {resolvedLevelNumber} 离线正式牌局"
+                : SourceNameOverride,
+            OfflineLayoutJsonPath = OfflineLayoutJsonPath,
+            OfflineCatalogJsonPath = OfflineCatalogJsonPath,
+            UseAsOfflineCatalogTemplate = UseAsOfflineCatalogTemplate,
+        };
+    }
 }

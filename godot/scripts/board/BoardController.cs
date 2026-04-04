@@ -94,6 +94,7 @@ public partial class BoardController : Node2D
 
     /// <summary>当前已经应用到牌桌上的布局数据。</summary>
     private LevelLayout? _currentLayout;
+    private string _currentSourceKindLabel = "未加载";
 
     /// <summary>当前布局来源，用于调试摘要区分“固定原型 / 随机布局”。</summary>
     private string _currentSourceName = "未加载";
@@ -194,6 +195,10 @@ public partial class BoardController : Node2D
     /// </summary>
     public int CurrentRemainingTileCount => GetActiveTiles().Count;
 
+    public string CurrentSourceKindLabel => _currentSourceKindLabel;
+
+    public string CurrentSourceName => _currentSourceName;
+
     public override void _Ready()
     {
         if (TileScene is null)
@@ -242,23 +247,23 @@ public partial class BoardController : Node2D
     /// <summary>加载固定原型布局。</summary>
     public void LoadPrototype(int levelId = 1, string sourceName = "固定原型")
     {
-        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), sourceName);
+        ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), sourceName, "原型关卡");
     }
 
     /// <summary>按当前规则生成一份随机布局。</summary>
     public void GenerateRandomBoard(int levelId = 1, int? seed = null, string sourceName = "随机布局")
     {
-        ApplyLayout(RandomStackLayoutGenerator.Generate(levelId, _layoutRules, seed), sourceName);
+        ApplyLayout(RandomStackLayoutGenerator.Generate(levelId, _layoutRules, seed), sourceName, "调试随机关卡");
     }
 
     public void LoadOfflineJsonBoard(string resourcePath, string sourceName = "离线关卡")
     {
-        ApplyLayout(OfflineLevelJsonLoader.Load(resourcePath), sourceName);
+        ApplyLayout(OfflineLevelJsonLoader.Load(resourcePath), sourceName, "离线正式关卡");
     }
 
     public void LoadOfflineCatalogBoard(string catalogPath, int levelNumber, string sourceName = "离线关卡目录")
     {
-        ApplyLayout(OfflineLevelJsonLoader.LoadFromCatalog(catalogPath, levelNumber), sourceName);
+        ApplyLayout(OfflineLevelJsonLoader.LoadFromCatalog(catalogPath, levelNumber), sourceName, "离线正式关卡");
     }
 
     /// <summary>切换当前规则档案。</summary>
@@ -297,13 +302,13 @@ public partial class BoardController : Node2D
     {
         return _currentLayout is null
             ? "尚未加载布局"
-            : BuildSummary(_currentLayout, _currentSourceName, _visibleMaxLayer, _score, _matchCount, CurrentMovableCount);
+            : BuildSummary(_currentLayout, _currentSourceKindLabel, _currentSourceName, _visibleMaxLayer, _score, _matchCount, CurrentMovableCount);
     }
 
     /// <summary>构造当前规则摘要文本。</summary>
     public string GetCurrentRulesSummary()
     {
-        return $"规则配置 | 档案 {CurrentProfileDisplayName} | 牌形 {CurrentRules.TileWidthUnits}x{CurrentRules.TileHeightUnits} | 上层偏移 {CurrentRules.GetOffsetModeDisplayName()} | 层数 {CurrentRules.MinLayerCount}-{CurrentRules.MaxLayerCount} | 底层至少 {CurrentRules.MinBottomLayerTileCount} | 完整覆盖 {(CurrentRules.RequireStrictSupport ? "开" : "关")} | 上层收缩 {(CurrentRules.RequireUpperLayerStrictlySmaller ? "开" : "关")}";
+        return $"规则配置 | 类型 {CurrentSourceKindLabel} | 来源 {CurrentSourceName} | 档案 {CurrentProfileDisplayName} | 牌形 {CurrentRules.TileWidthUnits}x{CurrentRules.TileHeightUnits} | 上层偏移 {CurrentRules.GetOffsetModeDisplayName()} | 层数 {CurrentRules.MinLayerCount}-{CurrentRules.MaxLayerCount} | 底层至少 {CurrentRules.MinBottomLayerTileCount} | 完整覆盖 {(CurrentRules.RequireStrictSupport ? "开" : "关")} | 上层收缩 {(CurrentRules.RequireUpperLayerStrictlySmaller ? "开" : "关")}";
     }
 
     /// <summary>返回当前档案目录中的全部规则档案。</summary>
@@ -326,10 +331,11 @@ public partial class BoardController : Node2D
     /// 即使校验失败，当前阶段也仍然允许继续渲染，方便直接观察错误布局。
     /// 因此“看得见牌桌”不等于“布局一定合法”。
     /// </remarks>
-    private void ApplyLayout(LevelLayout layout, string sourceName)
+    private void ApplyLayout(LevelLayout layout, string sourceName, string sourceKindLabel)
     {
         _currentLayout = layout;
         _currentSourceName = sourceName;
+        _currentSourceKindLabel = sourceKindLabel;
         _selectedTile = null;
         _matchCount = 0;
         _score = 0;
@@ -979,7 +985,7 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>构造当前布局摘要，供调试面板和日志使用。</summary>
-    private static string BuildSummary(LevelLayout layout, string sourceName, int visibleMaxLayer, int score, int matchCount, int movableCount)
+    private static string BuildSummary(LevelLayout layout, string sourceKindLabel, string sourceName, int visibleMaxLayer, int score, int matchCount, int movableCount)
     {
         var layerCounts = layout.Tiles
             .Where(tile => !tile.Removed)
@@ -988,7 +994,7 @@ public partial class BoardController : Node2D
             .Select(group => $"L{group.Key}:{group.Count()}")
             .ToArray();
 
-        return $"{sourceName} | 总牌数 {layout.Tiles.Count(tile => !tile.Removed)} | 可动 {movableCount} | 配对 {matchCount} | 分数 {score} | 显示 <= L{visibleMaxLayer} | 总层数 {layerCounts.Length} | {string.Join(" / ", layerCounts)}";
+        return $"{sourceKindLabel} | {sourceName} | 总牌数 {layout.Tiles.Count(tile => !tile.Removed)} | 可动 {movableCount} | 配对 {matchCount} | 分数 {score} | 显示 <= L{visibleMaxLayer} | 总层数 {layerCounts.Length} | {string.Join(" / ", layerCounts)}";
     }
 
     /// <summary>若场景未显式绑定档案目录，则从默认路径回退加载。</summary>

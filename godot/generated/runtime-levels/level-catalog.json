@@ -5,5 +5,40 @@
     "DifficultyBucket": "hard_core",
     "RecommendationScore": 0.826,
     "FileName": "level_001.json"
+  },
+  {
+    "LevelNumber": 2,
+    "CandidateId": "candidate_0013_875818459",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.812,
+    "FileName": "level_002.json"
+  },
+  {
+    "LevelNumber": 3,
+    "CandidateId": "candidate_0002_1182880116",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.802,
+    "FileName": "level_003.json"
+  },
+  {
+    "LevelNumber": 4,
+    "CandidateId": "candidate_0010_1046639693",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7933,
+    "FileName": "level_004.json"
+  },
+  {
+    "LevelNumber": 5,
+    "CandidateId": "candidate_0012_1750740149",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7711,
+    "FileName": "level_005.json"
+  },
+  {
+    "LevelNumber": 6,
+    "CandidateId": "candidate_0023_105768940",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.6697,
+    "FileName": "level_006.json"
   }
 ]

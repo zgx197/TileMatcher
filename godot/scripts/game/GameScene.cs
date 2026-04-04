@@ -568,28 +568,7 @@ public partial class GameScene : Node2D
     /// <summary>按关卡号查找配置，找不到时再按目录默认关卡回退一次。</summary>
     private LevelConfig? FindLevelConfig(int levelNumber)
     {
-        if (LevelCatalog is null)
-        {
-            return null;
-        }
-
-        foreach (var level in LevelCatalog.Levels)
-        {
-            if (level is not null && level.LevelNumber == levelNumber)
-            {
-                return level;
-            }
-        }
-
-        foreach (var level in LevelCatalog.Levels)
-        {
-            if (level is not null && level.LevelNumber == LevelCatalog.DefaultLevelNumber)
-            {
-                return level;
-            }
-        }
-
-        return null;
+        return LevelCatalog?.ResolveLevelOrFallback(levelNumber);
     }
 
     /// <summary>

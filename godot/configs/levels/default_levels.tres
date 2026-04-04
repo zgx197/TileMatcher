@@ -1,12 +1,9 @@
-[gd_resource type="Resource" script_class="LevelCatalog" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="LevelCatalog" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/config/LevelCatalog.cs" id="1_catalog_script"]
-[ext_resource type="Resource" path="res://configs/levels/level_1.tres" id="2_level"]
-[ext_resource type="Resource" path="res://configs/levels/level_2.tres" id="3_level"]
-[ext_resource type="Resource" path="res://configs/levels/level_3.tres" id="4_level"]
-[ext_resource type="Resource" path="res://configs/levels/level_4.tres" id="5_level"]
+[ext_resource type="Resource" path="res://configs/levels/offline_catalog_template.tres" id="2_level"]
 
 [resource]
 script = ExtResource("1_catalog_script")
 DefaultLevelNumber = 1
-Levels = [ExtResource("2_level"), ExtResource("3_level"), ExtResource("4_level"), ExtResource("5_level")]
+Levels = [ExtResource("2_level")]
