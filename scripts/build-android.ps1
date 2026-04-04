@@ -421,6 +421,11 @@ if (-not (Test-Path -LiteralPath $unsignedApkPath)) {
     }
 }
 
+if (-not (Test-Path -LiteralPath $unsignedApkPath)) {
+    Write-LogExcerpt -Path $godotExportResult.StdoutLogPath -Label "Godot export stdout"
+    Write-LogExcerpt -Path $godotExportResult.StderrLogPath -Label "Godot export stderr"
+}
+
 Assert-PathExists -Path $unsignedApkPath -Label "unsigned APK"
 if ($godotExitCode -ne 0) {
     Write-LogExcerpt -Path $godotExportResult.StdoutLogPath -Label "Godot export stdout"

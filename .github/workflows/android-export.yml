@@ -78,6 +78,11 @@ jobs:
             "platforms;${{ env.ANDROID_PLATFORM }}" `
             "build-tools;${{ env.ANDROID_BUILD_TOOLS }}"
 
+      - name: Install .NET Android workload
+        shell: pwsh
+        run: |
+          dotnet workload install android
+
       - name: Resolve build metadata
         id: meta
         shell: pwsh
