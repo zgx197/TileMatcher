@@ -100,6 +100,12 @@ public partial class GameScene : Node2D
     private SpinBox _jumpLevelInput = null!;
     /// <summary>确认跳到指定关卡的按钮。</summary>
     private Button _jumpLevelButton = null!;
+    /// <summary>调试面板中的救助中心立即刷新按钮。</summary>
+    private Button _refreshRescueCenterButton = null!;
+    /// <summary>调试面板中的金币追加输入框。</summary>
+    private SpinBox _addCoinInput = null!;
+    /// <summary>调试面板中的金币追加按钮。</summary>
+    private Button _addCoinButton = null!;
     /// <summary>重置当前关卡辅助次数的按钮。</summary>
     private Button _resetCurrentLevelAssistButton = null!;
     /// <summary>触发自动消除一对的调试按钮。</summary>
@@ -177,6 +183,12 @@ public partial class GameScene : Node2D
     /// <summary>请求清空账号数据并强制返回主页。</summary>
     public event Action? ResetProgressRequested;
 
+    /// <summary>请求立即刷新救助中心列表。</summary>
+    public event Action? RefreshRescueCenterRequested;
+
+    /// <summary>请求追加指定数量的金币。</summary>
+    public event Action<int>? AddCoinRequested;
+
     /// <summary>
     /// 绑定外围流程层持有的玩家进度对象。
     /// 游戏页内部只读写辅助资源使用情况，真正的保存动作仍由 AppRoot 统一触发。
@@ -219,6 +231,9 @@ public partial class GameScene : Node2D
         _prototypeButton = _debugOverlay.PrototypeButton;
         _jumpLevelInput = _debugOverlay.JumpLevelInput;
         _jumpLevelButton = _debugOverlay.JumpButton;
+        _refreshRescueCenterButton = _debugOverlay.RefreshRescueCenterButton;
+        _addCoinInput = _debugOverlay.AddCoinInput;
+        _addCoinButton = _debugOverlay.AddCoinButton;
         _resetCurrentLevelAssistButton = _debugOverlay.ResetCurrentLevelAssistButton;
         _autoMatchButton = _debugOverlay.AutoMatchButton;
         _resetProgressButton = _debugOverlay.ResetProgressButton;
@@ -237,6 +252,8 @@ public partial class GameScene : Node2D
         _generateButton.Text = "随机生成";
         _prototypeButton.Text = "原型关卡";
         _jumpLevelButton.Text = "跳到该关";
+        _refreshRescueCenterButton.Text = "立即刷新救助中心";
+        _addCoinButton.Text = "添加金币";
         _resetCurrentLevelAssistButton.Text = "重置当前关卡辅助次数";
         _autoMatchButton.Text = "自动消除一对";
         _resetProgressButton.Text = "重置账号数据";
@@ -269,6 +286,8 @@ public partial class GameScene : Node2D
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
         _jumpLevelButton.Pressed += OnJumpLevelPressed;
+        _refreshRescueCenterButton.Pressed += OnRefreshRescueCenterPressed;
+        _addCoinButton.Pressed += OnAddCoinPressed;
         _resetCurrentLevelAssistButton.Pressed += OnResetCurrentLevelAssistPressed;
         _autoMatchButton.Pressed += OnAutoMatchPressed;
         _resetProgressButton.Pressed += OnResetProgressPressed;
@@ -412,6 +431,22 @@ public partial class GameScene : Node2D
         ShowInteractionTip("已重置当前关卡的重开和提示次数。");
     }
 
+    /// <summary>响应 debug 面板中的“立即刷新救助中心”。</summary>
+    private void OnRefreshRescueCenterPressed()
+    {
+        PlayButtonFeedback(_refreshRescueCenterButton, new Color(0.70f, 0.92f, 0.84f, 1.0f));
+        RefreshRescueCenterRequested?.Invoke();
+    }
+
+    /// <summary>响应 debug 面板中的“添加金币”。</summary>
+    private void OnAddCoinPressed()
+    {
+        var coinAmount = Math.Max(1, Mathf.RoundToInt((float)_addCoinInput.Value));
+        _addCoinInput.Value = coinAmount;
+        PlayButtonFeedback(_addCoinButton, new Color(1.0f, 0.84f, 0.46f, 1.0f));
+        AddCoinRequested?.Invoke(coinAmount);
+    }
+
     /// <summary>响应 debug 面板中的“自动消除一对”。</summary>
     private void OnAutoMatchPressed()
     {
@@ -438,6 +473,12 @@ public partial class GameScene : Node2D
 
         ShowInteractionTip("正在重置账号数据并返回主页...");
         ResetProgressRequested?.Invoke();
+    }
+
+    /// <summary>供外层流程在调试操作完成后显示统一反馈。</summary>
+    public void ShowExternalDebugTip(string message)
+    {
+        ShowInteractionTip(message);
     }
 
     /// <summary>棋盘生成完成后，同步摘要、统计和调试控件。</summary>

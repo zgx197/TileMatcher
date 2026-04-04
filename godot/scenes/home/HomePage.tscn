@@ -1,83 +1,130 @@
-[gd_scene load_steps=6 format=4]
+[gd_scene load_steps=12 format=4]
 
 [ext_resource type="Script" path="res://scripts/home/HomePage.cs" id="1_home_script"]
 [ext_resource type="PackedScene" path="res://scenes/debug/SharedDebugPanel.tscn" id="2_shared_debug_panel"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header_chip"]
-bg_color = Color(0.480469, 0.242188, 0.0703125, 0.92)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.910156, 0.722656, 0.355469, 0.92)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_button"]
-bg_color = Color(0.902344, 0.421875, 0.0859375, 1)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rescue_button"]
+bg_color = Color(0.375, 0.628906, 0.460938, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(1, 0.800781, 0.367188, 0.95)
-shadow_color = Color(0.234375, 0.0898438, 0.015625, 0.35)
+border_color = Color(0.824219, 0.910156, 0.703125, 1)
+shadow_color = Color(0.152344, 0.242188, 0.160156, 0.24)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_brand_card"]
+bg_color = Color(0.996094, 0.957031, 0.890625, 0.96)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.878906, 0.738281, 0.496094, 0.9)
+shadow_color = Color(0.210938, 0.15625, 0.0820313, 0.16)
 shadow_size = 10
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_avatar"]
-bg_color = Color(0.503906, 0.820312, 0.578125, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin_chip"]
+bg_color = Color(0.609375, 0.375, 0.128906, 0.96)
 corner_radius_top_left = 18
 corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.867188, 0.660156, 0.351562, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_info_card"]
-bg_color = Color(0.996094, 0.957031, 0.867188, 0.96)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.824219, 0.628906, 0.257812, 0.9)
+border_color = Color(1, 0.863281, 0.515625, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pet_park_card"]
+bg_color = Color(0.925781, 0.972656, 0.929688, 0.98)
+corner_radius_top_left = 34
+corner_radius_top_right = 34
+corner_radius_bottom_right = 34
+corner_radius_bottom_left = 34
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.546875, 0.757813, 0.628906, 0.95)
+shadow_color = Color(0.09375, 0.207031, 0.140625, 0.16)
+shadow_size = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pet_canvas"]
+bg_color = Color(0.976563, 1, 0.976563, 0.96)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.742188, 0.878906, 0.765625, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom_card"]
+bg_color = Color(0.996094, 0.960938, 0.898438, 0.98)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886719, 0.679688, 0.335938, 0.92)
+shadow_color = Color(0.238281, 0.125, 0.03125, 0.18)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_button"]
+bg_color = Color(0.949219, 0.480469, 0.101563, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.824219, 0.421875, 1)
+shadow_color = Color(0.3125, 0.132813, 0.0234375, 0.28)
+shadow_size = 12
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debug_button"]
-bg_color = Color(0.0823529, 0.133333, 0.121569, 0.92)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.819608, 0.929412, 0.831373, 0.4)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugpanel"]
-bg_color = Color(0.0203922, 0.109804, 0.101961, 0.92)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
+bg_color = Color(0.144531, 0.191406, 0.171875, 0.96)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.301961, 0.623529, 0.529412, 0.88)
-shadow_color = Color(0, 0, 0, 0.35)
+border_color = Color(0.777344, 0.917969, 0.847656, 0.55)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rescue_panel"]
+bg_color = Color(1, 0.980469, 0.933594, 0.98)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.878906, 0.734375, 0.476563, 1)
+shadow_color = Color(0, 0, 0, 0.28)
 shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlay_button"]
+bg_color = Color(0, 0, 0, 0.18)
 
 [node name="HomePage" type="Control"]
 layout_mode = 3
@@ -103,79 +150,98 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.941176, 0.862745, 0.729412, 1)
+color = Color(0.988281, 0.925781, 0.816406, 1)
 
-[node name="Header" type="MarginContainer" parent="Root"]
+[node name="Content" type="MarginContainer" parent="Root"]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_top = 20.0
-offset_bottom = 150.0
+anchor_bottom = 1.0
 grow_horizontal = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 12
+grow_vertical = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 26
 
-[node name="Bar" type="HBoxContainer" parent="Root/Header"]
+[node name="MainStack" type="VBoxContainer" parent="Root/Content"]
 layout_mode = 2
-theme_override_constants/separation = 18
-alignment = 1
+theme_override_constants/separation = 20
 
-[node name="Left" type="HBoxContainer" parent="Root/Header/Bar"]
+[node name="DesktopHeader" type="HBoxContainer" parent="Root/Content/MainStack"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="RescueButton" type="Button" parent="Root/Content/MainStack/DesktopHeader"]
+custom_minimum_size = Vector2(140, 86)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_rescue_button")
+text = "Rescue"
+
+[node name="BrandCard" type="PanelContainer" parent="Root/Content/MainStack/DesktopHeader"]
+custom_minimum_size = Vector2(0, 104)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 14
+theme_override_styles/panel = SubResource("StyleBoxFlat_brand_card")
 
-[node name="Avatar" type="Panel" parent="Root/Header/Bar/Left"]
-custom_minimum_size = Vector2(84, 84)
+[node name="Margin" type="MarginContainer" parent="Root/Content/MainStack/DesktopHeader/BrandCard"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_avatar")
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
 
-[node name="ProfileRow" type="VBoxContainer" parent="Root/Header/Bar/Left"]
+[node name="Stack" type="HBoxContainer" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="PlayerName" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
+[node name="BrandText" type="VBoxContainer" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "毛球碰碰乐"
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="SubTitle" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
+[node name="BrandTitle" type="Label" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack/BrandText"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+modulate = Color(0.378906, 0.199219, 0.0625, 1)
+text = "TileMatcher"
+
+[node name="BrandSubtitle" type="Label" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack/BrandText"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-modulate = Color(0.45, 0.23, 0.09, 0.8)
-text = "欢迎回来"
+modulate = Color(0.414063, 0.277344, 0.175781, 0.82)
+text = "Welcome back"
 
-[node name="Center" type="PanelContainer" parent="Root/Header/Bar"]
-custom_minimum_size = Vector2(170, 58)
+[node name="CoinChip" type="PanelContainer" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack"]
+custom_minimum_size = Vector2(156, 60)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_header_chip")
+theme_override_styles/panel = SubResource("StyleBoxFlat_coin_chip")
 
-[node name="CoinRow" type="HBoxContainer" parent="Root/Header/Bar/Center"]
+[node name="CoinRow" type="HBoxContainer" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack/CoinChip"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="CoinIcon" type="Label" parent="Root/Header/Bar/Center/CoinRow"]
+[node name="CoinIcon" type="Label" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack/CoinChip/CoinRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-modulate = Color(0.636719, 0.972656, 0.390625, 1)
-text = "●"
+modulate = Color(0.703125, 1, 0.414063, 1)
+text = "*"
 
-[node name="CoinValue" type="Label" parent="Root/Header/Bar/Center/CoinRow"]
+[node name="CoinValue" type="Label" parent="Root/Content/MainStack/DesktopHeader/BrandCard/Margin/Stack/CoinChip/CoinRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-modulate = Color(1, 0.960938, 0.851562, 1)
+modulate = Color(1, 0.972656, 0.886719, 1)
 text = "x1"
 
-[node name="Right" type="HBoxContainer" parent="Root/Header/Bar"]
-layout_mode = 2
-size_flags_horizontal = 3
-alignment = 2
-
-[node name="DebugButton" type="Button" parent="Root/Header/Bar/Right"]
-custom_minimum_size = Vector2(110, 54)
+[node name="DebugButton" type="Button" parent="Root/Content/MainStack/DesktopHeader"]
+custom_minimum_size = Vector2(110, 86)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleBoxFlat_debug_button")
@@ -184,94 +250,333 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_debug_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_debug_button")
 text = "DEBUG"
 
-[node name="LogoBlock" type="CenterContainer" parent="Root"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -360.0
-offset_right = 260.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="LogoStack" type="VBoxContainer" parent="Root/LogoBlock"]
+[node name="MobileHeader" type="VBoxContainer" parent="Root/Content/MainStack"]
+visible = false
+custom_minimum_size = Vector2(0, 182)
 layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TopRow" type="HBoxContainer" parent="Root/Content/MainStack/MobileHeader"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RescueButton" type="Button" parent="Root/Content/MainStack/MobileHeader/TopRow"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_rescue_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_rescue_button")
+text = "Rescue"
+
+[node name="DebugButton" type="Button" parent="Root/Content/MainStack/MobileHeader/TopRow"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_debug_button")
+text = "DEBUG"
+
+[node name="BrandCard" type="PanelContainer" parent="Root/Content/MainStack/MobileHeader"]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_brand_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Content/MainStack/MobileHeader/BrandCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="Stack" type="HBoxContainer" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
 alignment = 1
 
-[node name="Logo" type="Label" parent="Root/LogoBlock/LogoStack"]
+[node name="BrandText" type="VBoxContainer" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 78
-modulate = Color(0.386719, 0.140625, 0.03125, 1)
-text = "毛球\n碰碰乐"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="Caption" type="Label" parent="Root/LogoBlock/LogoStack"]
+[node name="BrandTitle" type="Label" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/BrandText"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-modulate = Color(0.398438, 0.226562, 0.113281, 0.78)
-text = "带毛茸茸伙伴回家的轻松配对冒险"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 30
+modulate = Color(0.378906, 0.199219, 0.0625, 1)
+text = "TileMatcher"
 
-[node name="Bottom" type="MarginContainer" parent="Root"]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -360.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_constants/margin_left = 78
-theme_override_constants/margin_right = 78
-theme_override_constants/margin_bottom = 36
-
-[node name="BottomStack" type="VBoxContainer" parent="Root/Bottom"]
+[node name="BrandSubtitle" type="Label" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/BrandText"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_font_sizes/font_size = 15
+modulate = Color(0.414063, 0.277344, 0.175781, 0.82)
+text = "Welcome back"
+autowrap_mode = 2
 
-[node name="InfoCard" type="PanelContainer" parent="Root/Bottom/BottomStack"]
-custom_minimum_size = Vector2(0, 156)
+[node name="CoinChip" type="PanelContainer" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack"]
+custom_minimum_size = Vector2(138, 56)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_info_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_coin_chip")
 
-[node name="Stack" type="VBoxContainer" parent="Root/Bottom/BottomStack/InfoCard"]
+[node name="CoinRow" type="HBoxContainer" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/CoinChip"]
 layout_mode = 2
+alignment = 1
 theme_override_constants/separation = 8
 
-[node name="ProgressSummary" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+[node name="CoinIcon" type="Label" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/CoinChip/CoinRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-modulate = Color(0.410156, 0.257812, 0.128906, 0.86)
-text = "最高解锁 L1 · 已通关 0 局"
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.703125, 1, 0.414063, 1)
+text = "*"
+
+[node name="CoinValue" type="Label" parent="Root/Content/MainStack/MobileHeader/BrandCard/Margin/Stack/CoinChip/CoinRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+modulate = Color(1, 0.972656, 0.886719, 1)
+text = "x1"
+
+[node name="PetParkCard" type="PanelContainer" parent="Root/Content/MainStack"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_pet_park_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Content/MainStack/PetParkCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Stack" type="VBoxContainer" parent="Root/Content/MainStack/PetParkCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+modulate = Color(0.214844, 0.351563, 0.238281, 1)
+text = "Pet Park"
+
+[node name="Summary" type="Label" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.246094, 0.378906, 0.285156, 0.78)
+text = "Pet park summary"
+autowrap_mode = 2
+vertical_alignment = 1
+
+[node name="PetCanvas" type="PanelContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_pet_canvas")
+
+[node name="Margin" type="MarginContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="Body" type="VBoxContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ParkSummary" type="Label" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+modulate = Color(0.269531, 0.398438, 0.285156, 0.92)
+text = "No pets adopted yet."
+autowrap_mode = 2
+
+[node name="EmptyState" type="Label" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.269531, 0.398438, 0.285156, 0.76)
+text = "Earn coins to adopt new pets."
+autowrap_mode = 2
+
+[node name="PetParkList" type="HFlowContainer" parent="Root/Content/MainStack/PetParkCard/Margin/Stack/PetCanvas/Margin/Body"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+
+[node name="BottomCard" type="PanelContainer" parent="Root/Content/MainStack"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bottom_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Content/MainStack/BottomCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Stack" type="VBoxContainer" parent="Root/Content/MainStack/BottomCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SectionTitle" type="Label" parent="Root/Content/MainStack/BottomCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(0.476563, 0.273438, 0.113281, 0.88)
+text = "Play For Coins"
 horizontal_alignment = 1
 
-[node name="CurrentLevel" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+[node name="CurrentLevel" type="Label" parent="Root/Content/MainStack/BottomCard/Margin/Stack"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-modulate = Color(0.363281, 0.175781, 0.0546875, 1)
-text = "当前将进入：关卡 1"
+theme_override_font_sizes/font_size = 34
+modulate = Color(0.375, 0.175781, 0.0351563, 1)
+text = "Current Level: 1"
 horizontal_alignment = 1
 
-[node name="LevelSummary" type="Label" parent="Root/Bottom/BottomStack/InfoCard/Stack"]
+[node name="LevelSummary" type="Label" parent="Root/Content/MainStack/BottomCard/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-modulate = Color(0.398438, 0.226562, 0.113281, 0.86)
-text = "关卡信息准备中"
+modulate = Color(0.40625, 0.242188, 0.121094, 0.84)
+text = "Level summary pending"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="StartButton" type="Button" parent="Root/Bottom/BottomStack"]
-custom_minimum_size = Vector2(0, 96)
+[node name="ProgressSummary" type="Label" parent="Root/Content/MainStack/BottomCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.480469, 0.292969, 0.167969, 0.72)
+text = "Unlocked 1, Cleared 0"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="Root/Content/MainStack/BottomCard/Margin/Stack"]
+custom_minimum_size = Vector2(0, 92)
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 theme_override_styles/normal = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_start_button")
-text = "进入关卡 1"
+text = "Start Level 1"
 
-[node name="DebugPanel" parent="Root" instance=ExtResource("2_shared_debug_panel")]
+[node name="ModalLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="RescueOverlay" type="Control" parent="ModalLayer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="DismissButton" type="Button" parent="ModalLayer/RescueOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_overlay_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_overlay_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_overlay_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_overlay_button")
+text = ""
+
+[node name="RescuePanel" type="PanelContainer" parent="ModalLayer/RescueOverlay"]
+custom_minimum_size = Vector2(0, 560)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -280.0
+offset_right = 300.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_rescue_panel")
+
+[node name="Margin" type="MarginContainer" parent="ModalLayer/RescueOverlay/RescuePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Stack" type="VBoxContainer" parent="ModalLayer/RescueOverlay/RescuePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+modulate = Color(0.398438, 0.230469, 0.09375, 1)
+text = "Rescue Center"
+
+[node name="CloseButton" type="Button" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack/Header"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Close"
+
+[node name="Summary" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.429688, 0.269531, 0.160156, 0.82)
+text = "Coins x1"
+autowrap_mode = 2
+
+[node name="Feedback" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.179688, 0.429688, 0.238281, 0.92)
+text = ""
+autowrap_mode = 2
+
+[node name="BatchTitle" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+modulate = Color(0.332031, 0.203125, 0.09375, 1)
+text = "Current Rescue Batch"
+
+[node name="BatchHint" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+modulate = Color(0.429688, 0.269531, 0.160156, 0.78)
+text = "Pending rescue pets for this batch."
+autowrap_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="FooterHint" type="Label" parent="ModalLayer/RescueOverlay/RescuePanel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+modulate = Color(0.429688, 0.269531, 0.160156, 0.75)
+text = "Successful adoption will save immediately."
+autowrap_mode = 2
+
+[node name="DebugPanel" parent="ModalLayer" instance=ExtResource("2_shared_debug_panel")]

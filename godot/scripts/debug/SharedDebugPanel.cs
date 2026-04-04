@@ -65,6 +65,21 @@ public partial class SharedDebugPanel : Control
     /// <summary>跳关确认按钮。</summary>
     public Button JumpButton { get; private set; } = null!;
 
+    /// <summary>救助中心调试操作行。</summary>
+    public Control RescueDebugRow { get; private set; } = null!;
+
+    /// <summary>立即刷新救助中心按钮。</summary>
+    public Button RefreshRescueCenterButton { get; private set; } = null!;
+
+    /// <summary>金币调试操作行。</summary>
+    public Control CoinDebugRow { get; private set; } = null!;
+
+    /// <summary>要追加的金币数量输入框。</summary>
+    public SpinBox AddCoinInput { get; private set; } = null!;
+
+    /// <summary>应用金币追加的按钮。</summary>
+    public Button AddCoinButton { get; private set; } = null!;
+
     /// <summary>重置当前关卡辅助次数按钮。</summary>
     public Button ResetCurrentLevelAssistButton { get; private set; } = null!;
 
@@ -96,6 +111,11 @@ public partial class SharedDebugPanel : Control
         JumpRow = GetNode<Control>("Panel/Margin/Stack/JumpRow");
         JumpLevelInput = GetNode<SpinBox>("Panel/Margin/Stack/JumpRow/JumpLevelInput");
         JumpButton = GetNode<Button>("Panel/Margin/Stack/JumpRow/JumpButton");
+        RescueDebugRow = GetNode<Control>("Panel/Margin/Stack/RescueDebugRow");
+        RefreshRescueCenterButton = GetNode<Button>("Panel/Margin/Stack/RescueDebugRow/RefreshRescueCenterButton");
+        CoinDebugRow = GetNode<Control>("Panel/Margin/Stack/CoinDebugRow");
+        AddCoinInput = GetNode<SpinBox>("Panel/Margin/Stack/CoinDebugRow/AddCoinInput");
+        AddCoinButton = GetNode<Button>("Panel/Margin/Stack/CoinDebugRow/AddCoinButton");
         ResetCurrentLevelAssistButton = GetNode<Button>("Panel/Margin/Stack/ResetCurrentLevelAssistButton");
         AutoMatchButton = GetNode<Button>("Panel/Margin/Stack/AutoMatchButton");
         ResetProgressButton = GetNode<Button>("Panel/Margin/Stack/ResetProgressButton");
@@ -104,6 +124,10 @@ public partial class SharedDebugPanel : Control
         Visible = false;
         JumpLevelInput.MinValue = 1;
         JumpLevelInput.Step = 1;
+        AddCoinInput.MinValue = 1;
+        AddCoinInput.MaxValue = 99999;
+        AddCoinInput.Step = 1;
+        AddCoinInput.Value = 10;
         LayerFilterSlider.Step = 1;
     }
 

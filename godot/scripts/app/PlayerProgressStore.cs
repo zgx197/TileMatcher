@@ -37,6 +37,8 @@ public static class PlayerProgressStore
             data.CoinCount = ResolveCoinCount(json, data.CoinCount);
             data.CurrentLevelNumber = Math.Max(1, data.CurrentLevelNumber);
             data.HighestUnlockedLevel = Math.Max(data.CurrentLevelNumber, data.HighestUnlockedLevel);
+            data.OwnedPets ??= [];
+            data.RescueCenterPetIds ??= [];
             data.LevelAssistUsageByLevel ??= [];
             return data;
         }
