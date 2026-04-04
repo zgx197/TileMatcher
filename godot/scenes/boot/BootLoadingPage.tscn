@@ -68,21 +68,21 @@ theme_override_constants/separation = 18
 layout_mode = 2
 theme_override_font_sizes/font_size = 54
 modulate = Color(0.980469, 0.933594, 0.769531, 1)
-text = "青瓷旅人"
+text = "毛球碰碰乐"
 horizontal_alignment = 1
 
 [node name="SubTitle" type="Label" parent="Root/Center/Panel/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 modulate = Color(0.808594, 0.90625, 0.679688, 0.9)
-text = "已解锁 1 关"
+text = "准备和毛茸茸伙伴一起开玩"
 horizontal_alignment = 1
 
 [node name="Quote" type="Label" parent="Root/Center/Panel/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 modulate = Color(0.910156, 0.882812, 0.769531, 0.76)
-text = "今日的牌桌已经备好。"
+text = "今天的小动物牌桌已经准备好了"
 horizontal_alignment = 1
 
 [node name="ProgressBar" type="ProgressBar" parent="Root/Center/Panel/Margin/Stack"]
@@ -96,5 +96,5 @@ show_percentage = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 modulate = Color(0.757812, 0.871094, 0.777344, 0.82)
-text = "正在整理今日牌桌..."
+text = "正在整理今天的小动物牌桌..."
 horizontal_alignment = 1

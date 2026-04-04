@@ -139,7 +139,7 @@ alignment = 1
 [node name="PlayerName" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "青瓷旅人"
+text = "毛球碰碰乐"
 
 [node name="SubTitle" type="Label" parent="Root/Header/Bar/Left/ProfileRow"]
 layout_mode = 2
@@ -206,14 +206,14 @@ alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 78
 modulate = Color(0.386719, 0.140625, 0.03125, 1)
-text = "Vita\nMAHJONG"
+text = "毛球\n碰碰乐"
 horizontal_alignment = 1
 
 [node name="Caption" type="Label" parent="Root/LogoBlock/LogoStack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 modulate = Color(0.398438, 0.226562, 0.113281, 0.78)
-text = "主页已接入正式进度与关卡流转"
+text = "带毛茸茸伙伴回家的轻松配对冒险"
 horizontal_alignment = 1
 
 [node name="Bottom" type="MarginContainer" parent="Root"]
@@ -260,7 +260,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 modulate = Color(0.398438, 0.226562, 0.113281, 0.86)
-text = "规则摘要待加载"
+text = "关卡信息准备中"
 horizontal_alignment = 1
 autowrap_mode = 2
 

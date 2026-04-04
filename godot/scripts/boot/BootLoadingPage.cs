@@ -4,8 +4,7 @@ namespace TileMatcher.Boot;
 
 /// <summary>
 /// 启动加载页。
-/// 当前只负责承接正式启动氛围和最短展示时长，
-/// 之前为了排查移动端朝向临时加入的诊断 UI 已经移除。
+/// 当前只负责承接正式启动氛围和最短展示时长。
 /// </summary>
 public partial class BootLoadingPage : Control
 {
@@ -14,9 +13,9 @@ public partial class BootLoadingPage : Control
     private Label _statusLabel = null!;
     private ProgressBar _progressBar = null!;
 
-    private string _pendingTitle = "青瓷旅人";
-    private string _pendingSubtitle = "已解锁 1 关";
-    private string _pendingStatus = "正在整理今日牌桌...";
+    private string _pendingTitle = "毛球碰碰乐";
+    private string _pendingSubtitle = "准备和毛茸茸伙伴一起开玩";
+    private string _pendingStatus = "正在整理今天的小动物牌桌...";
 
     [Signal]
     public delegate void LoadCompletedEventHandler();
@@ -34,9 +33,9 @@ public partial class BootLoadingPage : Control
 
     public void Configure(string title, string subtitle, string status)
     {
-        _pendingTitle = title;
-        _pendingSubtitle = subtitle;
-        _pendingStatus = status;
+        _pendingTitle = "毛球碰碰乐";
+        _pendingSubtitle = "准备和毛茸茸伙伴一起开玩";
+        _pendingStatus = "正在整理今天的小动物牌桌...";
 
         if (IsNodeReady())
         {
