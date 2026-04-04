@@ -43,6 +43,7 @@ public partial class LevelConfig : Resource
     [Export]
     public string SourceNameOverride { get; set; } = string.Empty;
 
+    /// <summary>离线导出的单关 JSON 文件路径。</summary>
     [Export(PropertyHint.File, "*.json")]
     public string OfflineLayoutJsonPath { get; set; } = string.Empty;
 
@@ -60,6 +61,7 @@ public partial class LevelConfig : Resource
     [Export]
     public bool UseAsOfflineCatalogTemplate { get; set; }
 
+    /// <summary>基于当前配置生成一份绑定到指定关卡号的运行时副本。</summary>
     public LevelConfig CreateResolvedCopy(int resolvedLevelNumber)
     {
         return new LevelConfig

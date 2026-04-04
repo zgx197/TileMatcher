@@ -18,7 +18,7 @@ public partial class LayoutProfileCatalog : Resource
     [Export]
     public string DefaultProfileId { get; set; } = string.Empty;
 
-    /// <summary>全部可用规则档案。</summary>
+    /// <summary>目录中全部可用的规则档案。</summary>
     [Export]
     public Godot.Collections.Array<LayoutProfileConfig> Profiles { get; set; } = [];
 }

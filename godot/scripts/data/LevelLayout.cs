@@ -14,7 +14,7 @@ public sealed class LevelLayout
     /// <summary>关卡编号，当前主要用于调试和未来关卡资源扩展。</summary>
     public int LevelId { get; init; }
 
-    /// <summary>当前布局中的全部牌数据。</summary>
+    /// <summary>当前布局中的全部牌数据，包含已移除与未移除状态。</summary>
     public List<TileData> Tiles { get; } = [];
 
     /// <summary>

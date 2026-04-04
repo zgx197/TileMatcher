@@ -33,15 +33,15 @@ public sealed class TileData
     /// <summary>当前牌的逻辑形状，默认使用标准 4x6 麻将。</summary>
     public TileShape Shape { get; init; } = TileShape.StandardMahjong;
 
-    /// <summary>便捷访问当前牌 footprint 的宽度。</summary>
+    /// <summary>便捷访问当前牌 footprint 的宽度，单位为逻辑网格微单元。</summary>
     public int FootprintWidth => Shape.WidthUnits;
 
-    /// <summary>便捷访问当前牌 footprint 的高度。</summary>
+    /// <summary>便捷访问当前牌 footprint 的高度，单位为逻辑网格微单元。</summary>
     public int FootprintHeight => Shape.HeightUnits;
 
-    /// <summary>运行时是否已被移除。</summary>
+    /// <summary>运行时是否已被移除，不参与后续交互与统计。</summary>
     public bool Removed { get; set; }
 
-    /// <summary>运行时是否可移动，供后续交互逻辑使用。</summary>
+    /// <summary>运行时是否可移动，供交互层和调试摘要直接读取。</summary>
     public bool Movable { get; set; }
 }
