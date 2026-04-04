@@ -10,9 +10,9 @@ public sealed class DailyRewardSummary
 
     public string RewardDescription { get; init; } = string.Empty;
 
-    public int RewardLeafCount { get; init; }
+    public int RewardCoinCount { get; init; }
 
-    public int CurrentLeafTotal { get; init; }
+    public int CurrentCoinTotal { get; init; }
 
     public int NextLevelNumber { get; init; }
 

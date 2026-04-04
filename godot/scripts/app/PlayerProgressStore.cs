@@ -34,6 +34,7 @@ public static class PlayerProgressStore
                 return fallback;
             }
 
+            data.CoinCount = ResolveCoinCount(json, data.CoinCount);
             data.CurrentLevelNumber = Math.Max(1, data.CurrentLevelNumber);
             data.HighestUnlockedLevel = Math.Max(data.CurrentLevelNumber, data.HighestUnlockedLevel);
             data.LevelAssistUsageByLevel ??= [];
@@ -66,6 +67,26 @@ public static class PlayerProgressStore
         catch (Exception exception)
         {
             GD.PushWarning($"[PlayerProgressStore] 保存进度失败: {exception.Message}");
+        }
+    }
+
+    private static int ResolveCoinCount(string json, int currentCoinCount)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("LeafCount", out var legacyLeafCount))
+            {
+                return currentCoinCount;
+            }
+
+            return legacyLeafCount.ValueKind == JsonValueKind.Number
+                ? legacyLeafCount.GetInt32()
+                : currentCoinCount;
+        }
+        catch
+        {
+            return currentCoinCount;
         }
     }
 }

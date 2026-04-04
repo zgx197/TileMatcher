@@ -13,7 +13,7 @@ public sealed class PlayerProgressData
     public string PlayerName { get; set; } = "毛球碰碰乐";
 
     /// <summary>外围可消耗资源“金币”的当前数量。</summary>
-    public int LeafCount { get; set; } = 1;
+    public int CoinCount { get; set; } = 1;
 
     /// <summary>当前流程准备进入或继续的关卡号。</summary>
     public int CurrentLevelNumber { get; set; } = 1;

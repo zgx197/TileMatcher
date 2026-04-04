@@ -17,7 +17,7 @@ public partial class AppRoot : Node
 {
     private const string DefaultLevelCatalogPath = "res://configs/levels/default_levels.tres";
     private const string DefaultProfileCatalogPath = "res://configs/layout_profiles/default_catalog.tres";
-    private const int DailyRewardLeafCount = 3;
+    private const int DailyRewardCoinCount = 3;
 
     /// <summary>启动页场景资源。</summary>
     [Export]
@@ -127,7 +127,7 @@ public partial class AppRoot : Node
         homePage.Configure(
             _currentLevelNumber,
             _progress.PlayerName,
-            _progress.LeafCount,
+            _progress.CoinCount,
             $"最高解锁 {_progress.HighestUnlockedLevel} 关 · 已完成 {_progress.TotalCompletedLevelCount} 关",
             BuildLevelTitle(level, _currentLevelNumber),
             BuildLevelSummary(level));
@@ -209,7 +209,7 @@ public partial class AppRoot : Node
     {
         var nextLevelNumber = result.LevelNumber + 1;
         var nextLevel = GetLevelOrFallback(nextLevelNumber);
-        var rewardGranted = TryGrantDailyReward(out var grantedLeafCount);
+        var rewardGranted = TryGrantDailyReward(out var grantedCoinCount);
 
         _progress.TotalScore += result.Score;
         _progress.TotalMatches += result.MatchCount;
@@ -229,16 +229,16 @@ public partial class AppRoot : Node
             NextLevelName = BuildLevelTitle(nextLevel, nextLevelNumber),
             NextLevelSummary = BuildLevelSummary(nextLevel),
             HasDailyReward = rewardGranted,
-            DailyRewardLeafCount = grantedLeafCount,
+            DailyRewardCoinCount = grantedCoinCount,
         };
 
         _pendingDailyRewardSummary = rewardGranted
             ? new DailyRewardSummary
             {
-                RewardLeafCount = grantedLeafCount,
-                CurrentLeafTotal = _progress.LeafCount,
+                RewardCoinCount = grantedCoinCount,
+                CurrentCoinTotal = _progress.CoinCount,
                 RewardTitle = "今日金币奖励",
-                RewardDescription = $"今天第一次完成关卡，已获得 +{grantedLeafCount} 金币。",
+                RewardDescription = $"今天第一次完成关卡，已获得 +{grantedCoinCount} 金币。",
                 NextLevelNumber = nextLevelNumber,
                 NextLevelName = completeResult.NextLevelName,
                 NextLevelSummary = completeResult.NextLevelSummary,
@@ -342,18 +342,18 @@ public partial class AppRoot : Node
     }
 
     /// <summary>尝试发放今日首胜奖励。</summary>
-    private bool TryGrantDailyReward(out int grantedLeafCount)
+    private bool TryGrantDailyReward(out int grantedCoinCount)
     {
         var todayKey = DateTime.Now.ToString("yyyy-MM-dd");
         if (_progress.LastDailyRewardDate == todayKey)
         {
-            grantedLeafCount = 0;
+            grantedCoinCount = 0;
             return false;
         }
 
         _progress.LastDailyRewardDate = todayKey;
-        _progress.LeafCount += DailyRewardLeafCount;
-        grantedLeafCount = DailyRewardLeafCount;
+        _progress.CoinCount += DailyRewardCoinCount;
+        grantedCoinCount = DailyRewardCoinCount;
         return true;
     }
 

@@ -22,5 +22,5 @@ public sealed class LevelCompleteResult
 
     public bool HasDailyReward { get; init; }
 
-    public int DailyRewardLeafCount { get; init; }
+    public int DailyRewardCoinCount { get; init; }
 }
