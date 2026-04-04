@@ -1,0 +1,40 @@
+{
+  "batchName": "mvp-batch",
+  "candidateCount": 24,
+  "maxAcceptedLevels": 8,
+  "randomSeed": 20260404,
+  "analysisOutputDir": "artifacts/mahjong-mvp/analysis",
+  "runtimeOutputDir": "artifacts/mahjong-mvp/runtime-levels",
+  "rules": {
+    "minLayerCount": 4,
+    "maxLayerCount": 5,
+    "minBottomLayerTileCount": 12,
+    "requireStrictSupport": true,
+    "requireUpperLayerStrictlySmaller": true,
+    "randomWidthMin": 4,
+    "randomWidthMax": 5,
+    "randomHeightMin": 5,
+    "randomHeightMax": 6,
+    "bottomLayerHoleChance": 0.16,
+    "generationMaxAttempts": 48,
+    "tileWidthUnits": 4,
+    "tileHeightUnits": 6,
+    "bottomLayerStepX": 4,
+    "bottomLayerStepY": 6,
+    "upperLayerOffsetMode": "HalfXY"
+  },
+  "filter": {
+    "minTileCount": 16,
+    "maxTileCount": 48,
+    "minLayerCount": 4,
+    "maxLayerCount": 5,
+    "minInitialBranchCount": 2,
+    "minSolutionCountEstimate": 1,
+    "maxDeadEndRate": 0.35,
+    "minRandomPlaySurvivalRate": 0.18,
+    "autoAcceptScore": 0.62,
+    "needsReviewScore": 0.42,
+    "randomSimulationCount": 48,
+    "maxSolutionCountSearch": 256
+  }
+}

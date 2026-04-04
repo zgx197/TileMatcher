@@ -41,6 +41,7 @@ godot/TileMatcher.csproj.old
 *.sln
 !godot/TileMatcher.csproj
 !godot/TileMatcher.sln
+!tools/TileMatcher.Offline/TileMatcher.Offline.csproj
 /.vs/
 /bin/
 /obj/
@@ -53,6 +54,7 @@ godot/TileMatcher.csproj.old
 *.tmp
 *.log
 *.orig
+artifacts/
 
 # OS
 Thumbs.db
