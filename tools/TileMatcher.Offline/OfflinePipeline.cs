@@ -141,6 +141,11 @@ internal static partial class OfflinePipeline
         WriteJson(Path.Combine(runtimeDir, "level-catalog.json"), catalog);
     }
 
+    internal static void ExportRuntimeLevelsForTests(string runtimeDir, IReadOnlyList<OfflineCandidateRecord> accepted)
+    {
+        ExportRuntimeLevels(runtimeDir, accepted);
+    }
+
     private static string ResolveOutputPath(string repoRoot, string configuredPath)
     {
         return Path.GetFullPath(Path.Combine(repoRoot, configuredPath));
@@ -279,6 +284,11 @@ internal static partial class OfflinePipeline
         };
     }
 
+    internal static OfflineEvaluation EvaluateForTests(OfflineLevelLayout layout, OfflineFilterRules rules, int randomSeed)
+    {
+        return Evaluate(layout, rules, randomSeed);
+    }
+
     private static OfflineFilterResult Filter(
         OfflineLevelLayout layout,
         OfflineEvaluation evaluation,
@@ -353,6 +363,14 @@ internal static partial class OfflinePipeline
             RejectReasons = rejectReasons,
             Tags = BuildTags(evaluation, bucket),
         };
+    }
+
+    internal static OfflineFilterResult FilterForTests(
+        OfflineLevelLayout layout,
+        OfflineEvaluation evaluation,
+        OfflineFilterRules rules)
+    {
+        return Filter(layout, evaluation, rules);
     }
 
     private static double BuildRecommendationScore(OfflineEvaluation evaluation)

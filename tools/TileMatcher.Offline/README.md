@@ -57,6 +57,27 @@ tools/TileMatcher.Offline/batch-config.sample.json
 dotnet run --project tools\TileMatcher.Offline\TileMatcher.Offline.csproj -- path\to\your-batch-config.json
 ```
 
+## 最小测试
+
+当前仓库已经补了一套不依赖 Godot 的最小离线单测骨架，重点覆盖：
+
+1. 默认配置稳定性
+2. 最小可解 / 不可解样例的评估结果
+3. 自动筛选决策分档
+4. 运行时关卡导出格式与文件名稳定性
+
+一键运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-offline-tests.ps1
+```
+
+测试结果会输出到：
+
+```text
+artifacts/test-results/offline-tests/summary.json
+```
+
 ## 配置文件说明
 
 当前配置文件分为三部分：

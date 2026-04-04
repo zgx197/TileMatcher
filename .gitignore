@@ -42,6 +42,7 @@ godot/TileMatcher.csproj.old
 !godot/TileMatcher.csproj
 !godot/TileMatcher.sln
 !tools/TileMatcher.Offline/TileMatcher.Offline.csproj
+!tools/TileMatcher.Offline.Tests/TileMatcher.Offline.Tests.csproj
 /.vs/
 /bin/
 /obj/
