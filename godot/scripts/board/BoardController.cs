@@ -109,6 +109,9 @@ public partial class BoardController : Node2D
     private TileView? _hintedFirstTile;
     private TileView? _hintedSecondTile;
 
+    /// <summary>当前唯一处于 ActiveFaceUp 的背面牌。</summary>
+    private TileView? _revealedHiddenTile;
+
     /// <summary>本局累计成功消除的对数。</summary>
     private int _matchCount;
 
@@ -215,6 +218,7 @@ public partial class BoardController : Node2D
     /// </summary>
     public bool TryShowHintPair()
     {
+        CollapseActiveFaceUpTile();
         ClearHintPairVisual();
         if (!TryFindHintPair(out var firstTile, out var secondTile))
         {
@@ -241,6 +245,7 @@ public partial class BoardController : Node2D
             return false;
         }
 
+        CollapseActiveFaceUpTile();
         ClearHintPairVisual();
         if (!TryFindHintPair(out var firstTile, out var secondTile))
         {
@@ -395,6 +400,7 @@ public partial class BoardController : Node2D
         _interactionSnapshotExcludedTile = null;
         _hintedFirstTile = null;
         _hintedSecondTile = null;
+        _revealedHiddenTile = null;
         ResetPointerState();
 
         LogBoard($"开始应用布局: source={sourceName}, profile={CurrentProfileDisplayName}, tiles={layout.Tiles.Count}");
@@ -432,6 +438,7 @@ public partial class BoardController : Node2D
         {
             tileData.Removed = false;
             tileData.Movable = false;
+            InitializeTileFaceState(tileData);
 
             var tile = TileScene.Instantiate<TileView>();
             tile.ApplyData(tileData);
@@ -483,8 +490,14 @@ public partial class BoardController : Node2D
         if (clickedTile is null)
         {
             LogBoard("按下时未命中任何可见麻将");
+            CollapseActiveFaceUpTile();
             ClearSelection(false);
             return;
+        }
+
+        if (clickedTile != _revealedHiddenTile)
+        {
+            CollapseActiveFaceUpTile(clickedTile);
         }
 
         _pressedTile = clickedTile;
@@ -559,11 +572,22 @@ public partial class BoardController : Node2D
     private void TryBeginDrag(TileView tileView, Vector2 screenPosition)
     {
         ClearHintPairVisual();
+        if (_revealedHiddenTile is not null && _revealedHiddenTile != tileView)
+        {
+            CollapseActiveFaceUpTile(tileView);
+        }
+
+        if (TryActivateFaceDownTile(tileView))
+        {
+            LogBoard($"开始拖拽前先翻开背面麻将: {DescribeTile(tileView.Data)}");
+        }
+
         if (!tileView.Data.Movable)
         {
             LogBoard($"尝试开始拖拽失败，麻将不可移动: {DescribeTile(tileView.Data)}");
             var interactionState = TileInteractionRules.Evaluate(tileView.Data, GetInteractionTiles());
             ShowBlockedTileFeedback(tileView, interactionState);
+            CollapseActiveFaceUpTile();
             return;
         }
 
@@ -616,6 +640,7 @@ public partial class BoardController : Node2D
         if (targetTile is null)
         {
             EndDragInteractionSnapshot();
+            CollapseActiveFaceUpTile();
             ResetPointerState();
             EmitSignal(SignalName.BoardStateChanged, $"拖拽结束，{draggedTile.Data.Type} 没有碰到可消除目标");
             return;
@@ -626,6 +651,7 @@ public partial class BoardController : Node2D
         if (!matched)
         {
             EndDragInteractionSnapshot();
+            CollapseActiveFaceUpTile();
         }
 
         ResetPointerState();
@@ -721,6 +747,7 @@ public partial class BoardController : Node2D
             }
 
             tileView.SetInteractionState(tileView.Data.Movable, tileView == _selectedTile);
+            tileView.SetFaceUpState(tileView.Data.IsFaceUp);
         }
     }
 
@@ -752,10 +779,24 @@ public partial class BoardController : Node2D
     {
         var activeTiles = GetInteractionTiles();
         var interactionState = TileInteractionRules.Evaluate(tileView.Data, activeTiles);
+        var revealedFaceDownTile = TryActivateFaceDownTile(tileView);
 
         LogBoard(
             $"处理点击: {DescribeTile(tileView.Data)}, movable={tileView.Data.Movable}, " +
             interactionState.BuildDebugSummary());
+
+        if (revealedFaceDownTile)
+        {
+            LogBoard($"背面麻将本次未进入拖拽，点击处理后立即翻回背面: {DescribeTile(tileView.Data)}");
+
+            if (!interactionState.CanBePicked)
+            {
+                ShowBlockedTileFeedback(tileView, interactionState);
+            }
+
+            CollapseActiveFaceUpTile();
+            return;
+        }
 
         if (!interactionState.CanBePicked)
         {
@@ -806,6 +847,7 @@ public partial class BoardController : Node2D
     private bool TryStartMatch(TileView firstTile, TileView secondTile, string sourceLabel)
     {
         ClearHintPairVisual();
+        CollapseActiveFaceUpTile(firstTile, secondTile);
         var activeTiles = GetInteractionTiles();
         var validation = TileInteractionRules.ValidateMatchPair(firstTile.Data, secondTile.Data, activeTiles);
         if (!validation.IsValid)
@@ -867,6 +909,9 @@ public partial class BoardController : Node2D
     private async void RemoveMatchedPair(TileView a, TileView b)
     {
         ClearHintPairVisual();
+        PrepareTileForMatchAnimation(a);
+        PrepareTileForMatchAnimation(b);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         var feedback = GetMatchFeedback();
         var originalZIndexA = a.ZIndex;
         var originalZIndexB = b.ZIndex;
@@ -959,6 +1004,117 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>清空当前点击选中状态。</summary>
+    private static bool UsesFaceStateMachine(AppTileData tileData)
+    {
+        return tileData.FaceHiddenInitial;
+    }
+
+    /// <summary>初始化单张牌的背面牌状态机。</summary>
+    private static void InitializeTileFaceState(AppTileData tileData)
+    {
+        if (!UsesFaceStateMachine(tileData))
+        {
+            tileData.FaceState = TileFaceState.None;
+            tileData.IsFaceUp = true;
+            return;
+        }
+
+        tileData.FaceState = TileFaceState.FaceDownIdle;
+        tileData.IsFaceUp = false;
+    }
+
+    /// <summary>尝试将背面待机牌切换到 ActiveFaceUp。</summary>
+    private bool TryActivateFaceDownTile(TileView tileView)
+    {
+        if (!UsesFaceStateMachine(tileView.Data))
+        {
+            return false;
+        }
+
+        if (tileView.Data.FaceState == TileFaceState.ActiveFaceUp ||
+            tileView.Data.FaceState == TileFaceState.ClearedMatched)
+        {
+            return false;
+        }
+
+        ActivateFaceUpTile(tileView);
+        return true;
+    }
+
+    /// <summary>把当前背面牌提升为唯一的激活正面态。</summary>
+    private void ActivateFaceUpTile(TileView tileView)
+    {
+        CollapseActiveFaceUpTile(tileView);
+        tileView.Data.FaceState = TileFaceState.ActiveFaceUp;
+        tileView.Data.IsFaceUp = true;
+        tileView.SetFaceUpState(true);
+        _revealedHiddenTile = tileView;
+        LogBoard($"背面牌进入 ActiveFaceUp: {DescribeTile(tileView.Data)}");
+        EmitSignal(SignalName.BoardStateChanged, $"已翻开 {tileView.Data.Type}，切换到其他牌或空白区域后会翻回背面");
+    }
+
+    /// <summary>将当前激活的背面牌折叠回背面。</summary>
+    private void CollapseActiveFaceUpTile(TileView? keepTile = null)
+    {
+        if (_revealedHiddenTile is null || _revealedHiddenTile == keepTile)
+        {
+            return;
+        }
+
+        if (_revealedHiddenTile.Data.Removed)
+        {
+            _revealedHiddenTile = null;
+            return;
+        }
+
+        if (!UsesFaceStateMachine(_revealedHiddenTile.Data))
+        {
+            _revealedHiddenTile = null;
+            return;
+        }
+
+        _revealedHiddenTile.Data.FaceState = TileFaceState.CollapsedBack;
+        _revealedHiddenTile.Data.IsFaceUp = false;
+        _revealedHiddenTile.SetFaceUpState(false);
+        if (_selectedTile == _revealedHiddenTile)
+        {
+            _selectedTile = null;
+        }
+
+        LogBoard($"背面牌进入 CollapsedBack: {DescribeTile(_revealedHiddenTile.Data)}");
+        _revealedHiddenTile = null;
+        RefreshTileStates();
+    }
+
+    /// <summary>将当前激活的背面牌折叠回背面，但允许保留指定的一对配对牌。</summary>
+    private void CollapseActiveFaceUpTile(TileView? keepFirstTile, TileView? keepSecondTile)
+    {
+        if (_revealedHiddenTile == keepFirstTile || _revealedHiddenTile == keepSecondTile)
+        {
+            return;
+        }
+
+        CollapseActiveFaceUpTile();
+    }
+
+    /// <summary>进入消除动画前，统一把参与动画的牌切到正面并标记为已配对。</summary>
+    private void PrepareTileForMatchAnimation(TileView tileView)
+    {
+        if (UsesFaceStateMachine(tileView.Data))
+        {
+            tileView.Data.FaceState = TileFaceState.ClearedMatched;
+        }
+
+        tileView.SetFaceUpState(true);
+
+        if (_revealedHiddenTile == tileView)
+        {
+            _revealedHiddenTile = null;
+        }
+
+        LogBoard($"进入消除动画前统一翻正牌面: {DescribeTile(tileView.Data)}");
+    }
+
     private void ClearSelection(bool refreshVisual)
     {
         if (_selectedTile is not null)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Godot;
 
 namespace TileMatcher.Data;
@@ -118,6 +119,8 @@ public static class OfflineLevelJsonLoader
                     WidthUnits = tile.Shape?.WidthUnits ?? TileShape.StandardMahjong.WidthUnits,
                     HeightUnits = tile.Shape?.HeightUnits ?? TileShape.StandardMahjong.HeightUnits,
                 },
+                FaceHiddenInitial = tile.FaceHiddenInitial,
+                IsFaceUp = !tile.FaceHiddenInitial,
                 Removed = false,
                 Movable = false,
             });
@@ -152,6 +155,9 @@ public static class OfflineLevelJsonLoader
         public int GY { get; set; }
         public int GZ { get; set; }
         public OfflineTileShapeDto? Shape { get; set; }
+
+        [JsonPropertyName("face_hidden_initial")]
+        public bool FaceHiddenInitial { get; set; }
     }
 
     private sealed class OfflineTileShapeDto

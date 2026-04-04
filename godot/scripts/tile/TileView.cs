@@ -24,6 +24,10 @@ public partial class TileView : Node2D
     private const float HintPulseScaleMin = 1.0f;
     private const float HintPulseScaleMax = 1.035f;
     private const double HintPulseDuration = 0.60;
+    private static readonly Color FaceDownBodyColor = new(0.24f, 0.37f, 0.33f, 1.0f);
+    private static readonly Color FaceDownDepthColor = new(0.16f, 0.26f, 0.23f, 1.0f);
+    private static readonly Color FaceDownBorderColor = new(0.80f, 0.89f, 0.82f, 1.0f);
+    private static readonly Color FaceDownPatternColor = new(0.90f, 0.96f, 0.91f, 0.18f);
 
     /// <summary>不同层牌面主体的调试色板。</summary>
     private static readonly Color[] BodyPalette =
@@ -136,6 +140,19 @@ public partial class TileView : Node2D
         EnsureInitialized();
         _isMovable = isMovable;
         _isSelected = isSelected;
+        RefreshVisualState();
+        QueueRedraw();
+    }
+
+    public void SetFaceUpState(bool isFaceUp)
+    {
+        EnsureInitialized();
+        if (Data.IsFaceUp == isFaceUp)
+        {
+            return;
+        }
+
+        Data.IsFaceUp = isFaceUp;
         RefreshVisualState();
         QueueRedraw();
     }
@@ -376,6 +393,11 @@ public partial class TileView : Node2D
         DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_bodyStyle, new Rect2(0.0f, 0.0f, tileSize.X, tileSize.Y));
 
+        if (Data is not null && Data.FaceHiddenInitial && !Data.IsFaceUp)
+        {
+            DrawFaceDownPattern(tileSize);
+        }
+
         if (_feedbackOverlayAlpha > 0.0f)
         {
             var overlayColor = new Color(_feedbackColor.R, _feedbackColor.G, _feedbackColor.B, _feedbackOverlayAlpha);
@@ -420,13 +442,80 @@ public partial class TileView : Node2D
     }
 
     /// <summary>把交互状态翻译成当前牌面的视觉样式。</summary>
+    private void DrawFaceDownPattern(Vector2 tileSize)
+    {
+        const float inset = 14.0f;
+        const float stripeStep = 18.0f;
+        var innerRect = new Rect2(inset, inset, tileSize.X - inset * 2.0f, tileSize.Y - inset * 2.0f);
+        DrawRect(innerRect, FaceDownPatternColor, false, 3.0f);
+
+        var stripeColor = new Color(FaceDownPatternColor.R, FaceDownPatternColor.G, FaceDownPatternColor.B, 0.24f);
+        var minC = innerRect.Position.X + innerRect.Position.Y;
+        var maxC = innerRect.End.X + innerRect.End.Y;
+        for (var c = minC; c <= maxC; c += stripeStep)
+        {
+            if (!TryGetClippedDiagonalSegment(innerRect, c, out var start, out var end))
+            {
+                continue;
+            }
+
+            DrawLine(start, end, stripeColor, 2.0f, true);
+        }
+    }
+
+    private static bool TryGetClippedDiagonalSegment(Rect2 rect, float diagonalSum, out Vector2 start, out Vector2 end)
+    {
+        var points = new List<Vector2>(4);
+        TryAddPoint(points, rect, new Vector2(diagonalSum - rect.Position.Y, rect.Position.Y));
+        TryAddPoint(points, rect, new Vector2(diagonalSum - rect.End.Y, rect.End.Y));
+        TryAddPoint(points, rect, new Vector2(rect.Position.X, diagonalSum - rect.Position.X));
+        TryAddPoint(points, rect, new Vector2(rect.End.X, diagonalSum - rect.End.X));
+
+        if (points.Count < 2)
+        {
+            start = Vector2.Zero;
+            end = Vector2.Zero;
+            return false;
+        }
+
+        start = points[0];
+        end = points[1];
+        return true;
+    }
+
+    private static void TryAddPoint(List<Vector2> points, Rect2 rect, Vector2 candidate)
+    {
+        const float epsilon = 0.01f;
+        if (candidate.X < rect.Position.X - epsilon || candidate.X > rect.End.X + epsilon)
+        {
+            return;
+        }
+
+        if (candidate.Y < rect.Position.Y - epsilon || candidate.Y > rect.End.Y + epsilon)
+        {
+            return;
+        }
+
+        foreach (var point in points)
+        {
+            if (point.DistanceTo(candidate) <= epsilon)
+            {
+                return;
+            }
+        }
+
+        points.Add(candidate);
+    }
+
     private void RefreshVisualState()
     {
         var layer = Data?.GZ ?? 0;
         ApplyLayerDebugStyle(layer);
 
         var baseTextColor = Data is null ? Colors.Black : ResolveTextColor(Data.Type);
+        var isFaceDown = Data is not null && Data.FaceHiddenInitial && !Data.IsFaceUp;
         _label.AddThemeColorOverride("font_color", baseTextColor);
+        _label.Visible = !isFaceDown;
         Modulate = Colors.White;
 
         _bodyStyle.BorderWidthLeft = 2;
@@ -434,6 +523,14 @@ public partial class TileView : Node2D
         _bodyStyle.BorderWidthRight = 2;
         _bodyStyle.BorderWidthBottom = 2;
         _shadowStyle.BgColor = new Color(0.05f, 0.11f, 0.10f, 0.28f);
+
+        if (isFaceDown)
+        {
+            _bodyStyle.BgColor = FaceDownBodyColor;
+            _bodyStyle.BorderColor = FaceDownBorderColor;
+            _depthStyle.BgColor = FaceDownDepthColor;
+            _shadowStyle.BgColor = new Color(0.02f, 0.08f, 0.07f, 0.34f);
+        }
 
         if (_isSelected)
         {

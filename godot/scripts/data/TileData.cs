@@ -1,6 +1,27 @@
 namespace TileMatcher.Data;
 
 /// <summary>
+/// 背面牌在运行时的可见状态机。
+/// </summary>
+public enum TileFaceState
+{
+    /// <summary>普通正面牌，不参与背面牌状态机。</summary>
+    None = 0,
+
+    /// <summary>背面待机态，尚未被玩家激活。</summary>
+    FaceDownIdle = 1,
+
+    /// <summary>当前已被激活并翻到正面的背面牌。</summary>
+    ActiveFaceUp = 2,
+
+    /// <summary>该牌已经参与成功配对，后续会被移出牌桌。</summary>
+    ClearedMatched = 3,
+
+    /// <summary>背面牌结束当前激活后翻回背面。</summary>
+    CollapsedBack = 4,
+}
+
+/// <summary>
 /// 单张麻将在运行时的纯数据表示。
 /// </summary>
 /// <remarks>
@@ -44,4 +65,12 @@ public sealed class TileData
 
     /// <summary>运行时是否可移动，供交互层和调试摘要直接读取。</summary>
     public bool Movable { get; set; }
+
+    public bool FaceHiddenInitial { get; init; }
+
+    /// <summary>背面牌当前所处的运行时状态。</summary>
+    public TileFaceState FaceState { get; set; } = TileFaceState.None;
+
+    /// <summary>当前牌面是否以正面渲染。</summary>
+    public bool IsFaceUp { get; set; } = true;
 }
