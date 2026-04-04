@@ -150,6 +150,9 @@ public partial class GameScene : Node2D
     /// <summary>当前关卡是否已经触发过通关事件。</summary>
     private bool _levelCompleted;
 
+    /// <summary>当前关卡是否已经触发过失败事件。</summary>
+    private bool _levelFailed;
+
     /// <summary>由外围流程绑定进来的玩家进度对象。</summary>
     private PlayerProgressData? _progressData;
 
@@ -161,6 +164,9 @@ public partial class GameScene : Node2D
 
     /// <summary>页面流程层使用的普通 C# 事件，不走 Godot Signal 序列化约束。</summary>
     public event Action<LevelCompleteResult>? LevelCompleted;
+
+    /// <summary>页面流程层使用的失败事件，用于切到正式失败页。</summary>
+    public event Action<LevelFailedResult>? LevelFailed;
 
     /// <summary>请求返回主页的页面层事件。</summary>
     public event Action? BackToHomeRequested;
@@ -298,6 +304,7 @@ public partial class GameScene : Node2D
     {
         _currentLevelNumber = Math.Max(1, levelNumber);
         _levelCompleted = false;
+        _levelFailed = false;
         _levelStartTicksMsec = Time.GetTicksMsec();
         _levelValue.Text = _currentLevelNumber.ToString();
         _jumpLevelInput.Value = _currentLevelNumber;
@@ -453,6 +460,7 @@ public partial class GameScene : Node2D
         RefreshDebugPanelSummary();
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
         TryEmitLevelCompleted();
+        TryEmitLevelFailed();
     }
 
     /// <summary>在顶部中央显示一次短时交互提示。</summary>
@@ -995,7 +1003,7 @@ public partial class GameScene : Node2D
     /// </summary>
     private void TryEmitLevelCompleted()
     {
-        if (_levelCompleted)
+        if (_levelCompleted || _levelFailed)
         {
             return;
         }
@@ -1016,6 +1024,37 @@ public partial class GameScene : Node2D
 
         GD.Print($"[GameScene] 关卡完成：level={result.LevelNumber}, score={result.Score}, matches={result.MatchCount}, elapsed={result.ElapsedText}");
         LevelCompleted?.Invoke(result);
+    }
+
+    /// <summary>
+    /// 当当前局面已经没有任何可继续配对的牌时，向外围流程发出一次失败事件。
+    /// 这一层只负责识别“本局已无法继续”，真正的失败页流转仍由 AppRoot 统一管理。
+    /// </summary>
+    private void TryEmitLevelFailed()
+    {
+        if (_levelCompleted || _levelFailed)
+        {
+            return;
+        }
+
+        if (!_boardController.IsInDeadlockState())
+        {
+            return;
+        }
+
+        _levelFailed = true;
+        var result = new LevelFailedResult
+        {
+            LevelNumber = _currentLevelNumber,
+            RetryLevelNumber = _currentLevelNumber,
+            Score = _boardController.CurrentScore,
+            MatchCount = _boardController.CurrentMatchCount,
+            ElapsedText = BuildElapsedText(),
+            FailureReason = "当前局面已经没有可继续配对的牌，本局结束。",
+        };
+
+        GD.Print($"[GameScene] 关卡失败：level={result.LevelNumber}, score={result.Score}, matches={result.MatchCount}, elapsed={result.ElapsedText}");
+        LevelFailed?.Invoke(result);
     }
 
     /// <summary>

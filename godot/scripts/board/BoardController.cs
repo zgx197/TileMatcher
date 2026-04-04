@@ -272,6 +272,25 @@ public partial class BoardController : Node2D
         return TryStartMatch(firstTile, secondTile, "调试自动消除");
     }
 
+    /// <summary>
+    /// 判断当前棋盘是否已经进入死局。
+    /// 只要还有剩余牌且当前不存在任何合法配对，就视为本局无法继续推进。
+    /// </summary>
+    public bool IsInDeadlockState()
+    {
+        if (_currentLayout is null)
+        {
+            return false;
+        }
+
+        if (CurrentRemainingTileCount <= 0)
+        {
+            return false;
+        }
+
+        return !TryFindHintPair(out _, out _);
+    }
+
     /// <summary>补齐默认资源并确保运行时已有可用规则档案。</summary>
     public override void _Ready()
     {
