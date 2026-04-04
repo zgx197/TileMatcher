@@ -58,28 +58,47 @@ public partial class TileView : Node2D
         new(0.69f, 0.59f, 0.43f, 1.0f),
     ];
 
+    /// <summary>牌面中央的文字标签。</summary>
     private Label _label = null!;
+    /// <summary>牌面主体样式。</summary>
     private StyleBoxFlat _bodyStyle = null!;
+    /// <summary>牌面厚度区域样式。</summary>
     private StyleBoxFlat _depthStyle = null!;
+    /// <summary>牌面投影样式。</summary>
     private StyleBoxFlat _shadowStyle = null!;
+    /// <summary>内部子节点和样式是否已经初始化完成。</summary>
     private bool _initialized;
+    /// <summary>当前牌是否可移动。</summary>
     private bool _isMovable = true;
+    /// <summary>当前牌是否处于选中态。</summary>
     private bool _isSelected;
+    /// <summary>覆盖层高亮透明度。</summary>
     private float _feedbackOverlayAlpha;
+    /// <summary>描边高亮透明度。</summary>
     private float _feedbackEdgeAlpha;
+    /// <summary>当前反馈使用的主色。</summary>
     private Color _feedbackColor = Colors.Transparent;
+    /// <summary>是否点亮左侧边缘反馈。</summary>
     private bool _flashLeftEdge;
+    /// <summary>是否点亮右侧边缘反馈。</summary>
     private bool _flashRightEdge;
+    /// <summary>是否点亮顶部边缘反馈。</summary>
     private bool _flashTopEdge;
+    /// <summary>是否点亮底部边缘反馈。</summary>
     private bool _flashBottomEdge;
+    /// <summary>当前是否处于持续提示高亮态。</summary>
     private bool _isHintedPersistent;
+    /// <summary>不可移动反馈动画。</summary>
     private Tween? _blockedFeedbackTween;
+    /// <summary>提示瞬时高亮动画。</summary>
     private Tween? _hintFeedbackTween;
+    /// <summary>提示持续呼吸动画。</summary>
     private Tween? _hintPulseTween;
 
     /// <summary>当前视图绑定的逻辑数据。</summary>
     public AppTileData Data { get; private set; } = null!;
 
+    /// <summary>保证牌视图在进入场景树后完成延迟初始化。</summary>
     public override void _Ready()
     {
         EnsureInitialized();
@@ -233,9 +252,7 @@ public partial class TileView : Node2D
         };
     }
 
-    /// <summary>
-    /// 启动提示态的中频呼吸动画。
-    /// </summary>
+    /// <summary>启动提示态的持续呼吸动画。</summary>
     private void StartHintPulse()
     {
         _hintPulseTween?.Kill();
@@ -263,9 +280,7 @@ public partial class TileView : Node2D
         tween.TweenProperty(this, "scale", Vector2.One * HintPulseScaleMin, HintPulseDuration);
     }
 
-    /// <summary>
-    /// 停止提示态呼吸动画并清理附加高亮绘制参数。
-    /// </summary>
+    /// <summary>停止提示态呼吸动画，并清空附加高亮参数。</summary>
     private void StopHintPulse()
     {
         _hintPulseTween?.Kill();
@@ -308,9 +323,7 @@ public partial class TileView : Node2D
         return new Rect2(origin, tileSize);
     }
 
-    /// <summary>
-    /// 延迟初始化内部节点和样式对象。
-    /// </summary>
+    /// <summary>延迟初始化标签与绘制样式对象。</summary>
     private void EnsureInitialized()
     {
         if (_initialized)
@@ -396,9 +409,7 @@ public partial class TileView : Node2D
         }
     }
 
-    /// <summary>
-    /// 根据层级应用调试配色。
-    /// </summary>
+    /// <summary>根据层级给牌面应用调试配色。</summary>
     private void ApplyLayerDebugStyle(int layer)
     {
         var paletteIndex = Mathf.PosMod(layer, BodyPalette.Length);
@@ -408,9 +419,7 @@ public partial class TileView : Node2D
         _depthStyle.BgColor = DepthPalette[paletteIndex];
     }
 
-    /// <summary>
-    /// 把逻辑状态翻译成牌面视觉反馈。
-    /// </summary>
+    /// <summary>把交互状态翻译成当前牌面的视觉样式。</summary>
     private void RefreshVisualState()
     {
         var layer = Data?.GZ ?? 0;

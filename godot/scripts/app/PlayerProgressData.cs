@@ -4,24 +4,33 @@ namespace TileMatcher.App;
 
 /// <summary>
 /// 玩家外围进度数据。
-/// 这里只保存主页、奖励页和关卡流转真正需要的最小状态，不把牌桌内部状态混进来。
+/// 这里只保存主页、奖励页和关卡流转真正需要的最小状态，
+/// 不把单局牌桌内部状态直接混入长期存档。
 /// </summary>
 public sealed class PlayerProgressData
 {
+    /// <summary>玩家昵称，当前主要用于主页展示。</summary>
     public string PlayerName { get; set; } = "青瓷旅人";
 
+    /// <summary>外围可消耗资源“叶子”的当前数量。</summary>
     public int LeafCount { get; set; } = 1;
 
+    /// <summary>当前流程准备进入或继续的关卡号。</summary>
     public int CurrentLevelNumber { get; set; } = 1;
 
+    /// <summary>历史上已经解锁到的最高关卡号。</summary>
     public int HighestUnlockedLevel { get; set; } = 1;
 
+    /// <summary>累计得分。</summary>
     public int TotalScore { get; set; }
 
+    /// <summary>累计完成的配对数。</summary>
     public int TotalMatches { get; set; }
 
+    /// <summary>累计完成过的关卡局数。</summary>
     public int TotalCompletedLevelCount { get; set; }
 
+    /// <summary>上一次领取每日奖励时对应的日期字符串。</summary>
     public string LastDailyRewardDate { get; set; } = string.Empty;
 
     /// <summary>

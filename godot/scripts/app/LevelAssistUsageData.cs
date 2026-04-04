@@ -6,7 +6,9 @@ namespace TileMatcher.App;
 /// </summary>
 public sealed class LevelAssistUsageData
 {
+    /// <summary>当前关卡已经使用过的重开次数。</summary>
     public int RestartUsedCount { get; set; }
 
+    /// <summary>当前关卡已经使用过的提示次数。</summary>
     public int HintUsedCount { get; set; }
 }
