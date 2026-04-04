@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TileMatcher.Config;
 using TileMatcher.Data;
 using TileMatcher.Grid;
@@ -37,6 +38,18 @@ public partial class BoardController : Node2D
 
     /// <summary>底部调试区域和留白预留高度。</summary>
     private const float BottomReservedHeight = 172.0f;
+
+    /// <summary>开局发牌时，牌堆飞出的起点高度。</summary>
+    private const float DealStartHeight = 52.0f;
+
+    /// <summary>相邻两张牌的入场时间间隔。</summary>
+    private const double DealStaggerDuration = 0.028;
+
+    /// <summary>单张牌从牌堆飞到目标位置的时间。</summary>
+    private const double DealMoveDuration = 0.22;
+
+    /// <summary>单张牌落位时的轻微放大倍率。</summary>
+    private const float DealOvershootScale = 1.03f;
 
     /// <summary>不同层之间的基础 ZIndex 步长，保证层级永远优先于行列顺序。</summary>
     private const int LayerZStride = 128;
@@ -82,6 +95,9 @@ public partial class BoardController : Node2D
 
     /// <summary>当前牌桌上真实存在的全部牌视图实例。</summary>
     private readonly List<TileView> _tileViews = [];
+
+    /// <summary>记录每张牌在牌桌中的最终落点，供开局发牌动画复用。</summary>
+    private readonly Dictionary<int, Vector2> _dealTargetPositions = [];
 
     /// <summary>当前运行时规则对象。所有布局生成、校验与交互判定都以它为准。</summary>
     private LayoutRules _layoutRules = new();
@@ -389,7 +405,7 @@ public partial class BoardController : Node2D
     /// 即使校验失败，当前阶段也仍然允许继续渲染，方便直接观察错误布局。
     /// 因此“看得见牌桌”不等于“布局一定合法”。
     /// </remarks>
-    private void ApplyLayout(LevelLayout layout, string sourceName, string sourceKindLabel)
+    private async void ApplyLayout(LevelLayout layout, string sourceName, string sourceKindLabel)
     {
         _currentLayout = layout;
         _currentSourceName = sourceName;
@@ -424,6 +440,7 @@ public partial class BoardController : Node2D
         }
 
         _tileViews.Clear();
+        _dealTargetPositions.Clear();
 
         var boardOrigin = ComputeCenteredOrigin(layout);
         LogBoard($"布局世界原点: ({boardOrigin.X:0.##}, {boardOrigin.Y:0.##})");
@@ -442,16 +459,19 @@ public partial class BoardController : Node2D
 
             var tile = TileScene.Instantiate<TileView>();
             tile.ApplyData(tileData);
-            tile.Position = GridMath.GridToWorld(tileData.GX, tileData.GY, tileData.GZ, boardOrigin);
+            var targetPosition = GridMath.GridToWorld(tileData.GX, tileData.GY, tileData.GZ, boardOrigin);
+            tile.Position = targetPosition;
             tile.ZIndex = tileData.GZ * LayerZStride + tileData.GY * RowZStride + tileData.GX;
 
             AddChild(tile);
             _tileViews.Add(tile);
+            _dealTargetPositions[tileData.Id] = targetPosition;
         }
 
         _visibleMaxLayer = MaxLayer;
         RefreshTileStates();
         RefreshVisibleLayers();
+        await PlayBoardDealAnimation(drawOrder);
 
         var summary = GetCurrentSummary();
         LogBoard($"布局应用完成: {summary}");
@@ -758,6 +778,77 @@ public partial class BoardController : Node2D
         {
             tileView.Visible = !tileView.Data.Removed && tileView.Data.GZ <= _visibleMaxLayer;
         }
+    }
+
+    /// <summary>
+    /// 播放开局发牌入场动画。
+    /// </summary>
+    /// <remarks>
+    /// 动画只改变入场表现，不改变真实摆放结果。
+    /// 顺序严格沿用布局应用时的 draw order：
+    /// - 先底层后高层
+    /// - 同层内从左到右
+    /// - 同列关系下从上到下
+    /// </remarks>
+    private async Task PlayBoardDealAnimation(IReadOnlyList<AppTileData> drawOrder)
+    {
+        if (_tileViews.Count == 0)
+        {
+            _interactionLocked = false;
+            return;
+        }
+
+        _interactionLocked = true;
+        var dealOrigin = new Vector2(GetViewportRect().Size.X * 0.5f, DealStartHeight);
+        var targetMap = _tileViews.ToDictionary(tileView => tileView.Data.Id);
+        var orderedTileViews = drawOrder
+            .Select(tileData => targetMap[tileData.Id])
+            .Where(tileView => tileView.Visible)
+            .ToList();
+
+        foreach (var tileView in orderedTileViews)
+        {
+            PrepareTileForDealAnimation(tileView, dealOrigin);
+        }
+
+        foreach (var tileView in orderedTileViews)
+        {
+            StartTileDealTween(tileView, _dealTargetPositions[tileView.Data.Id]);
+            await ToSignal(GetTree().CreateTimer(DealStaggerDuration), SceneTreeTimer.SignalName.Timeout);
+        }
+
+        await ToSignal(GetTree().CreateTimer(DealMoveDuration + 0.08), SceneTreeTimer.SignalName.Timeout);
+        foreach (var tileView in orderedTileViews)
+        {
+            tileView.Position = _dealTargetPositions[tileView.Data.Id];
+            tileView.Scale = Vector2.One;
+            tileView.Modulate = Colors.White;
+        }
+
+        _interactionLocked = false;
+        LogBoard($"开局发牌动画完成: tiles={orderedTileViews.Count}");
+    }
+
+    /// <summary>把单张牌切到待发牌的初始视觉状态。</summary>
+    private static void PrepareTileForDealAnimation(TileView tileView, Vector2 dealOrigin)
+    {
+        tileView.Position = dealOrigin;
+        tileView.Scale = Vector2.One * 0.90f;
+        tileView.Modulate = new Color(1f, 1f, 1f, 0f);
+        tileView.Visible = true;
+    }
+
+    /// <summary>启动单张牌的发牌落位动画。</summary>
+    private static void StartTileDealTween(TileView tileView, Vector2 targetPosition)
+    {
+        var tween = tileView.CreateTween();
+        tween.SetParallel(true);
+        tween.SetEase(Tween.EaseType.Out);
+        tween.SetTrans(Tween.TransitionType.Cubic);
+        tween.TweenProperty(tileView, "position", targetPosition, DealMoveDuration);
+        tween.TweenProperty(tileView, "modulate", Colors.White, DealMoveDuration * 0.82);
+        tween.TweenProperty(tileView, "scale", Vector2.One * DealOvershootScale, DealMoveDuration * 0.72);
+        tween.Chain().TweenProperty(tileView, "scale", Vector2.One, DealMoveDuration * 0.28);
     }
 
     /// <summary>
