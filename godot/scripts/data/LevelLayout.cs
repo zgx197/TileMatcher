@@ -7,7 +7,7 @@ namespace TileMatcher.Data;
 /// 一整副当前关卡布局的运行时数据容器。
 /// </summary>
 /// <remarks>
-/// 它只负责聚合某次生成结果或固定原型，不负责生成和校验。
+/// 它只负责聚合某次生成结果或原型关卡，不负责生成和校验。
 /// </remarks>
 public sealed class LevelLayout
 {

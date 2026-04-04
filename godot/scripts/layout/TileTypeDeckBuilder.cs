@@ -13,7 +13,7 @@ namespace TileMatcher.Layout;
 ///
 /// 因此这里统一提供“按对生成”的牌面分配器：
 /// - 随机布局默认拿到一副被打乱的成对牌面序列
-/// - 固定原型也使用一份可读性更强的成对序列
+/// - 原型关卡也使用一份可读性更强的成对序列
 ///
 /// 这一层仍然只是临时调试阶段的数据设计，不等于最终正式关卡的牌组设计。
 /// 后续如果要支持：
@@ -42,10 +42,10 @@ public static class TileTypeDeckBuilder
     ];
 
     /// <summary>
-    /// 为固定原型生成一份可读性较强的成对牌面。
+    /// 为原型关卡生成一份可读性较强的成对牌面。
     /// </summary>
     /// <remarks>
-    /// 固定原型的目标是“稳定复现”和“方便肉眼观察”，
+    /// 原型关卡的目标是“稳定复现”和“方便肉眼观察”，
     /// 因此这里不做随机洗牌，而是按固定顺序给出成对数据。
     /// </remarks>
     public static IReadOnlyList<string> BuildPrototypePairDeck(int tileCount)

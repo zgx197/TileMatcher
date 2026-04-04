@@ -116,8 +116,8 @@ public static class OfflineLevelJsonLoader
                 GZ = tile.GZ,
                 Shape = new TileShape
                 {
-                    WidthUnits = tile.Shape?.WidthUnits ?? TileShape.StandardMahjong.WidthUnits,
-                    HeightUnits = tile.Shape?.HeightUnits ?? TileShape.StandardMahjong.HeightUnits,
+                    WidthUnits = tile.Shape?.WidthUnits ?? TileShape.StandardTile.WidthUnits,
+                    HeightUnits = tile.Shape?.HeightUnits ?? TileShape.StandardTile.HeightUnits,
                 },
                 FaceHiddenInitial = tile.FaceHiddenInitial,
                 IsFaceUp = !tile.FaceHiddenInitial,

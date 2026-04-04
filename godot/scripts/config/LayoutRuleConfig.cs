@@ -78,7 +78,7 @@ public partial class LayoutRuleConfig : Resource
     /// <summary>转换成纯运行时规则对象。</summary>
     public LayoutRules ToRuntimeRules()
     {
-        var runtimeShape = TileShape?.ToRuntimeShape() ?? TileMatcher.Data.TileShape.StandardMahjong;
+        var runtimeShape = TileShape?.ToRuntimeShape() ?? TileMatcher.Data.TileShape.StandardTile;
 
         return new LayoutRules
         {

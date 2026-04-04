@@ -21,7 +21,7 @@ public partial class LevelConfig : Resource
     [Export]
     public string LayoutProfileId { get; set; } = string.Empty;
 
-    /// <summary>这一关采用固定原型还是正式生成布局。</summary>
+    /// <summary>这一关采用原型关卡还是正式生成布局。</summary>
     [Export]
     public LevelLayoutSourceMode LayoutSourceMode { get; set; } = LevelLayoutSourceMode.RandomGenerated;
 

@@ -10,12 +10,12 @@ namespace TileMatcher.Data;
 public sealed class TileShape
 {
     /// <summary>
-    /// 项目默认标准麻将的逻辑尺寸。
+    /// 项目默认标准牌的逻辑尺寸。
     /// </summary>
     /// <remarks>
     /// 4x6 代表逻辑微单元尺寸，而不是像素尺寸。
     /// </remarks>
-    public static TileShape StandardMahjong { get; } = new()
+    public static TileShape StandardTile { get; } = new()
     {
         WidthUnits = 4,
         HeightUnits = 6,

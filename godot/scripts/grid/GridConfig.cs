@@ -13,9 +13,9 @@ namespace TileMatcher.Grid;
 /// </remarks>
 public static class GridConfig
 {
-    /// <summary>单张麻将的目标视觉宽度。</summary>
+    /// <summary>单张牌的目标视觉宽度。</summary>
     public const float TileWidth = 96.0f;
-    /// <summary>单张麻将的目标视觉高度。</summary>
+    /// <summary>单张牌的目标视觉高度。</summary>
     public const float TileHeight = 128.0f;
     /// <summary>当前用于绘制厚度感的参考值。</summary>
     public const float TileThickness = 10.0f;
@@ -23,9 +23,9 @@ public static class GridConfig
     public const float LayerOffsetX = -10.0f;
     /// <summary>上层相对下层的视觉 Y 偏移。</summary>
     public const float LayerOffsetY = -16.0f;
-    /// <summary>默认标准麻将在逻辑层的宽度。</summary>
+    /// <summary>默认标准牌在逻辑层的宽度。</summary>
     public const int DefaultFootprintWidthUnits = 4;
-    /// <summary>默认标准麻将在逻辑层的高度。</summary>
+    /// <summary>默认标准牌在逻辑层的高度。</summary>
     public const int DefaultFootprintHeightUnits = 6;
     /// <summary>底层对齐铺牌时 X 方向的默认步长。</summary>
     public const int BottomLayerStepX = DefaultFootprintWidthUnits;

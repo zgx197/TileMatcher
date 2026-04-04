@@ -4,7 +4,7 @@ using GridVector2I = Godot.Vector2I;
 namespace TileMatcher.Layout;
 
 /// <summary>
-/// 提供一份固定原型布局，用于快速人工观察堆叠关系。
+/// 提供一份原型关卡布局，用于快速人工观察堆叠关系。
 /// </summary>
 /// <remarks>
 /// 这份原型的目标不是生成真实关卡，而是稳定复现当前规则下的层间偏移效果。
@@ -12,7 +12,7 @@ namespace TileMatcher.Layout;
 /// </remarks>
 public static class PrototypeLayoutFactory
 {
-    /// <summary>创建固定原型布局。</summary>
+    /// <summary>创建原型关卡布局。</summary>
     public static LevelLayout CreateSingleLevelPrototype(LayoutRules? rules = null, int levelId = 1)
     {
         rules ??= new LayoutRules();

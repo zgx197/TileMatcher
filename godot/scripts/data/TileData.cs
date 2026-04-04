@@ -22,7 +22,7 @@ public enum TileFaceState
 }
 
 /// <summary>
-/// 单张麻将在运行时的纯数据表示。
+/// 单张牌在运行时的纯数据表示。
 /// </summary>
 /// <remarks>
 /// 这里故意不放任何 Godot 节点引用，只承载布局、几何和玩法相关的数据。
@@ -51,8 +51,8 @@ public sealed class TileData
     /// <summary>层级坐标，0 为底层。</summary>
     public int GZ { get; init; }
 
-    /// <summary>当前牌的逻辑形状，默认使用标准 4x6 麻将。</summary>
-    public TileShape Shape { get; init; } = TileShape.StandardMahjong;
+    /// <summary>当前牌的逻辑形状，默认使用标准 4x6 牌。</summary>
+    public TileShape Shape { get; init; } = TileShape.StandardTile;
 
     /// <summary>便捷访问当前牌 footprint 的宽度，单位为逻辑网格微单元。</summary>
     public int FootprintWidth => Shape.WidthUnits;

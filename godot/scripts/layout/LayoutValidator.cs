@@ -9,7 +9,7 @@ namespace TileMatcher.Layout;
 /// 对布局结果执行业务规则校验。
 /// </summary>
 /// <remarks>
-/// 这里不负责生成布局，只负责对“生成器 / 固定原型 / 将来关卡导入”
+/// 这里不负责生成布局，只负责对“生成器 / 原型关卡 / 将来关卡导入”
 /// 提供统一的有效性判断。
 /// </remarks>
 public static class LayoutValidator
@@ -21,7 +21,7 @@ public static class LayoutValidator
         var activeTiles = layout.Tiles.Where(tile => !tile.Removed).ToList();
         if (activeTiles.Count == 0)
         {
-            result.Errors.Add("布局中没有可用麻将。");
+            result.Errors.Add("布局中没有可用牌。");
             return result;
         }
 
@@ -73,7 +73,7 @@ public static class LayoutValidator
 
         if (bottomLayer.Count() < rules.MinBottomLayerTileCount)
         {
-            result.Errors.Add($"底层麻将不足：当前 {bottomLayer.Count()} 张，要求至少 {rules.MinBottomLayerTileCount} 张。");
+            result.Errors.Add($"底层牌数量不足：当前 {bottomLayer.Count()} 张，要求至少 {rules.MinBottomLayerTileCount} 张。");
         }
     }
 
@@ -113,7 +113,7 @@ public static class LayoutValidator
                     if (GridMath.OverlapsXY(tiles[i], tiles[j]))
                     {
                         result.Errors.Add(
-                            $"同层麻将重叠：L{layer.Key} 的 Tile#{tiles[i].Id} 与 Tile#{tiles[j].Id} 发生重叠。");
+                            $"同层牌重叠：L{layer.Key} 的 Tile#{tiles[i].Id} 与 Tile#{tiles[j].Id} 发生重叠。");
                     }
                 }
             }
@@ -171,7 +171,7 @@ public static class LayoutValidator
             if (!layerMap.TryGetValue(tile.GZ - 1, out var lowerLayerTiles)
                 || !GridMath.HasFullSupportFromLowerLayer(tile, lowerLayerTiles))
             {
-                result.Errors.Add($"麻将缺少完整底面覆盖：Tile#{tile.Id} {tile.Type} at ({tile.GX},{tile.GY},{tile.GZ})。");
+                result.Errors.Add($"牌缺少完整底面覆盖：Tile#{tile.Id} {tile.Type} at ({tile.GX},{tile.GY},{tile.GZ})。");
             }
         }
     }
