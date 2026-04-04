@@ -62,7 +62,7 @@ public partial class LevelCompletePage : Control
 
         _rewardHintLabel.Visible = _result.HasDailyReward;
         _rewardHintLabel.Text = _result.HasDailyReward
-            ? $"今日金币奖励待查看：+{_result.DailyRewardLeafCount} 金币"
+            ? $"今日金币奖励待查看：+{_result.DailyRewardCoinCount} 金币"
             : "本次继续将直接进入下一关";
 
         _nextLevelLabel.Text = string.IsNullOrWhiteSpace(_result.NextLevelName)

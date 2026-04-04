@@ -16,7 +16,7 @@ public partial class HomePage : Control
     private Label _profileSubtitleLabel = null!;
 
     /// <summary>顶部资源数量文本。</summary>
-    private Label _leafValueLabel = null!;
+    private Label _coinValueLabel = null!;
 
     /// <summary>首页下方的整体进度摘要。</summary>
     private Label _progressSummaryLabel = null!;
@@ -64,7 +64,7 @@ public partial class HomePage : Control
     private string _pendingPlayerName = "毛球碰碰乐";
 
     /// <summary>节点 Ready 前暂存的金币数量。</summary>
-    private int _pendingLeafCount = 1;
+    private int _pendingCoinCount = 1;
 
     /// <summary>节点 Ready 前暂存的进度摘要文本。</summary>
     private string _pendingProgressSummary = "最高解锁 L1 / 已通关 0 局";
@@ -96,7 +96,7 @@ public partial class HomePage : Control
     {
         _playerNameLabel = GetNode<Label>("Root/Header/Bar/Left/ProfileRow/PlayerName");
         _profileSubtitleLabel = GetNode<Label>("Root/Header/Bar/Left/ProfileRow/SubTitle");
-        _leafValueLabel = GetNode<Label>("Root/Header/Bar/Center/LeafRow/LeafValue");
+        _coinValueLabel = GetNode<Label>("Root/Header/Bar/Center/CoinRow/CoinValue");
         _progressSummaryLabel = GetNode<Label>("Root/Bottom/BottomStack/InfoCard/Stack/ProgressSummary");
         _currentLevelLabel = GetNode<Label>("Root/Bottom/BottomStack/InfoCard/Stack/CurrentLevel");
         _levelSummaryLabel = GetNode<Label>("Root/Bottom/BottomStack/InfoCard/Stack/LevelSummary");
@@ -135,14 +135,14 @@ public partial class HomePage : Control
     public void Configure(
         int levelNumber,
         string playerName,
-        int leafCount,
+        int coinCount,
         string progressSummary,
         string levelTitle,
         string levelSummary)
     {
         _levelNumber = levelNumber;
         _pendingPlayerName = playerName;
-        _pendingLeafCount = leafCount;
+        _pendingCoinCount = coinCount;
         _pendingProgressSummary = progressSummary;
         _pendingLevelTitle = levelTitle;
         _pendingLevelSummary = levelSummary;
@@ -158,7 +158,7 @@ public partial class HomePage : Control
     {
         _playerNameLabel.Text = _pendingPlayerName;
         _profileSubtitleLabel.Text = "欢迎回来";
-        _leafValueLabel.Text = $"x{_pendingLeafCount}";
+        _coinValueLabel.Text = $"x{_pendingCoinCount}";
         _progressSummaryLabel.Text = _pendingProgressSummary;
         _currentLevelLabel.Text = _pendingLevelTitle;
         _levelSummaryLabel.Text = _pendingLevelSummary;

@@ -152,18 +152,18 @@ custom_minimum_size = Vector2(170, 58)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_header_chip")
 
-[node name="LeafRow" type="HBoxContainer" parent="Root/Header/Bar/Center"]
+[node name="CoinRow" type="HBoxContainer" parent="Root/Header/Bar/Center"]
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 10
 
-[node name="LeafIcon" type="Label" parent="Root/Header/Bar/Center/LeafRow"]
+[node name="CoinIcon" type="Label" parent="Root/Header/Bar/Center/CoinRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 modulate = Color(0.636719, 0.972656, 0.390625, 1)
 text = "●"
 
-[node name="LeafValue" type="Label" parent="Root/Header/Bar/Center/LeafRow"]
+[node name="CoinValue" type="Label" parent="Root/Header/Bar/Center/CoinRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 modulate = Color(1, 0.960938, 0.851562, 1)

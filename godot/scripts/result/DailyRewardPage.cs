@@ -12,7 +12,7 @@ public partial class DailyRewardPage : Control
     private Label _headlineLabel = null!;
     private Label _rewardValueLabel = null!;
     private Label _descriptionLabel = null!;
-    private Label _leafTotalLabel = null!;
+    private Label _coinTotalLabel = null!;
     private Label _nextLevelLabel = null!;
     private Label _nextSummaryLabel = null!;
     private Button _continueButton = null!;
@@ -31,7 +31,7 @@ public partial class DailyRewardPage : Control
         _headlineLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Headline");
         _rewardValueLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/RewardCard/Stack/RewardValue");
         _descriptionLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Description");
-        _leafTotalLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/RewardCard/Stack/LeafTotal");
+        _coinTotalLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/RewardCard/Stack/CoinTotal");
         _nextLevelLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/NextCard/Stack/NextLevel");
         _nextSummaryLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/NextCard/Stack/NextSummary");
         _continueButton = GetNode<Button>("Root/Center/Card/Margin/Stack/Buttons/ContinueButton");
@@ -54,9 +54,9 @@ public partial class DailyRewardPage : Control
     private void RefreshTexts()
     {
         _headlineLabel.Text = _summary.RewardTitle;
-        _rewardValueLabel.Text = $"+{_summary.RewardLeafCount}";
+        _rewardValueLabel.Text = $"+{_summary.RewardCoinCount}";
         _descriptionLabel.Text = _summary.RewardDescription;
-        _leafTotalLabel.Text = $"当前金币：x{_summary.CurrentLeafTotal}";
+        _coinTotalLabel.Text = $"当前金币：x{_summary.CurrentCoinTotal}";
         _nextLevelLabel.Text = string.IsNullOrWhiteSpace(_summary.NextLevelName)
             ? $"下一关：关卡 {_summary.NextLevelNumber}"
             : $"下一关：{_summary.NextLevelName}";

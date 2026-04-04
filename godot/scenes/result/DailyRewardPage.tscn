@@ -133,7 +133,7 @@ modulate = Color(0.960938, 0.996094, 0.847656, 1)
 text = "+3"
 horizontal_alignment = 1
 
-[node name="LeafTotal" type="Label" parent="Root/Center/Card/Margin/Stack/RewardCard/Stack"]
+[node name="CoinTotal" type="Label" parent="Root/Center/Card/Margin/Stack/RewardCard/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 modulate = Color(0.757812, 0.976562, 0.671875, 0.92)
