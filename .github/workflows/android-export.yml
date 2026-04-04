@@ -1,33 +1,139 @@
-name: Android Export
+name: Android Release
 
 on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: Android version name
-        required: true
-        default: 0.1.5
+        description: Android version name. Leave empty to use project.godot.
+        required: false
+        default: ""
       version_code:
-        description: Android version code
-        required: true
-        default: "6"
+        description: Android version code. Leave empty to use project.godot.
+        required: false
+        default: ""
       package_name:
-        description: Android package name
-        required: true
-        default: com.zgx197.tilematcher
+        description: Android package name. Leave empty to use project.godot.
+        required: false
+        default: ""
       orientation:
-        description: Manifest orientation
+        description: Manifest orientation. Leave empty to use project.godot.
+        required: false
+        default: ""
+      tag_name:
+        description: Release tag name. Leave empty to use v<version_name>.
+        required: false
+        default: ""
+      publish_release:
+        description: Create or update a GitHub Release and upload the APK.
         required: true
-        default: portrait
+        type: boolean
+        default: true
+      prerelease:
+        description: Mark workflow_dispatch releases as prerelease.
+        required: true
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   export-android:
     runs-on:
       - self-hosted
       - windows
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve build metadata
+        id: meta
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION_NAME: ${{ github.event.inputs.version_name || '' }}
+          INPUT_VERSION_CODE: ${{ github.event.inputs.version_code || '' }}
+          INPUT_PACKAGE_NAME: ${{ github.event.inputs.package_name || '' }}
+          INPUT_ORIENTATION: ${{ github.event.inputs.orientation || '' }}
+          INPUT_TAG_NAME: ${{ github.event.inputs.tag_name || '' }}
+          INPUT_PUBLISH_RELEASE: ${{ github.event.inputs.publish_release || 'true' }}
+          INPUT_PRERELEASE: ${{ github.event.inputs.prerelease || 'true' }}
+        run: |
+          $projectSettings = Get-Content "godot/project.godot" -Raw -Encoding UTF8
+
+          function Get-MatchValue {
+            param(
+              [string]$Pattern,
+              [string]$Label
+            )
+
+            $match = [regex]::Match(
+              $projectSettings,
+              $Pattern,
+              [System.Text.RegularExpressions.RegexOptions]::Multiline)
+
+            if (-not $match.Success) {
+              throw "Failed to resolve $Label from godot/project.godot"
+            }
+
+            return $match.Groups[1].Value
+          }
+
+          $defaultVersionName = Get-MatchValue '^version_name="([^"]+)"$' "version_name"
+          $defaultVersionCode = Get-MatchValue '^version_code=(\d+)$' "version_code"
+          $defaultPackageName = Get-MatchValue '^package_name="([^"]+)"$' "package_name"
+          $defaultOrientation = Get-MatchValue '^manifest_orientation="([^"]+)"$' "manifest_orientation"
+
+          $versionName = if ([string]::IsNullOrWhiteSpace($env:INPUT_VERSION_NAME)) { $defaultVersionName } else { $env:INPUT_VERSION_NAME.Trim() }
+          $versionCode = if ([string]::IsNullOrWhiteSpace($env:INPUT_VERSION_CODE)) { $defaultVersionCode } else { $env:INPUT_VERSION_CODE.Trim() }
+          $packageName = if ([string]::IsNullOrWhiteSpace($env:INPUT_PACKAGE_NAME)) { $defaultPackageName } else { $env:INPUT_PACKAGE_NAME.Trim() }
+          $orientation = if ([string]::IsNullOrWhiteSpace($env:INPUT_ORIENTATION)) { $defaultOrientation } else { $env:INPUT_ORIENTATION.Trim() }
+
+          if ($env:EVENT_NAME -eq "push") {
+            $tagName = $env:REF_NAME
+            if ($tagName.StartsWith("v")) {
+              $versionName = $tagName.Substring(1)
+            } else {
+              $versionName = $tagName
+              $tagName = "v$tagName"
+            }
+
+            $publishRelease = "true"
+            $prerelease = "false"
+          } else {
+            $tagName = if ([string]::IsNullOrWhiteSpace($env:INPUT_TAG_NAME)) { "v$versionName" } else { $env:INPUT_TAG_NAME.Trim() }
+            $publishRelease = $env:INPUT_PUBLISH_RELEASE.ToLowerInvariant()
+            $prerelease = $env:INPUT_PRERELEASE.ToLowerInvariant()
+          }
+
+          if ($versionCode -notmatch '^\d+$') {
+            throw "version_code must be numeric, got: $versionCode"
+          }
+
+          if ($orientation -notin @("portrait", "landscape")) {
+            throw "orientation must be portrait or landscape, got: $orientation"
+          }
+
+          "version_name=$versionName" >> $env:GITHUB_OUTPUT
+          "version_code=$versionCode" >> $env:GITHUB_OUTPUT
+          "package_name=$packageName" >> $env:GITHUB_OUTPUT
+          "orientation=$orientation" >> $env:GITHUB_OUTPUT
+          "tag_name=$tagName" >> $env:GITHUB_OUTPUT
+          "publish_release=$publishRelease" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+          "release_name=Android $tagName" >> $env:GITHUB_OUTPUT
+          "apk_name=TileMatcher-$versionName-android-debug.apk" >> $env:GITHUB_OUTPUT
 
       - name: Export Android APK
         shell: pwsh
@@ -48,14 +154,67 @@ jobs:
           -KeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD"
           -KeyAlias "$env:ANDROID_DEBUG_KEY_ALIAS"
           -KeyPassword "$env:ANDROID_DEBUG_KEY_PASSWORD"
-          -PackageName "${{ inputs.package_name }}"
-          -VersionName "${{ inputs.version_name }}"
-          -VersionCode ${{ inputs.version_code }}
-          -ManifestOrientation "${{ inputs.orientation }}"
-          -OutputName "TileMatcher-${{ inputs.version_name }}-android-debug.apk"
+          -PackageName "${{ steps.meta.outputs.package_name }}"
+          -VersionName "${{ steps.meta.outputs.version_name }}"
+          -VersionCode ${{ steps.meta.outputs.version_code }}
+          -ManifestOrientation "${{ steps.meta.outputs.orientation }}"
+          -OutputName "${{ steps.meta.outputs.apk_name }}"
 
-      - name: Upload APK
+      - name: Collect APK metadata
+        id: apk
+        shell: pwsh
+        run: |
+          $apkRelativePath = "godot/build/android/${{ steps.meta.outputs.apk_name }}"
+          if (-not (Test-Path -LiteralPath $apkRelativePath)) {
+            throw "APK not found: $apkRelativePath"
+          }
+
+          $hash = (Get-FileHash -LiteralPath $apkRelativePath -Algorithm SHA256).Hash.ToUpperInvariant()
+          $hashFileRelativePath = "$apkRelativePath.sha256.txt"
+          "$hash  ${{ steps.meta.outputs.apk_name }}" | Set-Content -LiteralPath $hashFileRelativePath -Encoding ASCII
+
+          "artifact_path=$apkRelativePath" >> $env:GITHUB_OUTPUT
+          "artifact_name=${{ steps.meta.outputs.apk_name }}" >> $env:GITHUB_OUTPUT
+          "hash_path=$hashFileRelativePath" >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: godot/build/android/TileMatcher-*-android-debug.apk
+          name: android-apk-${{ steps.meta.outputs.version_name }}
+          path: |
+            ${{ steps.apk.outputs.artifact_path }}
+            ${{ steps.apk.outputs.hash_path }}
+          if-no-files-found: error
+
+      - name: Create or update GitHub Release
+        if: steps.meta.outputs.publish_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: ${{ steps.meta.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.apk.outputs.artifact_path }}
+            ${{ steps.apk.outputs.hash_path }}
+
+      - name: Publish workflow summary
+        if: always()
+        shell: pwsh
+        run: |
+          @"
+          ## Android release summary
+
+          - Trigger: `${{ github.event_name }}`
+          - Version: `${{ steps.meta.outputs.version_name }}`
+          - Version code: `${{ steps.meta.outputs.version_code }}`
+          - Package: `${{ steps.meta.outputs.package_name }}`
+          - Orientation: `${{ steps.meta.outputs.orientation }}`
+          - APK: `${{ steps.apk.outputs.artifact_name }}`
+          - SHA256: `${{ steps.apk.outputs.sha256 }}`
+          - Release tag: `${{ steps.meta.outputs.tag_name }}`
+          - Publish release: `${{ steps.meta.outputs.publish_release }}`
+          - Prerelease: `${{ steps.meta.outputs.prerelease }}`
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
