@@ -1,7 +1,7 @@
 {
   "batchName": "mvp-batch",
-  "candidateCount": 24,
-  "maxAcceptedLevels": 8,
+  "candidateCount": 120,
+  "maxAcceptedLevels": 20,
   "randomSeed": 20260404,
   "analysisOutputDir": "artifacts/mahjong-mvp/analysis",
   "runtimeOutputDir": "artifacts/mahjong-mvp/runtime-levels",
