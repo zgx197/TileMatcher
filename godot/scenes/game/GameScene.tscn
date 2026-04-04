@@ -7,7 +7,7 @@
 [ext_resource type="Resource" path="res://configs/levels/default_levels.tres" id="5_level_catalog"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_boardbg"]
-bg_color = Color(0.0588235, 0.32549, 0.231373, 0.780392)
+bg_color = Color(0.0196078, 0.231373, 0.176471, 0.96)
 corner_radius_top_left = 28
 corner_radius_top_right = 28
 corner_radius_bottom_right = 28
@@ -16,19 +16,24 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.14902, 0.494118, 0.392157, 0.784314)
-shadow_color = Color(0, 0, 0, 0.141176)
-shadow_size = 10
+border_color = Color(0.196078, 0.509804, 0.396078, 0.9)
+shadow_color = Color(0, 0, 0, 0.24)
+shadow_size = 16
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbox"]
-bg_color = Color(0.101961, 0.388235, 0.290196, 0.627451)
+bg_color = Color(0.0470588, 0.286275, 0.223529, 0.92)
 corner_radius_top_left = 18
 corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.223529, 0.556863, 0.447059, 0.74)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_backbutton"]
-bg_color = Color(0.964706, 0.780392, 0.470588, 0.96)
+bg_color = Color(0.909804, 0.741176, 0.411765, 1)
 corner_radius_top_left = 22
 corner_radius_top_right = 22
 corner_radius_bottom_right = 22
@@ -37,12 +42,38 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.588235, 0.337255, 0.109804, 0.94)
-shadow_color = Color(0.203922, 0.101961, 0.0196078, 0.22)
-shadow_size = 8
+border_color = Color(0.54902, 0.313726, 0.0862745, 0.96)
+shadow_color = Color(0.188235, 0.0941176, 0.0235294, 0.28)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_button"]
+bg_color = Color(0.360784, 0.145098, 0.0392157, 0.98)
+corner_radius_top_left = 38
+corner_radius_top_right = 38
+corner_radius_bottom_right = 38
+corner_radius_bottom_left = 38
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.862745, 0.541176, 0.184314, 0.96)
+shadow_color = Color(0.141176, 0.0509804, 0.0156863, 0.36)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_badge"]
+bg_color = Color(0.898039, 0.270588, 0.188235, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.996078, 0.858824, 0.568627, 0.96)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugpanel"]
-bg_color = Color(0.0235294, 0.156863, 0.117647, 0.760784)
+bg_color = Color(0.0203922, 0.109804, 0.101961, 0.86)
 corner_radius_top_left = 26
 corner_radius_top_right = 26
 corner_radius_bottom_right = 26
@@ -51,7 +82,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.313726, 0.662745, 0.545098, 0.827451)
+border_color = Color(0.301961, 0.623529, 0.529412, 0.88)
 shadow_color = Color(0, 0, 0, 0.35)
 shadow_size = 18
 
@@ -71,12 +102,17 @@ border_color = Color(0.662745, 0.905882, 0.819608, 0.501961)
 bg_color = Color(0, 0, 0, 0)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tipbox"]
-bg_color = Color(0.0313726, 0.0666667, 0.0588235, 0.8)
+bg_color = Color(0.0745098, 0.0862745, 0.101961, 0.88)
 corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
-shadow_color = Color(0, 0, 0, 0.28)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.976471, 0.778431, 0.360784, 0.48)
+shadow_color = Color(0, 0, 0, 0.32)
 shadow_size = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_leave_panel"]
@@ -121,9 +157,10 @@ border_color = Color(0.615686, 0.258824, 0.0627451, 0.94)
 script = ExtResource("1_te16v")
 LevelCatalog = ExtResource("5_level_catalog")
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="BoardBackdrop" type="CanvasLayer" parent="."]
+layer = -1
 
-[node name="Root" type="Control" parent="UI"]
+[node name="Root" type="Control" parent="BoardBackdrop"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -132,7 +169,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="BoardBackground" type="Panel" parent="UI/Root"]
+[node name="BoardBackground" type="Panel" parent="BoardBackdrop/Root"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -144,6 +181,16 @@ offset_bottom = -30.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_boardbg")
+mouse_filter = 2
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Root" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
 mouse_filter = 2
 
 [node name="TopBar" type="MarginContainer" parent="UI/Root"]
@@ -184,6 +231,81 @@ mouse_filter = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "被左右锁住"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BottomActions" type="Control" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -146.0
+offset_right = 180.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="RestartButton" type="Button" parent="UI/Root/BottomActions"]
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 1
+offset_left = 20.0
+offset_top = 8.0
+offset_right = 132.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_action_button")
+text = "重开"
+
+[node name="Count" type="PanelContainer" parent="UI/Root/BottomActions/RestartButton"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 1
+offset_left = 78.0
+offset_top = -8.0
+offset_right = 112.0
+offset_bottom = 26.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_action_badge")
+
+[node name="Value" type="Label" parent="UI/Root/BottomActions/RestartButton/Count"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HintButton" type="Button" parent="UI/Root/BottomActions"]
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 1
+offset_left = 228.0
+offset_top = 8.0
+offset_right = 340.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_action_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_action_button")
+text = "提示"
+
+[node name="Count" type="PanelContainer" parent="UI/Root/BottomActions/HintButton"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 1
+offset_left = 78.0
+offset_top = -8.0
+offset_right = 112.0
+offset_bottom = 26.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_action_badge")
+
+[node name="Value" type="Label" parent="UI/Root/BottomActions/HintButton/Count"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -520,6 +642,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
 text = "固定原型"
+
+[node name="ResetProgressButton" type="Button" parent="UI/Root/DebugOverlay/Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "重置账号数据"
 
 [node name="BoardController" type="Node2D" parent="."]
 script = ExtResource("2_qvnq0")

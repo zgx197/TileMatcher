@@ -17,37 +17,45 @@ namespace TileMatcher.Tile;
 /// </remarks>
 public partial class TileView : Node2D
 {
+    private const float HintPulseOverlayMinAlpha = 0.05f;
+    private const float HintPulseOverlayMaxAlpha = 0.17f;
+    private const float HintPulseEdgeMinAlpha = 0.42f;
+    private const float HintPulseEdgeMaxAlpha = 0.92f;
+    private const float HintPulseScaleMin = 1.0f;
+    private const float HintPulseScaleMax = 1.035f;
+    private const double HintPulseDuration = 0.60;
+
     /// <summary>不同层牌面主体的调试色板。</summary>
     private static readonly Color[] BodyPalette =
     [
-        new(0.97f, 0.97f, 0.93f, 1.0f),
-        new(0.97f, 0.89f, 0.75f, 1.0f),
-        new(0.80f, 0.91f, 0.98f, 1.0f),
-        new(0.86f, 0.96f, 0.82f, 1.0f),
-        new(0.93f, 0.84f, 0.97f, 1.0f),
-        new(0.99f, 0.86f, 0.88f, 1.0f),
+        new(0.98f, 0.97f, 0.93f, 1.0f),
+        new(0.97f, 0.95f, 0.89f, 1.0f),
+        new(0.96f, 0.96f, 0.94f, 1.0f),
+        new(0.98f, 0.96f, 0.90f, 1.0f),
+        new(0.96f, 0.95f, 0.91f, 1.0f),
+        new(0.99f, 0.97f, 0.92f, 1.0f),
     ];
 
     /// <summary>不同层侧边厚度区域的调试色板。</summary>
     private static readonly Color[] DepthPalette =
     [
-        new(0.80f, 0.82f, 0.88f, 1.0f),
-        new(0.88f, 0.70f, 0.52f, 1.0f),
-        new(0.53f, 0.72f, 0.86f, 1.0f),
-        new(0.56f, 0.76f, 0.53f, 1.0f),
-        new(0.70f, 0.58f, 0.82f, 1.0f),
-        new(0.86f, 0.60f, 0.67f, 1.0f),
+        new(0.83f, 0.79f, 0.72f, 1.0f),
+        new(0.80f, 0.75f, 0.67f, 1.0f),
+        new(0.78f, 0.76f, 0.70f, 1.0f),
+        new(0.84f, 0.78f, 0.69f, 1.0f),
+        new(0.79f, 0.74f, 0.66f, 1.0f),
+        new(0.85f, 0.79f, 0.70f, 1.0f),
     ];
 
     /// <summary>不同层边框颜色的调试色板。</summary>
     private static readonly Color[] BorderPalette =
     [
-        new(0.71f, 0.74f, 0.82f, 1.0f),
-        new(0.83f, 0.58f, 0.34f, 1.0f),
-        new(0.35f, 0.55f, 0.74f, 1.0f),
-        new(0.37f, 0.61f, 0.33f, 1.0f),
-        new(0.56f, 0.43f, 0.73f, 1.0f),
-        new(0.78f, 0.44f, 0.53f, 1.0f),
+        new(0.63f, 0.57f, 0.45f, 1.0f),
+        new(0.68f, 0.58f, 0.40f, 1.0f),
+        new(0.60f, 0.58f, 0.48f, 1.0f),
+        new(0.66f, 0.57f, 0.42f, 1.0f),
+        new(0.58f, 0.54f, 0.45f, 1.0f),
+        new(0.69f, 0.59f, 0.43f, 1.0f),
     ];
 
     private Label _label = null!;
@@ -64,7 +72,10 @@ public partial class TileView : Node2D
     private bool _flashRightEdge;
     private bool _flashTopEdge;
     private bool _flashBottomEdge;
+    private bool _isHintedPersistent;
     private Tween? _blockedFeedbackTween;
+    private Tween? _hintFeedbackTween;
+    private Tween? _hintPulseTween;
 
     /// <summary>当前视图绑定的逻辑数据。</summary>
     public AppTileData Data { get; private set; } = null!;
@@ -90,7 +101,9 @@ public partial class TileView : Node2D
         _label.Size = tileSize;
         _label.HorizontalAlignment = HorizontalAlignment.Center;
         _label.VerticalAlignment = VerticalAlignment.Center;
-        _label.AddThemeFontSizeOverride("font_size", 36);
+        _label.AddThemeFontSizeOverride("font_size", 30);
+        _label.AddThemeColorOverride("font_outline_color", new Color(0.98f, 0.96f, 0.90f, 0.92f));
+        _label.AddThemeConstantOverride("outline_size", 2);
 
         RefreshVisualState();
         QueueRedraw();
@@ -109,6 +122,31 @@ public partial class TileView : Node2D
     }
 
     /// <summary>
+    /// 设置当前牌是否处于持续提示高亮状态。
+    /// </summary>
+    public void SetHintState(bool isHintedPersistent)
+    {
+        EnsureInitialized();
+        if (_isHintedPersistent == isHintedPersistent)
+        {
+            return;
+        }
+
+        _isHintedPersistent = isHintedPersistent;
+        if (_isHintedPersistent)
+        {
+            StartHintPulse();
+        }
+        else
+        {
+            StopHintPulse();
+        }
+
+        RefreshVisualState();
+        QueueRedraw();
+    }
+
+    /// <summary>
     /// 播放一次“牌被锁住”的失败反馈。
     /// </summary>
     /// <remarks>
@@ -121,6 +159,8 @@ public partial class TileView : Node2D
     {
         EnsureInitialized();
 
+        _hintFeedbackTween?.Kill();
+        StopHintPulse();
         _blockedFeedbackTween?.Kill();
         Scale = Vector2.One;
         ConfigureBlockedFeedbackEdges(blockReason);
@@ -149,6 +189,91 @@ public partial class TileView : Node2D
             QueueRedraw();
             _blockedFeedbackTween = null;
         };
+    }
+
+    /// <summary>
+    /// 播放一次“提示可消除”的高亮反馈。
+    /// </summary>
+    public void PlayHintFeedback()
+    {
+        EnsureInitialized();
+
+        _blockedFeedbackTween?.Kill();
+        _hintFeedbackTween?.Kill();
+        Scale = Vector2.One;
+        _isHintedPersistent = true;
+        StartHintPulse();
+        _feedbackColor = new Color(1.0f, 0.80f, 0.24f, 1.0f);
+        _feedbackOverlayAlpha = 0.0f;
+        _feedbackEdgeAlpha = 0.0f;
+        _flashLeftEdge = true;
+        _flashRightEdge = true;
+        _flashTopEdge = true;
+        _flashBottomEdge = true;
+        QueueRedraw();
+
+        var tween = CreateTween();
+        _hintFeedbackTween = tween;
+        tween.SetParallel(true);
+        tween.SetEase(Tween.EaseType.Out);
+        tween.SetTrans(Tween.TransitionType.Cubic);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), 0.0f, 0.18f, 0.12);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), 0.0f, 0.92f, 0.12);
+        tween.TweenProperty(this, "scale", Vector2.One * 1.06f, 0.12).From(Vector2.One);
+        tween.Chain().TweenProperty(this, "scale", Vector2.One, 0.16);
+        tween.Chain().TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), 0.18f, 0.0f, 0.20);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), 0.92f, 0.0f, 0.20);
+        tween.Finished += () =>
+        {
+            _feedbackOverlayAlpha = HintPulseOverlayMinAlpha;
+            _feedbackEdgeAlpha = HintPulseEdgeMinAlpha;
+            RefreshVisualState();
+            QueueRedraw();
+            _hintFeedbackTween = null;
+        };
+    }
+
+    /// <summary>
+    /// 启动提示态的中频呼吸动画。
+    /// </summary>
+    private void StartHintPulse()
+    {
+        _hintPulseTween?.Kill();
+        _feedbackColor = new Color(1.0f, 0.80f, 0.24f, 1.0f);
+        _feedbackOverlayAlpha = HintPulseOverlayMinAlpha;
+        _feedbackEdgeAlpha = HintPulseEdgeMinAlpha;
+        ClearBlockedFeedbackEdges();
+        _flashLeftEdge = true;
+        _flashRightEdge = true;
+        _flashTopEdge = true;
+        _flashBottomEdge = true;
+
+        var tween = CreateTween();
+        _hintPulseTween = tween;
+        tween.SetLoops();
+        tween.SetParallel(true);
+        tween.SetEase(Tween.EaseType.InOut);
+        tween.SetTrans(Tween.TransitionType.Sine);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), HintPulseOverlayMinAlpha, HintPulseOverlayMaxAlpha, HintPulseDuration);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), HintPulseEdgeMinAlpha, HintPulseEdgeMaxAlpha, HintPulseDuration);
+        tween.TweenProperty(this, "scale", Vector2.One * HintPulseScaleMax, HintPulseDuration).From(Vector2.One * HintPulseScaleMin);
+        tween.Chain().SetParallel(true);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackOverlayAlpha), HintPulseOverlayMaxAlpha, HintPulseOverlayMinAlpha, HintPulseDuration);
+        tween.TweenMethod(Callable.From<float>(SetFeedbackEdgeAlpha), HintPulseEdgeMaxAlpha, HintPulseEdgeMinAlpha, HintPulseDuration);
+        tween.TweenProperty(this, "scale", Vector2.One * HintPulseScaleMin, HintPulseDuration);
+    }
+
+    /// <summary>
+    /// 停止提示态呼吸动画并清理附加高亮绘制参数。
+    /// </summary>
+    private void StopHintPulse()
+    {
+        _hintPulseTween?.Kill();
+        _hintPulseTween = null;
+        _feedbackOverlayAlpha = 0.0f;
+        _feedbackEdgeAlpha = 0.0f;
+        ClearBlockedFeedbackEdges();
+        Scale = Vector2.One;
     }
 
     /// <summary>
@@ -197,7 +322,7 @@ public partial class TileView : Node2D
 
         _shadowStyle = new StyleBoxFlat
         {
-            BgColor = new Color(0.11f, 0.06f, 0.22f, 0.35f),
+            BgColor = new Color(0.05f, 0.11f, 0.10f, 0.28f),
             CornerRadiusTopLeft = 18,
             CornerRadiusTopRight = 18,
             CornerRadiusBottomRight = 18,
@@ -206,7 +331,7 @@ public partial class TileView : Node2D
 
         _depthStyle = new StyleBoxFlat
         {
-            BgColor = new Color(0.65f, 0.67f, 0.88f, 1.0f),
+            BgColor = new Color(0.83f, 0.79f, 0.72f, 1.0f),
             CornerRadiusTopLeft = 18,
             CornerRadiusTopRight = 18,
             CornerRadiusBottomRight = 18,
@@ -215,7 +340,7 @@ public partial class TileView : Node2D
 
         _bodyStyle = new StyleBoxFlat
         {
-            BgColor = Colors.White,
+            BgColor = new Color(0.98f, 0.97f, 0.93f, 1.0f),
             CornerRadiusTopLeft = 18,
             CornerRadiusTopRight = 18,
             CornerRadiusBottomRight = 18,
@@ -224,7 +349,7 @@ public partial class TileView : Node2D
             BorderWidthTop = 2,
             BorderWidthRight = 2,
             BorderWidthBottom = 2,
-            BorderColor = new Color(0.76f, 0.77f, 0.9f, 1.0f),
+            BorderColor = new Color(0.63f, 0.57f, 0.45f, 1.0f),
         };
 
         _initialized = true;
@@ -299,7 +424,7 @@ public partial class TileView : Node2D
         _bodyStyle.BorderWidthTop = 2;
         _bodyStyle.BorderWidthRight = 2;
         _bodyStyle.BorderWidthBottom = 2;
-        _shadowStyle.BgColor = new Color(0.11f, 0.06f, 0.22f, 0.35f);
+        _shadowStyle.BgColor = new Color(0.05f, 0.11f, 0.10f, 0.28f);
 
         if (_isSelected)
         {
@@ -312,16 +437,27 @@ public partial class TileView : Node2D
             return;
         }
 
+        if (_isHintedPersistent)
+        {
+            _bodyStyle.BorderWidthLeft = 5;
+            _bodyStyle.BorderWidthTop = 5;
+            _bodyStyle.BorderWidthRight = 5;
+            _bodyStyle.BorderWidthBottom = 5;
+            _bodyStyle.BorderColor = new Color(1.0f, 0.82f, 0.24f, 1.0f);
+            _shadowStyle.BgColor = new Color(0.95f, 0.72f, 0.10f, 0.34f);
+            return;
+        }
+
         if (_isMovable)
         {
             return;
         }
 
-        _bodyStyle.BorderColor = new Color(0.34f, 0.40f, 0.44f, 1.0f);
-        _bodyStyle.BgColor = _bodyStyle.BgColor.Darkened(0.12f);
-        _depthStyle.BgColor = _depthStyle.BgColor.Darkened(0.35f);
-        _label.AddThemeColorOverride("font_color", new Color(baseTextColor.R, baseTextColor.G, baseTextColor.B, 0.78f));
-        Modulate = new Color(0.78f, 0.78f, 0.80f, 0.72f);
+        _bodyStyle.BorderColor = new Color(0.48f, 0.49f, 0.47f, 1.0f);
+        _bodyStyle.BgColor = _bodyStyle.BgColor.Darkened(0.08f);
+        _depthStyle.BgColor = _depthStyle.BgColor.Darkened(0.18f);
+        _label.AddThemeColorOverride("font_color", new Color(baseTextColor.R, baseTextColor.G, baseTextColor.B, 0.84f));
+        Modulate = new Color(0.90f, 0.91f, 0.90f, 0.92f);
     }
 
     /// <summary>
@@ -331,15 +467,15 @@ public partial class TileView : Node2D
     {
         if (type.Contains('D') || type is "C" or "R")
         {
-            return new Color(0.79f, 0.17f, 0.16f, 1.0f);
+            return new Color(0.74f, 0.17f, 0.14f, 1.0f);
         }
 
         if (type.Contains('B') || type is "F" or "G")
         {
-            return new Color(0.16f, 0.53f, 0.39f, 1.0f);
+            return new Color(0.11f, 0.46f, 0.31f, 1.0f);
         }
 
-        return new Color(0.15f, 0.22f, 0.55f, 1.0f);
+        return new Color(0.12f, 0.22f, 0.46f, 1.0f);
     }
 
     /// <summary>设置失败反馈的面闪透明度。</summary>

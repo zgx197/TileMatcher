@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 using TileMatcher.App;
 using TileMatcher.Board;
@@ -20,6 +21,8 @@ public partial class GameScene : Node2D
     private const string BuildVersionNameSettingPath = "tilematcher_build/version_name";
     private const string BuildVersionCodeSettingPath = "tilematcher_build/version_code";
     private const string BuildOrientationSettingPath = "tilematcher_build/manifest_orientation";
+    private const int MaxRestartCountPerLevel = 3;
+    private const int MaxHintCountPerLevel = 3;
 
     /// <summary>
     /// 当游戏页被单独作为主场景运行时，是否在 `_Ready` 后自动加载一局默认牌桌。
@@ -62,6 +65,10 @@ public partial class GameScene : Node2D
     /// </remarks>
     private Control _interactionTip = null!;
     private Label _interactionTipLabel = null!;
+    private Button _restartButton = null!;
+    private Label _restartCountLabel = null!;
+    private Button _hintButton = null!;
+    private Label _hintCountLabel = null!;
     private Tween? _interactionTipTween;
 
     /// <summary>调试悬浮层及其内部控件。</summary>
@@ -73,6 +80,7 @@ public partial class GameScene : Node2D
     private Button _backHomeButton = null!;
     private Button _generateButton = null!;
     private Button _prototypeButton = null!;
+    private Button _resetProgressButton = null!;
     private HSlider _layerFilterSlider = null!;
     private Label _layerFilterValue = null!;
     private Button _debugToggleButton = null!;
@@ -96,6 +104,9 @@ public partial class GameScene : Node2D
     private int _currentLevelNumber = 1;
     private ulong _levelStartTicksMsec;
     private bool _levelCompleted;
+    private PlayerProgressData? _progressData;
+    private Action? _saveProgressAction;
+    private readonly Dictionary<int, LevelAssistUsageData> _standaloneAssistUsageByLevel = [];
 
     /// <summary>页面流程层使用的普通 C# 事件，不走 Godot Signal 序列化约束。</summary>
     public event Action<LevelCompleteResult>? LevelCompleted;
@@ -103,17 +114,39 @@ public partial class GameScene : Node2D
     /// <summary>请求返回主页的页面层事件。</summary>
     public event Action? BackToHomeRequested;
 
+    /// <summary>请求清空账号数据并强制返回主页。</summary>
+    public event Action? ResetProgressRequested;
+
+    /// <summary>
+    /// 绑定外围流程层持有的玩家进度对象。
+    /// 游戏页内部只读写辅助资源使用情况，真正的保存动作仍由 AppRoot 统一触发。
+    /// </summary>
+    public void BindProgressContext(PlayerProgressData progressData, Action saveProgressAction)
+    {
+        _progressData = progressData;
+        _saveProgressAction = saveProgressAction;
+
+        if (IsNodeReady())
+        {
+            RefreshAssistButtons();
+        }
+    }
+
     public override void _Ready()
     {
-        RenderingServer.SetDefaultClearColor(new Color(0.07f, 0.42f, 0.29f, 1.0f));
+        RenderingServer.SetDefaultClearColor(new Color(0.06f, 0.36f, 0.29f, 1.0f));
 
         _boardController = GetNode<BoardController>("BoardController");
-        _boardBackground = GetNode<CanvasItem>("UI/Root/BoardBackground");
+        _boardBackground = GetNode<CanvasItem>("BoardBackdrop/Root/BoardBackground");
         _levelValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/LevelBox/VBox/Value");
         _scoreValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/ScoreBox/VBox/Value");
         _matchValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/MatchBox/VBox/Value");
         _interactionTip = GetNode<Control>("UI/Root/InteractionTip");
         _interactionTipLabel = GetNode<Label>("UI/Root/InteractionTip/Label");
+        _restartButton = GetNode<Button>("UI/Root/BottomActions/RestartButton");
+        _restartCountLabel = GetNode<Label>("UI/Root/BottomActions/RestartButton/Count/Value");
+        _hintButton = GetNode<Button>("UI/Root/BottomActions/HintButton");
+        _hintCountLabel = GetNode<Label>("UI/Root/BottomActions/HintButton/Count/Value");
         _debugOverlay = GetNode<Control>("UI/Root/DebugOverlay");
         _debugPanel = GetNode<Control>("UI/Root/DebugOverlay/Panel");
         _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
@@ -123,6 +156,7 @@ public partial class GameScene : Node2D
         _settingsButton = GetNode<Button>("UI/Root/TopBar/Layout/SettingsButton");
         _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
         _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
+        _resetProgressButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/ResetProgressButton");
         _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
         _layerFilterValue = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Value");
         _debugToggleButton = GetNode<Button>("UI/Root/DebugToggleButton");
@@ -137,6 +171,7 @@ public partial class GameScene : Node2D
         _backHomeButton.Text = "主页";
         _generateButton.Text = "随机生成";
         _prototypeButton.Text = "固定原型";
+        _resetProgressButton.Text = "重置账号数据";
         _debugLabel.Text = "点击牌桌中的可移动麻将，可以先验证基础配对消除逻辑。";
         _rulesSummaryLabel.Text = string.Empty;
         _backHomeButton.Text = "< 返回主页";
@@ -152,13 +187,18 @@ public partial class GameScene : Node2D
         _debugOverlay.Visible = false;
         _interactionTip.Visible = false;
         _interactionTipLabel.Text = string.Empty;
+        _restartButton.Text = "重开";
+        _hintButton.Text = "提示";
         _leaveConfirmOverlay.Visible = false;
 
         EnsureLevelCatalogLoaded();
         _backHomeButton.Pressed += OnBackHomePressed;
         _settingsButton.Pressed += OnSettingsPressed;
+        _restartButton.Pressed += OnRestartPressed;
+        _hintButton.Pressed += OnHintPressed;
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
+        _resetProgressButton.Pressed += OnResetProgressPressed;
         _layerFilterSlider.ValueChanged += OnLayerFilterChanged;
         _debugToggleButton.GuiInput += OnDebugToggleGuiInput;
         _debugHeader.GuiInput += OnDebugPanelGuiInput;
@@ -174,6 +214,7 @@ public partial class GameScene : Node2D
         InitializeProfileSelector();
         InitializeDebugButtonPosition();
         SyncStats();
+        RefreshAssistButtons();
         RefreshDebugPanelSummary();
         if (AutoStartPrototype)
         {
@@ -192,6 +233,7 @@ public partial class GameScene : Node2D
         _levelCompleted = false;
         _levelStartTicksMsec = Time.GetTicksMsec();
         _levelValue.Text = _currentLevelNumber.ToString();
+        RefreshAssistButtons();
 
         var levelConfig = FindLevelConfig(_currentLevelNumber);
         if (levelConfig is null)
@@ -206,6 +248,49 @@ public partial class GameScene : Node2D
         ApplyLevelConfig(levelConfig);
         _debugLabel.Text = $"已进入关卡 {_currentLevelNumber}，当前使用原型牌桌验证外围流程。";
         return;
+    }
+
+    /// <summary>响应底部“重开当前关卡”。</summary>
+    private void OnRestartPressed()
+    {
+        var usage = GetCurrentAssistUsage();
+        var remainingCount = Math.Max(0, MaxRestartCountPerLevel - usage.RestartUsedCount);
+        if (remainingCount <= 0)
+        {
+            ShowInteractionTip("本关重开次数已用完。");
+            return;
+        }
+
+        usage.RestartUsedCount += 1;
+        PersistProgressContext();
+        RefreshAssistButtons();
+        PlayButtonFeedback(_restartButton, new Color(0.98f, 0.82f, 0.42f, 1.0f));
+        ShowInteractionTip($"已重新开始当前关卡，剩余 {Math.Max(0, MaxRestartCountPerLevel - usage.RestartUsedCount)} 次。");
+        StartLevel(_currentLevelNumber);
+    }
+
+    /// <summary>响应底部“提示一对可消除麻将”。</summary>
+    private void OnHintPressed()
+    {
+        var usage = GetCurrentAssistUsage();
+        var remainingCount = Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount);
+        if (remainingCount <= 0)
+        {
+            ShowInteractionTip("本关提示次数已用完。");
+            return;
+        }
+
+        if (!_boardController.TryShowHintPair())
+        {
+            ShowInteractionTip("当前局面没有可提示的可消除牌。");
+            return;
+        }
+
+        usage.HintUsedCount += 1;
+        PersistProgressContext();
+        RefreshAssistButtons();
+        PlayButtonFeedback(_hintButton, new Color(1.0f, 0.86f, 0.45f, 1.0f));
+        ShowInteractionTip($"已高亮一对可消除麻将，剩余 {Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount)} 次。");
     }
 
     private void OnGeneratePressed()
@@ -227,6 +312,21 @@ public partial class GameScene : Node2D
         PlayButtonFeedback(_prototypeButton, new Color(0.42f, 0.84f, 0.67f, 1.0f));
         FlashBoard(new Color(0.14f, 0.46f, 0.34f, 1.0f));
         _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 调试原型布局");
+    }
+
+    /// <summary>响应 debug 面板中的“重置账号数据”。</summary>
+    private void OnResetProgressPressed()
+    {
+        GD.Print("[GameScene] 点击了重置账号数据按钮");
+        PlayButtonFeedback(_resetProgressButton, new Color(1.0f, 0.66f, 0.48f, 1.0f));
+        HideLeaveConfirmDialog();
+        if (_debugOverlay.Visible)
+        {
+            ToggleDebugOverlay();
+        }
+
+        ShowInteractionTip("正在重置账号数据并返回主页...");
+        ResetProgressRequested?.Invoke();
     }
 
     /// <summary>牌桌生成完成后，同步摘要、统计和调试控件。</summary>
@@ -641,6 +741,44 @@ public partial class GameScene : Node2D
     {
         _scoreValue.Text = _boardController.CurrentScore.ToString();
         _matchValue.Text = _boardController.CurrentMatchCount.ToString();
+    }
+
+    /// <summary>刷新底部两个辅助按钮的剩余次数和可点击状态。</summary>
+    private void RefreshAssistButtons()
+    {
+        var usage = GetCurrentAssistUsage();
+        var restartRemainingCount = Math.Max(0, MaxRestartCountPerLevel - usage.RestartUsedCount);
+        var hintRemainingCount = Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount);
+
+        _restartCountLabel.Text = restartRemainingCount.ToString();
+        _hintCountLabel.Text = hintRemainingCount.ToString();
+        _restartButton.Disabled = restartRemainingCount <= 0;
+        _hintButton.Disabled = hintRemainingCount <= 0;
+        _restartButton.Modulate = restartRemainingCount > 0 ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.52f);
+        _hintButton.Modulate = hintRemainingCount > 0 ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.52f);
+    }
+
+    /// <summary>取得当前关卡对应的辅助资源使用状态。</summary>
+    private LevelAssistUsageData GetCurrentAssistUsage()
+    {
+        if (_progressData is not null)
+        {
+            return _progressData.GetOrCreateLevelAssistUsage(_currentLevelNumber);
+        }
+
+        if (!_standaloneAssistUsageByLevel.TryGetValue(_currentLevelNumber, out var usage) || usage is null)
+        {
+            usage = new LevelAssistUsageData();
+            _standaloneAssistUsageByLevel[_currentLevelNumber] = usage;
+        }
+
+        return usage;
+    }
+
+    /// <summary>把辅助资源使用情况写回外围流程层。</summary>
+    private void PersistProgressContext()
+    {
+        _saveProgressAction?.Invoke();
     }
 
     /// <summary>为按钮播放一次轻量缩放反馈。</summary>

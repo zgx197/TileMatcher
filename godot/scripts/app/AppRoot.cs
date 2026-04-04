@@ -123,8 +123,10 @@ public partial class AppRoot : Node
     {
         var gamePage = GamePageScene.Instantiate<GameScene>();
         gamePage.AutoStartPrototype = false;
+        gamePage.BindProgressContext(_progress, SaveProgress);
         gamePage.LevelCompleted += OnLevelCompleted;
         gamePage.BackToHomeRequested += OnBackToHomeRequested;
+        gamePage.ResetProgressRequested += OnResetProgressRequested;
 
         SwitchToPage(gamePage);
         gamePage.StartLevel(levelNumber);
@@ -244,6 +246,18 @@ public partial class AppRoot : Node
 
     private void OnBackToHomeRequested()
     {
+        ShowHomePage();
+    }
+
+    private void OnResetProgressRequested()
+    {
+        GD.Print("[AppRoot] 收到重置账号数据请求，正在清空进度并返回主页。");
+        _progress = new PlayerProgressData();
+        _pendingDailyRewardSummary = null;
+        _currentLevelNumber = 1;
+        _progress.CurrentLevelNumber = 1;
+        _progress.HighestUnlockedLevel = 1;
+        SaveProgress();
         ShowHomePage();
     }
 

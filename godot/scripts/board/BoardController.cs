@@ -105,6 +105,10 @@ public partial class BoardController : Node2D
     /// <summary>点击配对模式下当前选中的第一张牌。</summary>
     private TileView? _selectedTile;
 
+    /// <summary>当前被提示高亮的一对牌。发生任何新的牌桌操作后都会清空。</summary>
+    private TileView? _hintedFirstTile;
+    private TileView? _hintedSecondTile;
+
     /// <summary>本局累计成功消除的对数。</summary>
     private int _matchCount;
 
@@ -198,6 +202,27 @@ public partial class BoardController : Node2D
     public string CurrentSourceKindLabel => _currentSourceKindLabel;
 
     public string CurrentSourceName => _currentSourceName;
+
+    /// <summary>
+    /// 尝试在当前局面中找出一对可直接消除的麻将，并播放提示反馈。
+    /// </summary>
+    public bool TryShowHintPair()
+    {
+        ClearHintPairVisual();
+        if (!TryFindHintPair(out var firstTile, out var secondTile))
+        {
+            return false;
+        }
+
+        _hintedFirstTile = firstTile;
+        _hintedSecondTile = secondTile;
+        firstTile.SetHintState(true);
+        secondTile.SetHintState(true);
+        firstTile.PlayHintFeedback();
+        secondTile.PlayHintFeedback();
+        LogBoard($"提示了一对可消除麻将: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
+        return true;
+    }
 
     public override void _Ready()
     {
@@ -340,6 +365,8 @@ public partial class BoardController : Node2D
         _matchCount = 0;
         _score = 0;
         _interactionSnapshotExcludedTile = null;
+        _hintedFirstTile = null;
+        _hintedSecondTile = null;
         ResetPointerState();
 
         LogBoard($"开始应用布局: source={sourceName}, profile={CurrentProfileDisplayName}, tiles={layout.Tiles.Count}");
@@ -421,6 +448,7 @@ public partial class BoardController : Node2D
     {
         LogBoard($"收到左键按下: screen=({screenPosition.X:0.##}, {screenPosition.Y:0.##})");
 
+        ClearHintPairVisual();
         ResetPointerState();
 
         var clickedTile = PickTopTileAtScreenPoint(screenPosition);
@@ -502,6 +530,7 @@ public partial class BoardController : Node2D
     /// </summary>
     private void TryBeginDrag(TileView tileView, Vector2 screenPosition)
     {
+        ClearHintPairVisual();
         if (!tileView.Data.Movable)
         {
             LogBoard($"尝试开始拖拽失败，麻将不可移动: {DescribeTile(tileView.Data)}");
@@ -603,6 +632,38 @@ public partial class BoardController : Node2D
             .OrderBy(tileView => GetRectGapDistance(draggedRect, tileView.GetGlobalRect()))
             .ThenByDescending(tileView => tileView.ZIndex)
             .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// 在当前可交互快照中寻找一对可直接消除的麻将。
+    /// </summary>
+    private bool TryFindHintPair(out TileView firstTile, out TileView secondTile)
+    {
+        var activeTiles = GetInteractionTiles();
+        var candidates = _tileViews
+            .Where(tileView => tileView.Visible && !tileView.Data.Removed && tileView.Data.Movable)
+            .OrderByDescending(tileView => tileView.ZIndex)
+            .ThenBy(tileView => tileView.Data.GZ)
+            .ThenBy(tileView => tileView.Data.GY)
+            .ThenBy(tileView => tileView.Data.GX)
+            .ToList();
+
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            for (var j = i + 1; j < candidates.Count; j++)
+            {
+                if (TileInteractionRules.TryValidateMatchPair(candidates[i].Data, candidates[j].Data, activeTiles, out _))
+                {
+                    firstTile = candidates[i];
+                    secondTile = candidates[j];
+                    return true;
+                }
+            }
+        }
+
+        firstTile = null!;
+        secondTile = null!;
+        return false;
     }
 
     /// <summary>
@@ -716,6 +777,7 @@ public partial class BoardController : Node2D
     /// </remarks>
     private bool TryStartMatch(TileView firstTile, TileView secondTile, string sourceLabel)
     {
+        ClearHintPairVisual();
         var activeTiles = GetInteractionTiles();
         var validation = TileInteractionRules.ValidateMatchPair(firstTile.Data, secondTile.Data, activeTiles);
         if (!validation.IsValid)
@@ -776,6 +838,7 @@ public partial class BoardController : Node2D
     /// </summary>
     private async void RemoveMatchedPair(TileView a, TileView b)
     {
+        ClearHintPairVisual();
         var feedback = GetMatchFeedback();
         var originalZIndexA = a.ZIndex;
         var originalZIndexB = b.ZIndex;
@@ -880,6 +943,25 @@ public partial class BoardController : Node2D
         {
             RefreshTileStates();
         }
+    }
+
+    /// <summary>
+    /// 清除当前持续提示高亮。
+    /// </summary>
+    private void ClearHintPairVisual()
+    {
+        if (_hintedFirstTile is not null)
+        {
+            _hintedFirstTile.SetHintState(false);
+        }
+
+        if (_hintedSecondTile is not null && _hintedSecondTile != _hintedFirstTile)
+        {
+            _hintedSecondTile.SetHintState(false);
+        }
+
+        _hintedFirstTile = null;
+        _hintedSecondTile = null;
     }
 
     /// <summary>

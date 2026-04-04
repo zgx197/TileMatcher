@@ -36,6 +36,7 @@ public static class PlayerProgressStore
 
             data.CurrentLevelNumber = Math.Max(1, data.CurrentLevelNumber);
             data.HighestUnlockedLevel = Math.Max(data.CurrentLevelNumber, data.HighestUnlockedLevel);
+            data.LevelAssistUsageByLevel ??= [];
             return data;
         }
         catch (Exception exception)
