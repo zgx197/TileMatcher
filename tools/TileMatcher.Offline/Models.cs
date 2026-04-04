@@ -12,6 +12,15 @@ public sealed class OfflineBatchConfig
     public string RuntimeOutputDir { get; set; } = "artifacts/mahjong-mvp/runtime-levels";
     public OfflineLayoutRules Rules { get; set; } = new();
     public OfflineFilterRules Filter { get; set; } = new();
+    public OfflineHiddenFaceConfig HiddenFace { get; set; } = new();
+}
+
+public sealed class OfflineHiddenFaceConfig
+{
+    public int StartLevel { get; set; } = int.MaxValue;
+    public int HiddenCount { get; set; }
+    public double HiddenRatio { get; set; }
+    public int MaxHiddenCount { get; set; } = 6;
 }
 
 public sealed class OfflineLayoutRules
@@ -74,6 +83,9 @@ public sealed class OfflineTileData
     public OfflineTileShape Shape { get; init; } = new() { WidthUnits = 4, HeightUnits = 6 };
     public bool Removed { get; set; }
 
+    [JsonPropertyName("face_hidden_initial")]
+    public bool FaceHiddenInitial { get; init; }
+
     [JsonIgnore]
     public int FootprintWidth => Shape.WidthUnits;
 
@@ -95,6 +107,7 @@ public sealed class OfflineTileData
                 HeightUnits = Shape.HeightUnits,
             },
             Removed = Removed,
+            FaceHiddenInitial = FaceHiddenInitial,
         };
     }
 }

@@ -71,7 +71,7 @@ internal static partial class OfflinePipeline
             .ToList();
 
         ExportAnalysisFiles(config, analysisDir, candidates, accepted, review);
-        ExportRuntimeLevels(runtimeDir, accepted);
+        ExportRuntimeLevels(runtimeDir, accepted, config.HiddenFace);
 
         return new OfflineBatchSummary
         {
@@ -108,7 +108,10 @@ internal static partial class OfflinePipeline
             });
     }
 
-    private static void ExportRuntimeLevels(string runtimeDir, IReadOnlyList<OfflineCandidateRecord> accepted)
+    private static void ExportRuntimeLevels(
+        string runtimeDir,
+        IReadOnlyList<OfflineCandidateRecord> accepted,
+        OfflineHiddenFaceConfig? hiddenFaceConfig = null)
     {
         var levelsDir = Path.Combine(runtimeDir, "levels");
         Directory.CreateDirectory(levelsDir);
@@ -123,7 +126,7 @@ internal static partial class OfflinePipeline
                 CandidateId = accepted[index].CandidateId,
                 DifficultyBucket = accepted[index].FilterResult.DifficultyBucket,
                 RecommendationScore = accepted[index].FilterResult.RecommendationScore,
-                Layout = accepted[index].Layout,
+                Layout = BuildRuntimeLayout(accepted[index], levelNumber, hiddenFaceConfig),
             };
 
             var fileName = $"level_{levelNumber:000}.json";
@@ -141,9 +144,12 @@ internal static partial class OfflinePipeline
         WriteJson(Path.Combine(runtimeDir, "level-catalog.json"), catalog);
     }
 
-    internal static void ExportRuntimeLevelsForTests(string runtimeDir, IReadOnlyList<OfflineCandidateRecord> accepted)
+    internal static void ExportRuntimeLevelsForTests(
+        string runtimeDir,
+        IReadOnlyList<OfflineCandidateRecord> accepted,
+        OfflineHiddenFaceConfig? hiddenFaceConfig = null)
     {
-        ExportRuntimeLevels(runtimeDir, accepted);
+        ExportRuntimeLevels(runtimeDir, accepted, hiddenFaceConfig);
     }
 
     private static string ResolveOutputPath(string repoRoot, string configuredPath)
@@ -155,6 +161,82 @@ internal static partial class OfflinePipeline
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(value, JsonOptions));
+    }
+
+    private static OfflineLevelLayout BuildRuntimeLayout(
+        OfflineCandidateRecord acceptedCandidate,
+        int levelNumber,
+        OfflineHiddenFaceConfig? hiddenFaceConfig)
+    {
+        var hiddenTileIds = ResolveInitiallyHiddenTileIds(
+            acceptedCandidate.Layout,
+            acceptedCandidate.Seed,
+            levelNumber,
+            hiddenFaceConfig);
+
+        return new OfflineLevelLayout
+        {
+            CandidateId = acceptedCandidate.Layout.CandidateId,
+            LevelId = acceptedCandidate.Layout.LevelId,
+            Tiles = acceptedCandidate.Layout.Tiles
+                .Select(tile => new OfflineTileData
+                {
+                    Id = tile.Id,
+                    Type = tile.Type,
+                    GX = tile.GX,
+                    GY = tile.GY,
+                    GZ = tile.GZ,
+                    Shape = new OfflineTileShape
+                    {
+                        WidthUnits = tile.Shape.WidthUnits,
+                        HeightUnits = tile.Shape.HeightUnits,
+                    },
+                    Removed = false,
+                    FaceHiddenInitial = hiddenTileIds.Contains(tile.Id),
+                })
+                .ToList(),
+        };
+    }
+
+    private static HashSet<int> ResolveInitiallyHiddenTileIds(
+        OfflineLevelLayout layout,
+        int seed,
+        int levelNumber,
+        OfflineHiddenFaceConfig? hiddenFaceConfig)
+    {
+        if (hiddenFaceConfig is null || levelNumber < hiddenFaceConfig.StartLevel)
+        {
+            return [];
+        }
+
+        var tileCount = layout.Tiles.Count;
+        if (tileCount == 0)
+        {
+            return [];
+        }
+
+        var targetCount = hiddenFaceConfig.HiddenCount > 0
+            ? hiddenFaceConfig.HiddenCount
+            : (int)Math.Ceiling(tileCount * Math.Max(0.0, hiddenFaceConfig.HiddenRatio));
+        targetCount = Math.Min(targetCount, Math.Max(0, hiddenFaceConfig.MaxHiddenCount));
+        targetCount = Math.Min(targetCount, tileCount);
+        if (targetCount <= 0)
+        {
+            return [];
+        }
+
+        var rng = new Random(seed ^ (levelNumber * 397));
+        var candidates = layout.Tiles
+            .OrderByDescending(tile => tile.GZ)
+            .ThenBy(tile => tile.GY)
+            .ThenBy(tile => tile.GX)
+            .ThenBy(tile => tile.Id)
+            .Select(tile => (TileId: tile.Id, Sort: rng.NextDouble()))
+            .OrderBy(item => item.Sort)
+            .Take(targetCount)
+            .Select(item => item.TileId);
+
+        return candidates.ToHashSet();
     }
 
     private static OfflineLevelLayout GenerateCandidate(int levelId, int seed, OfflineLayoutRules rules)

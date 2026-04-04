@@ -17,7 +17,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 2,
@@ -29,7 +30,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 3,
@@ -41,7 +43,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 4,
@@ -53,7 +56,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 5,
@@ -65,7 +69,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 6,
@@ -77,7 +82,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 7,
@@ -89,7 +95,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 8,
@@ -101,7 +108,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 9,
@@ -113,7 +121,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 10,
@@ -125,7 +134,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 11,
@@ -137,7 +147,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 12,
@@ -149,7 +160,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 13,
@@ -161,7 +173,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 14,
@@ -173,7 +186,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 15,
@@ -185,7 +199,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": true
       },
       {
         "Id": 16,
@@ -197,7 +212,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 17,
@@ -209,7 +225,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 18,
@@ -221,7 +238,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 19,
@@ -233,7 +251,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 20,
@@ -245,7 +264,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 21,
@@ -257,7 +277,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 22,
@@ -269,7 +290,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 23,
@@ -281,7 +303,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 24,
@@ -293,7 +316,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 25,
@@ -305,7 +329,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 26,
@@ -317,7 +342,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 27,
@@ -329,7 +355,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 28,
@@ -341,7 +368,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 29,
@@ -353,7 +381,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 30,
@@ -365,7 +394,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 31,
@@ -377,7 +407,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 32,
@@ -389,7 +420,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 33,
@@ -401,7 +433,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 34,
@@ -413,7 +446,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 35,
@@ -425,7 +459,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 36,
@@ -437,7 +472,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 37,
@@ -449,7 +485,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 38,
@@ -461,7 +498,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 39,
@@ -473,7 +511,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 40,
@@ -485,7 +524,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 41,
@@ -497,7 +537,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 42,
@@ -509,7 +550,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 43,
@@ -521,7 +563,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 44,
@@ -533,7 +576,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 45,
@@ -545,7 +589,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": true
       },
       {
         "Id": 46,
@@ -557,7 +602,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 47,
@@ -569,7 +615,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       },
       {
         "Id": 48,
@@ -581,7 +628,8 @@
           "WidthUnits": 4,
           "HeightUnits": 6
         },
-        "Removed": false
+        "Removed": false,
+        "face_hidden_initial": false
       }
     ]
   }

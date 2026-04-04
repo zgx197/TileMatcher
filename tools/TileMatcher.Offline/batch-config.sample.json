@@ -5,6 +5,12 @@
   "randomSeed": 20260404,
   "analysisOutputDir": "artifacts/mahjong-mvp/analysis",
   "runtimeOutputDir": "artifacts/mahjong-mvp/runtime-levels",
+  "hiddenFace": {
+    "startLevel": 1,
+    "hiddenCount": 2,
+    "hiddenRatio": 0.0,
+    "maxHiddenCount": 6
+  },
   "rules": {
     "minLayerCount": 4,
     "maxLayerCount": 5,

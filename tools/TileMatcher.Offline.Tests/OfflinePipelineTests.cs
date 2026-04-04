@@ -39,6 +39,8 @@ internal static class OfflinePipelineTests
         TestAssert.Equal("artifacts/mahjong-mvp/analysis", config.AnalysisOutputDir, "Default analysis output directory should stay stable.");
         TestAssert.Equal("artifacts/mahjong-mvp/runtime-levels", config.RuntimeOutputDir, "Default runtime output directory should stay stable.");
         TestAssert.Equal(48, config.Filter.RandomSimulationCount, "Default random simulation count should stay stable.");
+        TestAssert.Equal(int.MaxValue, config.HiddenFace.StartLevel, "Default hidden-face start level should keep the feature disabled.");
+        TestAssert.Equal(0, config.HiddenFace.HiddenCount, "Default hidden-face count should keep the feature disabled.");
     }
 
     private static void EvaluateLayout_FindsSolution_ForSimplePair()
@@ -160,7 +162,15 @@ internal static class OfflinePipelineTests
             CreateAcceptedRecord(2, "candidate_beta", "hard_core", 0.5345),
         };
 
-        OfflineTestHooks.ExportRuntimeLevels(runtimeDir, accepted);
+        OfflineTestHooks.ExportRuntimeLevels(
+            runtimeDir,
+            accepted,
+            new OfflineHiddenFaceConfig
+            {
+                StartLevel = 1,
+                HiddenCount = 1,
+                MaxHiddenCount = 2,
+            });
 
         var catalogPath = Path.Combine(runtimeDir, "level-catalog.json");
         var levelOnePath = Path.Combine(runtimeDir, "levels", "level_001.json");
@@ -186,6 +196,8 @@ internal static class OfflinePipelineTests
         TestAssert.Equal("candidate_alpha", levelOne.CandidateId, "The first exported level should retain its candidate id.");
         TestAssert.Equal(2, levelTwo!.LevelNumber, "The second exported level should keep level number 2.");
         TestAssert.Equal("candidate_beta", levelTwo.CandidateId, "The second exported level should retain its candidate id.");
+        TestAssert.Equal(1, levelOne.Layout.Tiles.Count(tile => tile.FaceHiddenInitial), "The first exported level should mark one tile as initially hidden.");
+        TestAssert.Equal(1, levelTwo.Layout.Tiles.Count(tile => tile.FaceHiddenInitial), "The second exported level should mark one tile as initially hidden.");
     }
 
     private static OfflineLevelLayout CreateLayout(string candidateId, params (int Id, string Type, int GX, int GY, int GZ)[] tiles)

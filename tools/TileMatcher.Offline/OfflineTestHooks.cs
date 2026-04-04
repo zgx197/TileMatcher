@@ -12,8 +12,11 @@ internal static class OfflineTestHooks
         return OfflinePipeline.FilterForTests(layout, evaluation, rules);
     }
 
-    public static void ExportRuntimeLevels(string runtimeDir, IReadOnlyList<OfflineCandidateRecord> accepted)
+    public static void ExportRuntimeLevels(
+        string runtimeDir,
+        IReadOnlyList<OfflineCandidateRecord> accepted,
+        OfflineHiddenFaceConfig? hiddenFaceConfig = null)
     {
-        OfflinePipeline.ExportRuntimeLevelsForTests(runtimeDir, accepted);
+        OfflinePipeline.ExportRuntimeLevelsForTests(runtimeDir, accepted, hiddenFaceConfig);
     }
 }
