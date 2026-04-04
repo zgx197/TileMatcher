@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=4]
+[gd_scene load_steps=7 format=4]
 
 [ext_resource type="Script" path="res://scripts/app/AppRoot.cs" id="1_app_root"]
 [ext_resource type="PackedScene" path="res://scenes/boot/BootLoadingPage.tscn" id="2_boot"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/game/GameScene.tscn" id="4_game"]
 [ext_resource type="PackedScene" path="res://scenes/result/LevelCompletePage.tscn" id="5_complete"]
 [ext_resource type="PackedScene" path="res://scenes/result/DailyRewardPage.tscn" id="6_reward"]
+[ext_resource type="PackedScene" path="res://scenes/result/LevelFailedPage.tscn" id="7_failed"]
 
 [node name="AppRoot" type="Node"]
 script = ExtResource("1_app_root")
@@ -13,4 +14,5 @@ BootLoadingPageScene = ExtResource("2_boot")
 HomePageScene = ExtResource("3_home")
 GamePageScene = ExtResource("4_game")
 LevelCompletePageScene = ExtResource("5_complete")
+LevelFailedPageScene = ExtResource("7_failed")
 DailyRewardPageScene = ExtResource("6_reward")

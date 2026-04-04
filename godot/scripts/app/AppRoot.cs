@@ -35,6 +35,10 @@ public partial class AppRoot : Node
     [Export]
     public PackedScene LevelCompletePageScene { get; set; } = null!;
 
+    /// <summary>关卡失败页场景资源。</summary>
+    [Export]
+    public PackedScene LevelFailedPageScene { get; set; } = null!;
+
     /// <summary>每日奖励页场景资源。</summary>
     [Export]
     public PackedScene DailyRewardPageScene { get; set; } = null!;
@@ -68,6 +72,7 @@ public partial class AppRoot : Node
         HomePageScene ??= GD.Load<PackedScene>("res://scenes/home/HomePage.tscn");
         GamePageScene ??= GD.Load<PackedScene>("res://scenes/game/GameScene.tscn");
         LevelCompletePageScene ??= GD.Load<PackedScene>("res://scenes/result/LevelCompletePage.tscn");
+        LevelFailedPageScene ??= GD.Load<PackedScene>("res://scenes/result/LevelFailedPage.tscn");
         DailyRewardPageScene ??= GD.Load<PackedScene>("res://scenes/result/DailyRewardPage.tscn");
 
         EnsureCatalogsLoaded();
@@ -146,6 +151,7 @@ public partial class AppRoot : Node
         gamePage.AutoStartPrototype = false;
         gamePage.BindProgressContext(_progress, SaveProgress);
         gamePage.LevelCompleted += OnLevelCompleted;
+        gamePage.LevelFailed += OnLevelFailed;
         gamePage.BackToHomeRequested += OnBackToHomeRequested;
         gamePage.DebugLevelJumpRequested += OnDebugLevelJumpRequested;
         gamePage.ResetProgressRequested += OnResetProgressRequested;
@@ -163,6 +169,17 @@ public partial class AppRoot : Node
         completePage.ReturnHomeRequested += OnBackToHomeRequested;
 
         SwitchToPage(completePage);
+    }
+
+    /// <summary>切到关卡失败页。</summary>
+    private void ShowLevelFailedPage(LevelFailedResult result)
+    {
+        var failedPage = LevelFailedPageScene.Instantiate<LevelFailedPage>();
+        failedPage.Configure(result);
+        failedPage.RetryRequested += OnRetryRequested;
+        failedPage.ReturnHomeRequested += OnBackToHomeRequested;
+
+        SwitchToPage(failedPage);
     }
 
     /// <summary>切到每日奖励页。</summary>
@@ -248,6 +265,16 @@ public partial class AppRoot : Node
         ShowLevelCompletePage(completeResult);
     }
 
+    /// <summary>响应关卡失败事件，保持当前关卡号不前进并切到失败页。</summary>
+    private void OnLevelFailed(LevelFailedResult result)
+    {
+        _pendingDailyRewardSummary = null;
+        _currentLevelNumber = Math.Max(1, result.LevelNumber);
+        _progress.CurrentLevelNumber = _currentLevelNumber;
+        SaveProgress();
+        ShowLevelFailedPage(result);
+    }
+
     /// <summary>响应结算页继续按钮，必要时先进入每日奖励页。</summary>
     private void OnContinueRequested(int nextLevelNumber)
     {
@@ -272,6 +299,16 @@ public partial class AppRoot : Node
         _progress.CurrentLevelNumber = nextLevelNumber;
         SaveProgress();
         ShowGamePage(nextLevelNumber);
+    }
+
+    /// <summary>响应失败页“重新来一局”，直接重开当前失败关卡。</summary>
+    private void OnRetryRequested(int levelNumber)
+    {
+        _pendingDailyRewardSummary = null;
+        _currentLevelNumber = Math.Max(1, levelNumber);
+        _progress.CurrentLevelNumber = _currentLevelNumber;
+        SaveProgress();
+        ShowGamePage(_currentLevelNumber);
     }
 
     /// <summary>响应返回主页请求。</summary>

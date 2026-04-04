@@ -1,0 +1,216 @@
+[gd_scene load_steps=4 format=4]
+
+[ext_resource type="Script" path="res://scripts/result/LevelFailedPage.cs" id="1_failed_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.101562, 0.0703125, 0.0585938, 0.92)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.820312, 0.449219, 0.214844, 0.95)
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_statbox"]
+bg_color = Color(0.183594, 0.121094, 0.0976562, 0.95)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.785156, 0.488281, 0.28125, 0.78)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_button"]
+bg_color = Color(0.894531, 0.398438, 0.132812, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.722656, 0.40625, 0.92)
+
+[node name="LevelFailedPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_failed_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0429688, 0.0507812, 0.0546875, 0.95)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="Root/Center"]
+custom_minimum_size = Vector2(560, 760)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="Stack" type="VBoxContainer" parent="Root/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Emblem" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 82
+modulate = Color(1, 0.519531, 0.28125, 1)
+text = "!"
+horizontal_alignment = 1
+
+[node name="Headline" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 56
+modulate = Color(1, 0.71875, 0.488281, 1)
+text = "关卡 1 未完成"
+horizontal_alignment = 1
+
+[node name="SubText" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+modulate = Color(0.972656, 0.882812, 0.828125, 0.82)
+text = "很遗憾，这一局没能顺利通关"
+horizontal_alignment = 1
+
+[node name="Stats" type="HBoxContainer" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TimeBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(1, 0.753906, 0.578125, 0.88)
+text = "时间"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/TimeBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.980469, 0.933594, 1)
+text = "05:32"
+horizontal_alignment = 1
+
+[node name="ScoreBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(1, 0.753906, 0.578125, 0.88)
+text = "分数"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/ScoreBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.980469, 0.933594, 1)
+text = "1100"
+horizontal_alignment = 1
+
+[node name="MatchBox" type="PanelContainer" parent="Root/Center/Card/Margin/Stack/Stats"]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_statbox")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+modulate = Color(1, 0.753906, 0.578125, 0.88)
+text = "配对"
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="Root/Center/Card/Margin/Stack/Stats/MatchBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+modulate = Color(1, 0.980469, 0.933594, 1)
+text = "11"
+horizontal_alignment = 1
+
+[node name="Reason" type="Label" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+modulate = Color(1, 0.855469, 0.753906, 1)
+text = "当前局面已经没有可继续配对的牌。"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Buttons" type="VBoxContainer" parent="Root/Center/Card/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="RetryButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxFlat_primary_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_primary_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_primary_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_primary_button")
+text = "重新来一局"
+
+[node name="HomeButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "返回主页"
