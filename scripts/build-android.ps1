@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$GodotExe = $env:GODOT_EXE,
-    [string]$ProjectDir = (Join-Path (Split-Path -Parent $PSScriptRoot) "godot"),
+    [string]$ProjectDir,
     [string]$ExportPreset = "Android",
     [string]$PackageName = "com.zgx197.tilematcher",
     [string]$VersionName = "0.1.5",
@@ -29,6 +29,18 @@ function Write-Step {
     param([string]$Message)
     Write-Host ""
     Write-Host "==> $Message" -ForegroundColor Cyan
+}
+
+function Get-ScriptRoot {
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        return $PSScriptRoot
+    }
+
+    if ($MyInvocation.MyCommand.Path) {
+        return Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+
+    throw "Unable to resolve script root."
 }
 
 function Assert-PathExists {
@@ -86,6 +98,112 @@ function Resolve-BuildTool {
     return $latest.FullName
 }
 
+function Get-NativeExitCode {
+    $lastExitCodeVariable = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+    if ($null -eq $lastExitCodeVariable) {
+        return 0
+    }
+
+    return [int]$lastExitCodeVariable.Value
+}
+
+function Write-LogExcerpt {
+    param(
+        [string]$Path,
+        [string]$Label,
+        [int]$TailCount = 120
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+
+    Write-Host ""
+    Write-Host "[$Label] $Path" -ForegroundColor DarkGray
+    Get-Content -LiteralPath $Path -Tail $TailCount
+}
+
+function Invoke-GodotExport {
+    param(
+        [string]$GodotExe,
+        [string]$ProjectDir,
+        [string]$ExportPreset,
+        [string]$UnsignedApkPath,
+        [string]$FallbackApkPath
+    )
+
+    $stdoutLogPath = Join-Path $env:TEMP "tilematcher-godot-export-stdout.log"
+    $stderrLogPath = Join-Path $env:TEMP "tilematcher-godot-export-stderr.log"
+    $exportStartedAt = Get-Date
+
+    Remove-Item -LiteralPath $stdoutLogPath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $stderrLogPath -Force -ErrorAction SilentlyContinue
+
+    $process = Start-Process `
+        -FilePath $GodotExe `
+        -ArgumentList @("--headless", "--path", $ProjectDir, "--export-debug", $ExportPreset, $UnsignedApkPath) `
+        -NoNewWindow `
+        -PassThru `
+        -RedirectStandardOutput $stdoutLogPath `
+        -RedirectStandardError $stderrLogPath
+
+    $artifactStableSince = $null
+    $artifactFingerprint = $null
+    $completedByFreshFallbackArtifact = $false
+
+    while (-not $process.HasExited) {
+        Start-Sleep -Seconds 2
+
+        if ([string]::IsNullOrWhiteSpace($FallbackApkPath) -or (-not (Test-Path -LiteralPath $FallbackApkPath))) {
+            continue
+        }
+
+        $fallbackItem = Get-Item -LiteralPath $FallbackApkPath
+        if (($fallbackItem.LastWriteTime -lt $exportStartedAt) -or ($fallbackItem.Length -le 0)) {
+            continue
+        }
+
+        $currentFingerprint = "$($fallbackItem.Length)|$($fallbackItem.LastWriteTimeUtc.Ticks)"
+        if ($currentFingerprint -ne $artifactFingerprint) {
+            $artifactFingerprint = $currentFingerprint
+            $artifactStableSince = Get-Date
+            continue
+        }
+
+        if (($null -ne $artifactStableSince) -and (((Get-Date) - $artifactStableSince).TotalSeconds -ge 8)) {
+            try {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            catch {
+            }
+
+            $completedByFreshFallbackArtifact = $true
+            break
+        }
+    }
+
+    if (-not $process.HasExited) {
+        $process.WaitForExit()
+    }
+
+    if ($completedByFreshFallbackArtifact) {
+        Write-Warning "Godot export did not exit cleanly after producing a fresh Gradle APK. The process was stopped and the build will continue from the generated artifact."
+        return [pscustomobject]@{
+            ExitCode = 0
+            StdoutLogPath = $stdoutLogPath
+            StderrLogPath = $stderrLogPath
+            CompletedByFreshFallbackArtifact = $true
+        }
+    }
+
+    return [pscustomobject]@{
+        ExitCode = $process.ExitCode
+        StdoutLogPath = $stdoutLogPath
+        StderrLogPath = $stderrLogPath
+        CompletedByFreshFallbackArtifact = $false
+    }
+}
+
 function Update-BuildMetadata {
     param(
         [string]$ProjectDir,
@@ -128,6 +246,94 @@ function Update-BuildMetadata {
     Set-RegexValue -Path $projectSettingsPath -Pattern '^manifest_orientation="[^"]*"$' -Replacement "manifest_orientation=`"$ManifestOrientation`""
 }
 
+function Resolve-GradleUserHome {
+    param([string]$ProjectDir)
+
+    $projectGradleHome = Join-Path $ProjectDir "android/build/.gradle"
+    New-Item -ItemType Directory -Path $projectGradleHome -Force | Out-Null
+
+    Get-ChildItem -LiteralPath $projectGradleHome -Recurse -Include "*.lck", "*.part" -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+    }
+
+    $volatileCacheDirs = @(
+        (Join-Path $projectGradleHome "caches\8.11.1\groovy-dsl"),
+        (Join-Path $projectGradleHome "caches\8.11.1\transforms"),
+        (Join-Path $projectGradleHome "daemon\8.11.1")
+    )
+
+    foreach ($volatileCacheDir in $volatileCacheDirs) {
+        if (Test-Path -LiteralPath $volatileCacheDir) {
+            Remove-Item -LiteralPath $volatileCacheDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    return $projectGradleHome
+}
+
+function Clear-GodotMonoBuildIssueFiles {
+    $godotMonoBuildLogsRoot = Join-Path $env:APPDATA "Godot\mono\build_logs"
+    if (-not (Test-Path -LiteralPath $godotMonoBuildLogsRoot)) {
+        return
+    }
+
+    Get-ChildItem -LiteralPath $godotMonoBuildLogsRoot -Recurse -Filter "msbuild_issues.csv" -ErrorAction SilentlyContinue | ForEach-Object {
+        $issueFile = $_
+        try {
+            [System.IO.File]::SetAttributes($issueFile.FullName, [System.IO.FileAttributes]::Normal)
+            Remove-Item -LiteralPath $issueFile.FullName -Force -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Failed to clear stale Godot Mono build issue file: $($issueFile.FullName)"
+        }
+    }
+}
+
+function Remove-GodotDiagnosticArtifacts {
+    param([string]$ProjectDir)
+
+    $logsRoot = Join-Path $ProjectDir "logs"
+    if (-not (Test-Path -LiteralPath $logsRoot)) {
+        return
+    }
+
+    Get-ChildItem -LiteralPath $logsRoot -Directory -Filter "diagnostics-*" -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Resolve-GodotExportFallbackApkPath {
+    param([string]$ProjectDir)
+
+    $fallbackApkPath = Join-Path $ProjectDir "android/build/build/outputs/apk/mono/debug/android_monoDebug.apk"
+    if (Test-Path -LiteralPath $fallbackApkPath) {
+        return $fallbackApkPath
+    }
+
+    return $null
+}
+
+function Remove-StaleGodotExportArtifacts {
+    param([string]$ProjectDir)
+
+    $stalePaths = @(
+        (Join-Path $ProjectDir "android/build/build/outputs/apk/mono/debug/android_monoDebug.apk"),
+        (Join-Path $ProjectDir "android/build/build/outputs/apk/mono/debug/output-metadata.json")
+    )
+
+    foreach ($stalePath in $stalePaths) {
+        if (Test-Path -LiteralPath $stalePath) {
+            Remove-Item -LiteralPath $stalePath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($ProjectDir)) {
+    $scriptRoot = Get-ScriptRoot
+    $repoRoot = Split-Path -Parent $scriptRoot
+    $ProjectDir = Join-Path $repoRoot "godot"
+}
+
 if ([string]::IsNullOrWhiteSpace($GodotExe)) {
     $GodotExe = "D:\GodotCSharp\Godot_v4.6.1-stable_mono_win64\Godot_v4.6.1-stable_mono_win64.exe"
 }
@@ -163,12 +369,26 @@ Assert-PathExists -Path $aaptPath -Label "aapt"
 $env:JAVA_HOME = $JavaHome
 $env:ANDROID_SDK_ROOT = $AndroidSdkRoot
 $env:ANDROID_HOME = $AndroidSdkRoot
+$gradleUserHome = Resolve-GradleUserHome -ProjectDir $ProjectDir
+New-Item -ItemType Directory -Path $gradleUserHome -Force | Out-Null
+$env:GRADLE_USER_HOME = $gradleUserHome
 
 $outputDir = Join-Path $ProjectDir "build/android"
 $unsignedApkPath = Join-Path $outputDir "TileMatcher-unsigned.apk"
 $signedApkPath = Join-Path $outputDir $OutputName
 
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+if (Test-Path -LiteralPath $unsignedApkPath) {
+    Remove-Item -LiteralPath $unsignedApkPath -Force
+}
+
+if (Test-Path -LiteralPath $signedApkPath) {
+    Remove-Item -LiteralPath $signedApkPath -Force
+}
+
+Clear-GodotMonoBuildIssueFiles
+Remove-GodotDiagnosticArtifacts -ProjectDir $ProjectDir
+Remove-StaleGodotExportArtifacts -ProjectDir $ProjectDir
 
 Update-BuildMetadata `
     -ProjectDir $ProjectDir `
@@ -178,12 +398,39 @@ Update-BuildMetadata `
     -ManifestOrientation $ManifestOrientation
 
 Write-Step "Run Godot export"
-& $GodotExe --headless --path $ProjectDir --export-debug $ExportPreset $unsignedApkPath
-$godotExitCode = $LASTEXITCODE
+$exportStartedAt = Get-Date
+$fallbackApkPath = Join-Path $ProjectDir "android/build/build/outputs/apk/mono/debug/android_monoDebug.apk"
+$godotExportResult = Invoke-GodotExport `
+    -GodotExe $GodotExe `
+    -ProjectDir $ProjectDir `
+    -ExportPreset $ExportPreset `
+    -UnsignedApkPath $unsignedApkPath `
+    -FallbackApkPath $fallbackApkPath
+$godotExitCode = [int]$godotExportResult.ExitCode
+
+if (-not (Test-Path -LiteralPath $unsignedApkPath)) {
+    $existingFallbackApkPath = Resolve-GodotExportFallbackApkPath -ProjectDir $ProjectDir
+    if (-not [string]::IsNullOrWhiteSpace($existingFallbackApkPath)) {
+        $fallbackItem = Get-Item -LiteralPath $existingFallbackApkPath
+        if ($fallbackItem.LastWriteTime -lt $exportStartedAt) {
+            throw "Godot export did not produce a fresh Gradle APK. Refusing to reuse stale fallback artifact: $existingFallbackApkPath"
+        }
+
+        Write-Warning "Godot did not copy the unsigned APK to the final export path. Reusing the fresh Gradle output instead: $existingFallbackApkPath"
+        Copy-Item -LiteralPath $existingFallbackApkPath -Destination $unsignedApkPath -Force
+    }
+}
+
 Assert-PathExists -Path $unsignedApkPath -Label "unsigned APK"
 if ($godotExitCode -ne 0) {
+    Write-LogExcerpt -Path $godotExportResult.StdoutLogPath -Label "Godot export stdout"
+    Write-LogExcerpt -Path $godotExportResult.StderrLogPath -Label "Godot export stderr"
     # Do not fail immediately. The exported artifact is the real success criterion here.
     Write-Warning "Godot export returned exit code $godotExitCode, but the unsigned APK was generated successfully. Continue with signing."
+}
+
+if ($godotExportResult.CompletedByFreshFallbackArtifact) {
+    Write-Host "Godot export logs were captured and the build continued from the fresh Gradle APK." -ForegroundColor DarkGray
 }
 
 if ($SkipSigning) {
@@ -207,22 +454,25 @@ Copy-Item -LiteralPath $unsignedApkPath -Destination $signedApkPath -Force
     --ks-key-alias $KeyAlias `
     --key-pass "pass:$KeyPassword" `
     $signedApkPath
-if ($LASTEXITCODE -ne 0) {
-    throw "apksigner sign failed with exit code $LASTEXITCODE"
+$signExitCode = Get-NativeExitCode
+if ($signExitCode -ne 0) {
+    throw "apksigner sign failed with exit code $signExitCode"
 }
 
 Write-Step "Verify signature"
 & $apksignerPath verify --verbose $signedApkPath
-if ($LASTEXITCODE -ne 0) {
-    throw "apksigner verify failed with exit code $LASTEXITCODE"
+$verifyExitCode = Get-NativeExitCode
+if ($verifyExitCode -ne 0) {
+    throw "apksigner verify failed with exit code $verifyExitCode"
 }
 
 Write-Step "Dump badging"
 # This final check is intentionally part of the script rather than an optional manual step.
 # A version mismatch discovered here usually means metadata sync regressed earlier in the pipeline.
 & $aaptPath dump badging $signedApkPath
-if ($LASTEXITCODE -ne 0) {
-    throw "aapt dump badging failed with exit code $LASTEXITCODE"
+$badgingExitCode = Get-NativeExitCode
+if ($badgingExitCode -ne 0) {
+    throw "aapt dump badging failed with exit code $badgingExitCode"
 }
 
 Write-Host ""

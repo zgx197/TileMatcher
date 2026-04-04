@@ -304,7 +304,21 @@ task validateJavaVersion {
  * This code ensures those are removed.
  */
 tasks.withType( com.android.build.gradle.internal.tasks.MergeNativeLibsTask) {
+    doNotTrackState("Mono Android export only packages selected ABIs, so Gradle should not fail on missing unused ABI output folders.")
+
     doFirst {
+        [
+            "lib/x86",
+            "lib/x86_64",
+            "lib/armeabi-v7a",
+            "lib/arm64-v8a",
+        ].each { relativePath ->
+            File expectedOutputDir = outputDir.file(relativePath).get().asFile
+            if (!expectedOutputDir.exists()) {
+                expectedOutputDir.mkdirs()
+            }
+        }
+
         externalLibNativeLibs.each { jniDir ->
             if (jniDir.getCanonicalPath().contains("godot-openxr-") || jniDir.getCanonicalPath().contains("godotopenxr")) {
                 // Delete the 'libopenxr_loader.so' files from the vendors plugin so we only use the version from the
