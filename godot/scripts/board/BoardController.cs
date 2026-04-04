@@ -146,9 +146,11 @@ public partial class BoardController : Node2D
     /// <summary>消除动画播放期间暂时锁定交互，避免同一时刻重复输入。</summary>
     private bool _interactionLocked;
 
+    /// <summary>牌实例场景资源。</summary>
     [Export]
     public PackedScene TileScene { get; set; } = null!;
 
+    /// <summary>可选规则档案目录资源。</summary>
     [Export]
     public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
 
@@ -160,12 +162,15 @@ public partial class BoardController : Node2D
     [Export]
     public MatchFeedbackConfig MatchFeedbackConfig { get; set; } = null!;
 
+    /// <summary>牌桌完成生成或加载后抛出的摘要事件。</summary>
     [Signal]
     public delegate void BoardGeneratedEventHandler(string summary);
 
+    /// <summary>牌桌状态发生变化时抛出的说明事件。</summary>
     [Signal]
     public delegate void BoardStateChangedEventHandler(string message);
 
+    /// <summary>请求游戏页显示顶部交互提示。</summary>
     [Signal]
     public delegate void InteractionTipRequestedEventHandler(string message);
 
@@ -199,8 +204,10 @@ public partial class BoardController : Node2D
     /// </summary>
     public int CurrentRemainingTileCount => GetActiveTiles().Count;
 
+    /// <summary>当前牌桌来源类型标签，例如原型、随机或离线正式关卡。</summary>
     public string CurrentSourceKindLabel => _currentSourceKindLabel;
 
+    /// <summary>当前牌桌来源名，主要用于调试摘要展示。</summary>
     public string CurrentSourceName => _currentSourceName;
 
     /// <summary>
@@ -244,6 +251,7 @@ public partial class BoardController : Node2D
         return TryStartMatch(firstTile, secondTile, "调试自动消除");
     }
 
+    /// <summary>补齐默认资源并确保运行时已有可用规则档案。</summary>
     public override void _Ready()
     {
         if (TileScene is null)
