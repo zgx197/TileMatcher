@@ -231,19 +231,19 @@ function Update-BuildMetadata {
     Assert-PathExists -Path $debugManifestPath -Label "debug AndroidManifest.xml"
     Assert-PathExists -Path $projectSettingsPath -Label "project.godot"
 
-    Set-RegexValue -Path $exportPresetsPath -Pattern '^version/code=\d+$' -Replacement "version/code=$VersionCode"
-    Set-RegexValue -Path $exportPresetsPath -Pattern '^version/name="[^"]*"$' -Replacement "version/name=`"$VersionName`""
-    Set-RegexValue -Path $exportPresetsPath -Pattern '^package/unique_name="[^"]*"$' -Replacement "package/unique_name=`"$PackageName`""
+    Set-RegexValue -Path $exportPresetsPath -Pattern '^\s*version/code=\d+\r?$' -Replacement "version/code=$VersionCode"
+    Set-RegexValue -Path $exportPresetsPath -Pattern '^\s*version/name="[^"]*"\r?$' -Replacement "version/name=`"$VersionName`""
+    Set-RegexValue -Path $exportPresetsPath -Pattern '^\s*package/unique_name="[^"]*"\r?$' -Replacement "package/unique_name=`"$PackageName`""
 
     Set-RegexValue -Path $mainManifestPath -Pattern 'android:versionCode="\d+"' -Replacement "android:versionCode=`"$VersionCode`""
     Set-RegexValue -Path $mainManifestPath -Pattern 'android:versionName="[^"]*"' -Replacement "android:versionName=`"$VersionName`""
     Set-RegexValue -Path $mainManifestPath -Pattern 'android:screenOrientation="[^"]*"' -Replacement "android:screenOrientation=`"$ManifestOrientation`""
     Set-RegexValue -Path $debugManifestPath -Pattern 'android:screenOrientation="[^"]*"' -Replacement "android:screenOrientation=`"$ManifestOrientation`""
 
-    Set-RegexValue -Path $projectSettingsPath -Pattern '^package_name="[^"]*"$' -Replacement "package_name=`"$PackageName`""
-    Set-RegexValue -Path $projectSettingsPath -Pattern '^version_name="[^"]*"$' -Replacement "version_name=`"$VersionName`""
-    Set-RegexValue -Path $projectSettingsPath -Pattern '^version_code=\d+$' -Replacement "version_code=$VersionCode"
-    Set-RegexValue -Path $projectSettingsPath -Pattern '^manifest_orientation="[^"]*"$' -Replacement "manifest_orientation=`"$ManifestOrientation`""
+    Set-RegexValue -Path $projectSettingsPath -Pattern '^\s*package_name="[^"]*"\r?$' -Replacement "package_name=`"$PackageName`""
+    Set-RegexValue -Path $projectSettingsPath -Pattern '^\s*version_name="[^"]*"\r?$' -Replacement "version_name=`"$VersionName`""
+    Set-RegexValue -Path $projectSettingsPath -Pattern '^\s*version_code=\d+\r?$' -Replacement "version_code=$VersionCode"
+    Set-RegexValue -Path $projectSettingsPath -Pattern '^\s*manifest_orientation="[^"]*"\r?$' -Replacement "manifest_orientation=`"$ManifestOrientation`""
 }
 
 function Resolve-GradleUserHome {
