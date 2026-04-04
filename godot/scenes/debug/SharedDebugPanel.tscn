@@ -1,0 +1,201 @@
+[gd_scene load_steps=4 format=4]
+
+[ext_resource type="Script" path="res://scripts/debug/SharedDebugPanel.cs" id="1_shared_debug_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugpanel"]
+bg_color = Color(0.0203922, 0.109804, 0.101961, 0.86)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.301961, 0.623529, 0.529412, 0.88)
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlaymask"]
+bg_color = Color(0, 0, 0, 0.18)
+
+[node name="SharedDebugPanel" type="Control"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 100
+script = ExtResource("1_shared_debug_script")
+
+[node name="Mask" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_overlaymask")
+
+[node name="Panel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -250.0
+offset_right = 300.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_debugpanel")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 22
+
+[node name="Stack" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+
+[node name="Title" type="Label" parent="Panel/Margin/Stack/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 26
+text = "调试面板"
+
+[node name="CloseButton" type="Button" parent="Panel/Margin/Stack/Header"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "X"
+
+[node name="Hint" type="Label" parent="Panel/Margin/Stack"]
+layout_mode = 2
+text = "调试面板中的操作只有在点击对应按钮后才会执行。"
+autowrap_mode = 2
+
+[node name="ProfileRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ProfileLabel" type="Label" parent="Panel/Margin/Stack/ProfileRow"]
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+text = "规则档案"
+vertical_alignment = 1
+
+[node name="ProfileSelector" type="OptionButton" parent="Panel/Margin/Stack/ProfileRow"]
+custom_minimum_size = Vector2(220, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RulesSummary" type="Label" parent="Panel/Margin/Stack"]
+layout_mode = 2
+text = "规则摘要"
+autowrap_mode = 2
+
+[node name="DebugLabel" type="Label" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "调试信息"
+autowrap_mode = 2
+
+[node name="LayerInspector" type="VBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/Stack/LayerInspector"]
+layout_mode = 2
+text = "显示层级过滤"
+
+[node name="Controls" type="HBoxContainer" parent="Panel/Margin/Stack/LayerInspector"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Slider" type="HSlider" parent="Panel/Margin/Stack/LayerInspector/Controls"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 3.0
+step = 1.0
+value = 0.0
+
+[node name="Value" type="Label" parent="Panel/Margin/Stack/LayerInspector/Controls"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "<= L0"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 22
+
+[node name="ShuffleButton" type="Button" parent="Panel/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(180, 62)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "随机生成"
+
+[node name="PrototypeButton" type="Button" parent="Panel/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(180, 62)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "固定原型"
+
+[node name="JumpRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JumpLabel" type="Label" parent="Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+text = "跳转关卡"
+vertical_alignment = 1
+
+[node name="JumpLevelInput" type="SpinBox" parent="Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+step = 1.0
+value = 1.0
+
+[node name="JumpButton" type="Button" parent="Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(132, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "跳到该关"
+
+[node name="ResetCurrentLevelAssistButton" type="Button" parent="Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "重置当前关卡辅助次数"
+
+[node name="AutoMatchButton" type="Button" parent="Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "自动消除一对"
+
+[node name="ResetProgressButton" type="Button" parent="Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "重置账号数据"

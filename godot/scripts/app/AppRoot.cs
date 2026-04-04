@@ -59,9 +59,6 @@ public partial class AppRoot : Node
     /// <summary>通关后待展示的每日奖励摘要，若为空则直接继续下一关。</summary>
     private DailyRewardSummary? _pendingDailyRewardSummary;
 
-    /// <summary>是否在下一次进入游戏页时自动展开调试面板。</summary>
-    private bool _openDebugOverlayOnNextGamePage;
-
     /// <summary>初始化外围页面资源、进度数据和启动流程。</summary>
     public override void _Ready()
     {
@@ -135,7 +132,9 @@ public partial class AppRoot : Node
             BuildLevelTitle(level, _currentLevelNumber),
             BuildLevelSummary(level));
         homePage.StartGameRequested += OnStartGameRequested;
-        homePage.DebugEnterRequested += OnDebugEnterRequested;
+        homePage.DebugLevelJumpRequested += OnDebugLevelJumpRequested;
+        homePage.ResetCurrentLevelAssistRequested += OnResetCurrentLevelAssistRequested;
+        homePage.ResetProgressRequested += OnResetProgressRequested;
 
         SwitchToPage(homePage);
     }
@@ -153,11 +152,6 @@ public partial class AppRoot : Node
 
         SwitchToPage(gamePage);
         gamePage.StartLevel(levelNumber);
-        if (_openDebugOverlayOnNextGamePage)
-        {
-            _openDebugOverlayOnNextGamePage = false;
-            gamePage.OpenDebugOverlay();
-        }
     }
 
     /// <summary>切到通关结算页。</summary>
@@ -206,16 +200,6 @@ public partial class AppRoot : Node
     {
         _currentLevelNumber = Math.Max(1, levelNumber);
         _progress.CurrentLevelNumber = _currentLevelNumber;
-        SaveProgress();
-        ShowGamePage(_currentLevelNumber);
-    }
-
-    /// <summary>响应主页 DEBUG 请求，进入关卡并自动展开调试面板。</summary>
-    private void OnDebugEnterRequested(int levelNumber)
-    {
-        _currentLevelNumber = Math.Max(1, levelNumber);
-        _progress.CurrentLevelNumber = _currentLevelNumber;
-        _openDebugOverlayOnNextGamePage = true;
         SaveProgress();
         ShowGamePage(_currentLevelNumber);
     }
@@ -303,6 +287,15 @@ public partial class AppRoot : Node
         _progress.CurrentLevelNumber = _currentLevelNumber;
         SaveProgress();
         ShowGamePage(_currentLevelNumber);
+    }
+
+    /// <summary>响应首页调试面板的当前关卡辅助次数重置请求。</summary>
+    private void OnResetCurrentLevelAssistRequested(int levelNumber)
+    {
+        var usage = _progress.GetOrCreateLevelAssistUsage(levelNumber);
+        usage.RestartUsedCount = 0;
+        usage.HintUsedCount = 0;
+        SaveProgress();
     }
 
     /// <summary>响应清空账号数据请求，重置存档并回到主页。</summary>

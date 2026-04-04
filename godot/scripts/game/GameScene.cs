@@ -4,6 +4,7 @@ using Godot;
 using TileMatcher.App;
 using TileMatcher.Board;
 using TileMatcher.Config;
+using TileMatcher.DebugUI;
 
 namespace TileMatcher.Game;
 
@@ -49,9 +50,11 @@ public partial class GameScene : Node2D
     /// <summary>牌桌背景，用于做轻量闪烁反馈。</summary>
     private CanvasItem _boardBackground = null!;
 
-    /// <summary>顶部状态栏文本。</summary>
+    /// <summary>顶部关卡编号文本。</summary>
     private Label _levelValue = null!;
+    /// <summary>顶部当前分数文本。</summary>
     private Label _scoreValue = null!;
+    /// <summary>顶部已完成配对数文本。</summary>
     private Label _matchValue = null!;
 
     /// <summary>
@@ -64,21 +67,34 @@ public partial class GameScene : Node2D
     /// - 为什么拖过去后仍然不能消除
     /// </remarks>
     private Control _interactionTip = null!;
+    /// <summary>顶部交互提示中的正文标签。</summary>
     private Label _interactionTipLabel = null!;
+    /// <summary>底部“重开”按钮。</summary>
     private Button _restartButton = null!;
+    /// <summary>重开按钮角标中的剩余次数文本。</summary>
     private Label _restartCountLabel = null!;
+    /// <summary>底部“提示”按钮。</summary>
     private Button _hintButton = null!;
+    /// <summary>提示按钮角标中的剩余次数文本。</summary>
     private Label _hintCountLabel = null!;
+    /// <summary>顶部交互提示使用的出入场动画。</summary>
     private Tween? _interactionTipTween;
 
     /// <summary>调试悬浮层及其内部控件。</summary>
-    private Control _debugOverlay = null!;
+    private SharedDebugPanel _debugOverlay = null!;
+    /// <summary>调试浮层中的主面板。</summary>
     private Control _debugPanel = null!;
+    /// <summary>调试面板可拖拽的标题栏区域。</summary>
     private Control _debugHeader = null!;
+    /// <summary>调试面板中的状态说明文本。</summary>
     private Label _debugLabel = null!;
+    /// <summary>调试面板中的规则与来源摘要文本。</summary>
     private Label _rulesSummaryLabel = null!;
+    /// <summary>顶部返回主页按钮。</summary>
     private Button _backHomeButton = null!;
+    /// <summary>调试面板中的随机生成按钮。</summary>
     private Button _generateButton = null!;
+    /// <summary>调试面板中的固定原型按钮。</summary>
     private Button _prototypeButton = null!;
     /// <summary>调试面板中的跳关输入框。</summary>
     private SpinBox _jumpLevelInput = null!;
@@ -88,16 +104,27 @@ public partial class GameScene : Node2D
     private Button _resetCurrentLevelAssistButton = null!;
     /// <summary>触发自动消除一对的调试按钮。</summary>
     private Button _autoMatchButton = null!;
+    /// <summary>调试面板中的重置账号数据按钮。</summary>
     private Button _resetProgressButton = null!;
+    /// <summary>调试面板的层级过滤滑杆。</summary>
     private HSlider _layerFilterSlider = null!;
+    /// <summary>层级过滤当前值文本。</summary>
     private Label _layerFilterValue = null!;
+    /// <summary>悬浮在页面上的 DEBUG 入口按钮。</summary>
     private Button _debugToggleButton = null!;
+    /// <summary>调试面板右上角关闭按钮。</summary>
     private Button _debugCloseButton = null!;
+    /// <summary>调试面板中的规则档案下拉框。</summary>
     private OptionButton _profileSelector = null!;
+    /// <summary>顶部设置按钮，当前作为调试入口补充按钮。</summary>
     private Button _settingsButton = null!;
+    /// <summary>离开关卡确认弹层。</summary>
     private Control _leaveConfirmOverlay = null!;
+    /// <summary>离开关卡确认弹层中的主面板。</summary>
     private Control _leaveConfirmPanel = null!;
+    /// <summary>离开确认中的取消按钮。</summary>
     private Button _leaveConfirmCancelButton = null!;
+    /// <summary>离开确认中的确认按钮。</summary>
     private Button _leaveConfirmConfirmButton = null!;
 
     /// <summary>以下状态用于区分“点击”和“拖动”，避免浮动控件误触。</summary>
@@ -105,9 +132,13 @@ public partial class GameScene : Node2D
     private bool _debugButtonDragged;
     private bool _debugPanelPressed;
     private bool _debugPanelDragged;
+    /// <summary>DEBUG 按钮按下时的全局坐标。</summary>
     private Vector2 _debugButtonPressPosition;
+    /// <summary>DEBUG 按钮开始拖动前的位置。</summary>
     private Vector2 _debugButtonStartPosition;
+    /// <summary>调试面板标题栏按下时的全局坐标。</summary>
     private Vector2 _debugPanelPressPosition;
+    /// <summary>调试面板开始拖动前的位置。</summary>
     private Vector2 _debugPanelStartPosition;
 
     /// <summary>当前正在游玩的关卡号。</summary>
@@ -171,25 +202,25 @@ public partial class GameScene : Node2D
         _restartCountLabel = GetNode<Label>("UI/Root/BottomActions/RestartButton/Count/Value");
         _hintButton = GetNode<Button>("UI/Root/BottomActions/HintButton");
         _hintCountLabel = GetNode<Label>("UI/Root/BottomActions/HintButton/Count/Value");
-        _debugOverlay = GetNode<Control>("UI/Root/DebugOverlay");
-        _debugPanel = GetNode<Control>("UI/Root/DebugOverlay/Panel");
-        _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
-        _debugLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/DebugLabel");
-        _rulesSummaryLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/RulesSummary");
+        _debugOverlay = GetNode<SharedDebugPanel>("UI/Root/DebugPanel");
+        _debugPanel = _debugOverlay.PanelRoot;
+        _debugHeader = _debugOverlay.HeaderRoot;
+        _debugLabel = _debugOverlay.DebugLabel;
+        _rulesSummaryLabel = _debugOverlay.RulesSummaryLabel;
         _backHomeButton = GetNode<Button>("UI/Root/TopBar/Layout/BackHomeButton");
         _settingsButton = GetNode<Button>("UI/Root/TopBar/Layout/SettingsButton");
-        _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
-        _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
-        _jumpLevelInput = GetNode<SpinBox>("UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow/JumpLevelInput");
-        _jumpLevelButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow/JumpButton");
-        _resetCurrentLevelAssistButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/ResetCurrentLevelAssistButton");
-        _autoMatchButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/AutoMatchButton");
-        _resetProgressButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/ResetProgressButton");
-        _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
-        _layerFilterValue = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Value");
+        _generateButton = _debugOverlay.GenerateButton;
+        _prototypeButton = _debugOverlay.PrototypeButton;
+        _jumpLevelInput = _debugOverlay.JumpLevelInput;
+        _jumpLevelButton = _debugOverlay.JumpButton;
+        _resetCurrentLevelAssistButton = _debugOverlay.ResetCurrentLevelAssistButton;
+        _autoMatchButton = _debugOverlay.AutoMatchButton;
+        _resetProgressButton = _debugOverlay.ResetProgressButton;
+        _layerFilterSlider = _debugOverlay.LayerFilterSlider;
+        _layerFilterValue = _debugOverlay.LayerFilterValueLabel;
         _debugToggleButton = GetNode<Button>("UI/Root/DebugToggleButton");
-        _debugCloseButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header/CloseButton");
-        _profileSelector = GetNode<OptionButton>("UI/Root/DebugOverlay/Panel/Margin/Stack/ProfileRow/ProfileSelector");
+        _debugCloseButton = _debugOverlay.CloseButton;
+        _profileSelector = _debugOverlay.ProfileSelector;
         _leaveConfirmOverlay = GetNode<Control>("UI/Root/LeaveConfirmOverlay");
         _leaveConfirmPanel = GetNode<Control>("UI/Root/LeaveConfirmOverlay/Panel");
         _leaveConfirmCancelButton = GetNode<Button>("UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack/Buttons/CancelButton");
@@ -218,7 +249,9 @@ public partial class GameScene : Node2D
         _jumpLevelInput.Step = 1;
         _jumpLevelInput.Value = _currentLevelNumber;
         _layerFilterValue.Text = "<= L0";
-        _debugOverlay.Visible = false;
+        _debugOverlay.TitleLabel.Text = "调试面板";
+        _debugOverlay.HintLabel.Text = "这里放置开发期牌局调试功能。只有点击具体按钮后才会执行对应操作。";
+        _debugOverlay.ClosePanel();
         _interactionTip.Visible = false;
         _interactionTipLabel.Text = string.Empty;
         _restartButton.Text = "重开";
@@ -331,6 +364,7 @@ public partial class GameScene : Node2D
         ShowInteractionTip($"已高亮一对可消除麻将，剩余 {Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount)} 次。");
     }
 
+    /// <summary>响应调试面板中的“随机生成”按钮。</summary>
     private void OnGeneratePressed()
     {
         GD.Print("[GameScene] 点击了随机生成按钮");
@@ -486,7 +520,6 @@ public partial class GameScene : Node2D
     private void ToggleDebugOverlay()
     {
         _debugOverlay.Visible = !_debugOverlay.Visible;
-        _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
         RefreshDebugPanelSummary();
     }
 
@@ -499,7 +532,8 @@ public partial class GameScene : Node2D
             return;
         }
 
-        ToggleDebugOverlay();
+        _debugOverlay.OpenPanel();
+        RefreshDebugPanelSummary();
     }
 
     /// <summary>显式可见的返回主页入口，避免当前流程只依赖键盘 `Esc`。</summary>
@@ -704,11 +738,13 @@ public partial class GameScene : Node2D
     /// 若场景未在 Inspector 中显式绑定关卡目录，则从默认路径回退加载。
     /// 这样 `GameScene` 既能被 AppRoot 驱动，也能单独运行调试。
     /// </summary>
+    /// <summary>刷新调试面板中的汇总摘要文本。</summary>
     private void RefreshDebugPanelSummary()
     {
         _rulesSummaryLabel.Text = BuildDebugPanelSummary();
     }
 
+    /// <summary>构造调试面板中展示的构建、牌桌和来源汇总信息。</summary>
     private string BuildDebugPanelSummary()
     {
         // 这里保留调试面板汇总，统一展示构建信息、当前牌桌状态和当前规则摘要。
@@ -737,6 +773,7 @@ public partial class GameScene : Node2D
         return string.IsNullOrWhiteSpace(text) ? fallback : text;
     }
 
+    /// <summary>确保当前场景已经拿到可用的关卡目录资源。</summary>
     private void EnsureLevelCatalogLoaded()
     {
         if (LevelCatalog is not null)
@@ -810,6 +847,7 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>把关卡来源模式转换为更适合展示的中文名称。</summary>
     private static string ResolveSourceDisplayName(LevelConfig levelConfig)
     {
         return levelConfig.LayoutSourceMode switch
@@ -931,6 +969,7 @@ public partial class GameScene : Node2D
         };
     }
 
+    /// <summary>处理返回键，统一弹出或关闭离开确认层。</summary>
     public override void _UnhandledInput(InputEvent @event)
     {
         if (@event is InputEventKey keyEvent &&

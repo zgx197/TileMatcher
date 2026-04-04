@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=4]
+[gd_scene load_steps=6 format=4]
 
 [ext_resource type="Script" path="res://scripts/home/HomePage.cs" id="1_home_script"]
+[ext_resource type="PackedScene" path="res://scenes/debug/SharedDebugPanel.tscn" id="2_shared_debug_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header_chip"]
 bg_color = Color(0.480469, 0.242188, 0.0703125, 0.92)
@@ -63,6 +64,20 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.819608, 0.929412, 0.831373, 0.4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugpanel"]
+bg_color = Color(0.0203922, 0.109804, 0.101961, 0.92)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.301961, 0.623529, 0.529412, 0.88)
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 18
 
 [node name="HomePage" type="Control"]
 layout_mode = 3
@@ -258,3 +273,5 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_start_button")
 text = "进入关卡 1"
+
+[node name="DebugPanel" parent="Root" instance=ExtResource("2_shared_debug_panel")]

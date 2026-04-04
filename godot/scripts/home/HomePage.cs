@@ -1,4 +1,5 @@
 using Godot;
+using TileMatcher.DebugUI;
 
 namespace TileMatcher.Home;
 
@@ -28,6 +29,18 @@ public partial class HomePage : Control
 
     /// <summary>开发期快捷调试入口按钮。</summary>
     private Button _debugButton = null!;
+    /// <summary>首页调试面板遮罩层。</summary>
+    private SharedDebugPanel _debugPanel = null!;
+    /// <summary>首页调试面板中的当前关卡输入框。</summary>
+    private SpinBox _jumpLevelInput = null!;
+    /// <summary>首页调试面板中的跳关按钮。</summary>
+    private Button _jumpLevelButton = null!;
+    /// <summary>首页调试面板中的重置当前关卡辅助次数按钮。</summary>
+    private Button _resetCurrentLevelAssistButton = null!;
+    /// <summary>首页调试面板中的重置账号数据按钮。</summary>
+    private Button _resetProgressButton = null!;
+    /// <summary>首页调试面板中的关闭按钮。</summary>
+    private Button _debugCloseButton = null!;
 
     /// <summary>当前主页准备进入的关卡号。</summary>
     private int _levelNumber = 1;
@@ -51,9 +64,17 @@ public partial class HomePage : Control
     [Signal]
     public delegate void StartGameRequestedEventHandler(int levelNumber);
 
-    /// <summary>请求按当前关卡号进入游戏页并直接展开调试面板。</summary>
+    /// <summary>请求按指定关卡号直接进入游戏页。</summary>
     [Signal]
-    public delegate void DebugEnterRequestedEventHandler(int levelNumber);
+    public delegate void DebugLevelJumpRequestedEventHandler(int levelNumber);
+
+    /// <summary>请求重置当前关卡的辅助次数。</summary>
+    [Signal]
+    public delegate void ResetCurrentLevelAssistRequestedEventHandler(int levelNumber);
+
+    /// <summary>请求清空全部账号进度。</summary>
+    [Signal]
+    public delegate void ResetProgressRequestedEventHandler();
 
     /// <summary>绑定节点引用并接通主页按钮事件。</summary>
     public override void _Ready()
@@ -65,9 +86,28 @@ public partial class HomePage : Control
         _levelSummaryLabel = GetNode<Label>("Root/Bottom/BottomStack/InfoCard/Stack/LevelSummary");
         _startButton = GetNode<Button>("Root/Bottom/BottomStack/StartButton");
         _debugButton = GetNode<Button>("Root/Header/Bar/Right/DebugButton");
+        _debugPanel = GetNode<SharedDebugPanel>("Root/DebugPanel");
+        _jumpLevelInput = _debugPanel.JumpLevelInput;
+        _jumpLevelButton = _debugPanel.JumpButton;
+        _resetCurrentLevelAssistButton = _debugPanel.ResetCurrentLevelAssistButton;
+        _resetProgressButton = _debugPanel.ResetProgressButton;
+        _debugCloseButton = _debugPanel.CloseButton;
 
         _startButton.Pressed += OnStartPressed;
         _debugButton.Pressed += OnDebugPressed;
+        _jumpLevelButton.Pressed += OnJumpLevelPressed;
+        _resetCurrentLevelAssistButton.Pressed += OnResetCurrentLevelAssistPressed;
+        _resetProgressButton.Pressed += OnResetProgressPressed;
+        _debugCloseButton.Pressed += OnDebugClosePressed;
+        _debugPanel.TitleLabel.Text = "调试面板";
+        _debugPanel.HintLabel.Text = "首页 DEBUG 只打开调试面板，不会自动进入关卡。";
+        _debugPanel.ProfileRow.Visible = false;
+        _debugPanel.RulesSummaryLabel.Visible = false;
+        _debugPanel.DebugLabel.Visible = false;
+        _debugPanel.LayerInspector.Visible = false;
+        _debugPanel.GenerationButtonsRow.Visible = false;
+        _debugPanel.AutoMatchButton.Visible = false;
+        _debugPanel.ClosePanel();
         RefreshTexts();
     }
 
@@ -102,6 +142,7 @@ public partial class HomePage : Control
         _currentLevelLabel.Text = _pendingLevelTitle;
         _levelSummaryLabel.Text = _pendingLevelSummary;
         _startButton.Text = $"进入关卡 {_levelNumber}";
+        _jumpLevelInput.Value = _levelNumber;
     }
 
     /// <summary>响应“进入关卡”按钮，进入当前关卡。</summary>
@@ -110,9 +151,38 @@ public partial class HomePage : Control
         EmitSignal(SignalName.StartGameRequested, _levelNumber);
     }
 
-    /// <summary>响应首页 DEBUG 按钮，进入当前关卡并要求展开调试面板。</summary>
+    /// <summary>响应首页 DEBUG 按钮，只打开首页自己的调试面板。</summary>
     private void OnDebugPressed()
     {
-        EmitSignal(SignalName.DebugEnterRequested, _levelNumber);
+        _debugPanel.OpenPanel();
+        _debugPanel.SetJumpLevel(_levelNumber);
+    }
+
+    /// <summary>响应首页调试面板中的跳关按钮。</summary>
+    private void OnJumpLevelPressed()
+    {
+        var targetLevel = Mathf.Max(1, Mathf.RoundToInt((float)_jumpLevelInput.Value));
+        _jumpLevelInput.Value = targetLevel;
+        EmitSignal(SignalName.DebugLevelJumpRequested, targetLevel);
+    }
+
+    /// <summary>响应首页调试面板中的重置当前关卡辅助次数按钮。</summary>
+    private void OnResetCurrentLevelAssistPressed()
+    {
+        var targetLevel = Mathf.Max(1, Mathf.RoundToInt((float)_jumpLevelInput.Value));
+        _jumpLevelInput.Value = targetLevel;
+        EmitSignal(SignalName.ResetCurrentLevelAssistRequested, targetLevel);
+    }
+
+    /// <summary>响应首页调试面板中的重置账号数据按钮。</summary>
+    private void OnResetProgressPressed()
+    {
+        EmitSignal(SignalName.ResetProgressRequested);
+    }
+
+    /// <summary>关闭首页调试面板。</summary>
+    private void OnDebugClosePressed()
+    {
+        _debugPanel.ClosePanel();
     }
 }
