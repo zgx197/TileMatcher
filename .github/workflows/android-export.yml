@@ -49,6 +49,7 @@ env:
   GODOT_RELEASE_STATUS: stable
   ANDROID_PLATFORM: android-35
   ANDROID_BUILD_TOOLS: 35.0.1
+  GRADLE_VERSION: 8.11.1
 
 jobs:
   export-android:
@@ -82,6 +83,17 @@ jobs:
         shell: pwsh
         run: |
           dotnet workload install android
+
+      - name: Download pinned Gradle distribution
+        shell: pwsh
+        run: |
+          $gradleDirectory = "build-support/gradle"
+          $gradleArchivePath = Join-Path $gradleDirectory "gradle-${{ env.GRADLE_VERSION }}-bin.zip"
+
+          New-Item -ItemType Directory -Path $gradleDirectory -Force | Out-Null
+          Invoke-WebRequest `
+            -Uri "https://services.gradle.org/distributions/gradle-${{ env.GRADLE_VERSION }}-bin.zip" `
+            -OutFile $gradleArchivePath
 
       - name: Resolve build metadata
         id: meta
