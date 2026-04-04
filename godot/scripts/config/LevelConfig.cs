@@ -42,4 +42,14 @@ public partial class LevelConfig : Resource
     /// </summary>
     [Export]
     public string SourceNameOverride { get; set; } = string.Empty;
+
+    [Export(PropertyHint.File, "*.json")]
+    public string OfflineLayoutJsonPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 离线侧导出的关卡目录索引文件，通常是 level-catalog.json。
+    /// 配置后，运行时会优先按目录索引定位当前关卡对应的 JSON 文件。
+    /// </summary>
+    [Export(PropertyHint.File, "*.json")]
+    public string OfflineCatalogJsonPath { get; set; } = string.Empty;
 }

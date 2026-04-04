@@ -251,6 +251,16 @@ public partial class BoardController : Node2D
         ApplyLayout(RandomStackLayoutGenerator.Generate(levelId, _layoutRules, seed), sourceName);
     }
 
+    public void LoadOfflineJsonBoard(string resourcePath, string sourceName = "离线关卡")
+    {
+        ApplyLayout(OfflineLevelJsonLoader.Load(resourcePath), sourceName);
+    }
+
+    public void LoadOfflineCatalogBoard(string catalogPath, int levelNumber, string sourceName = "离线关卡目录")
+    {
+        ApplyLayout(OfflineLevelJsonLoader.LoadFromCatalog(catalogPath, levelNumber), sourceName);
+    }
+
     /// <summary>切换当前规则档案。</summary>
     public void SetLayoutProfile(string profileId)
     {

@@ -606,7 +606,7 @@ public partial class GameScene : Node2D
         InitializeProfileSelector();
 
         var sourceName = string.IsNullOrWhiteSpace(levelConfig.SourceNameOverride)
-            ? $"关卡 {levelConfig.LevelNumber} {(levelConfig.LayoutSourceMode == LevelLayoutSourceMode.Prototype ? "原型布局" : "随机布局")}"
+            ? $"关卡 {levelConfig.LevelNumber} {ResolveSourceDisplayName(levelConfig)}"
             : levelConfig.SourceNameOverride;
 
         _debugLabel.Text = $"已进入关卡 {levelConfig.LevelNumber}：{levelConfig.DisplayName}";
@@ -617,12 +617,43 @@ public partial class GameScene : Node2D
                 _boardController.LoadPrototype(levelConfig.LevelNumber, sourceName);
                 break;
 
+            case LevelLayoutSourceMode.OfflineJson:
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(levelConfig.OfflineCatalogJsonPath))
+                    {
+                        _boardController.LoadOfflineCatalogBoard(levelConfig.OfflineCatalogJsonPath, levelConfig.LevelNumber, sourceName);
+                    }
+                    else
+                    {
+                        _boardController.LoadOfflineJsonBoard(levelConfig.OfflineLayoutJsonPath, sourceName);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    GD.PushError($"[GameScene] 离线关卡加载失败，回退到固定原型: level={levelConfig.LevelNumber}, path={levelConfig.OfflineLayoutJsonPath}, error={exception.Message}");
+                    _debugLabel.Text = $"离线关卡加载失败，已回退到固定原型: {levelConfig.LevelNumber}";
+                    _boardController.LoadPrototype(levelConfig.LevelNumber, $"关卡 {levelConfig.LevelNumber} 原型布局");
+                }
+                break;
+
             case LevelLayoutSourceMode.RandomGenerated:
             default:
                 int? seed = levelConfig.UseFixedSeed ? levelConfig.RandomSeed : null;
                 _boardController.GenerateRandomBoard(levelConfig.LevelNumber, seed, sourceName);
                 break;
         }
+    }
+
+    private static string ResolveSourceDisplayName(LevelConfig levelConfig)
+    {
+        return levelConfig.LayoutSourceMode switch
+        {
+            LevelLayoutSourceMode.Prototype => "原型布局",
+            LevelLayoutSourceMode.RandomGenerated => "随机布局",
+            LevelLayoutSourceMode.OfflineJson => "离线关卡",
+            _ => "未知布局",
+        };
     }
 
     /// <summary>同步顶部“分数 / 已消除对数”数值。</summary>

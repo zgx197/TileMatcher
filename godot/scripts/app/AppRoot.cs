@@ -341,6 +341,11 @@ public partial class AppRoot : Node
             LevelLayoutSourceMode.RandomGenerated => level.UseFixedSeed
                 ? $"固定种子随机布局 #{level.RandomSeed}"
                 : "动态随机布局",
+            LevelLayoutSourceMode.OfflineJson => string.IsNullOrWhiteSpace(level.OfflineLayoutJsonPath)
+                ? string.IsNullOrWhiteSpace(level.OfflineCatalogJsonPath)
+                    ? "离线正式关卡 JSON"
+                    : $"离线关卡目录 | {level.OfflineCatalogJsonPath}"
+                : $"离线正式关卡 JSON | {level.OfflineLayoutJsonPath}",
             _ => "未知布局模式",
         };
 

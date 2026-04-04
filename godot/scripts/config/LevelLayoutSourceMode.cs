@@ -9,4 +9,5 @@ public enum LevelLayoutSourceMode
 {
     Prototype = 0,
     RandomGenerated = 1,
+    OfflineJson = 2,
 }
