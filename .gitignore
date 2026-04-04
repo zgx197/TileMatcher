@@ -11,6 +11,9 @@ godot/android/build/assetPackInstallTime/build/
 godot/android/build/src/main/assets/
 godot/android/build/src/instrumented/
 godot/android/build/src/androidTestInstrumented/
+godot/android/build/libs/debug/
+godot/android/build/libs/release/
+!godot/android/build/libs/gdextensionlibs.json
 godot/android/build/libs/debug/arm64-v8a/
 godot/android/build/libs/debug/*.aar
 godot/android/build/libs/release/*.aar
