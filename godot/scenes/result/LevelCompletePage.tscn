@@ -120,7 +120,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 modulate = Color(0.960938, 0.910156, 0.710938, 0.82)
-text = "外围主流程已接入正式结算"
+text = "毛茸茸伙伴正在等你带回家"
 horizontal_alignment = 1
 
 [node name="Stats" type="HBoxContainer" parent="Root/Center/Card/Margin/Stack"]
@@ -203,7 +203,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 modulate = Color(0.824219, 0.96875, 0.4375, 1)
-text = "当前外围流程已可承接正式通关反馈"
+text = "这一关已经顺利完成"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -211,7 +211,7 @@ autowrap_mode = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 modulate = Color(0.992188, 0.867188, 0.453125, 0.96)
-text = "今日首胜奖励待领取：+3 叶子"
+text = "今日金币奖励待查看：+3 金币"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -235,7 +235,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 modulate = Color(0.898438, 0.945312, 0.851562, 0.86)
-text = "规则摘要待加载"
+text = "下一关信息准备中"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -251,7 +251,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_green_button")
 theme_override_styles/focus = SubResource("StyleBoxFlat_green_button")
-text = "继续领取奖励"
+text = "继续查看奖励"
 
 [node name="HomeButton" type="Button" parent="Root/Center/Card/Margin/Stack/Buttons"]
 custom_minimum_size = Vector2(0, 68)

@@ -229,16 +229,13 @@ public partial class GameScene : Node2D
         _levelValue.Text = "1";
         _backHomeButton.Text = "主页";
         _generateButton.Text = "随机生成";
-        _prototypeButton.Text = "固定原型";
+        _prototypeButton.Text = "原型关卡";
         _jumpLevelButton.Text = "跳到该关";
         _resetCurrentLevelAssistButton.Text = "重置当前关卡辅助次数";
         _autoMatchButton.Text = "自动消除一对";
         _resetProgressButton.Text = "重置账号数据";
-        _debugLabel.Text = "点击牌桌中的可移动麻将，可以先验证基础配对消除逻辑。";
+        _debugLabel.Text = "点击可移动的小动物牌，可以快速验证当前关卡逻辑。";
         _rulesSummaryLabel.Text = string.Empty;
-        _backHomeButton.Text = "< 返回主页";
-        _backHomeButton.Text = "返回主页";
-        _backHomeButton.Text = "< 返回主页";
         _backHomeButton.Text = "←";
         _settingsButton.Text = "≡";
         _layerFilterSlider.MinValue = 0;
@@ -250,7 +247,7 @@ public partial class GameScene : Node2D
         _jumpLevelInput.Value = _currentLevelNumber;
         _layerFilterValue.Text = "<= L0";
         _debugOverlay.TitleLabel.Text = "调试面板";
-        _debugOverlay.HintLabel.Text = "这里放置开发期牌局调试功能。只有点击具体按钮后才会执行对应操作。";
+        _debugOverlay.HintLabel.Text = "这里是开发调试面板，只有点击具体按钮后才会执行对应操作。";
         _debugOverlay.ClosePanel();
         _interactionTip.Visible = false;
         _interactionTipLabel.Text = string.Empty;
@@ -310,14 +307,14 @@ public partial class GameScene : Node2D
         if (levelConfig is null)
         {
             GD.PushWarning($"[GameScene] 未找到关卡配置，回退到固定原型: level={_currentLevelNumber}");
-            _debugLabel.Text = $"关卡 {_currentLevelNumber} 未配置，已回退到固定原型。";
-            _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 原型布局");
+            _debugLabel.Text = $"关卡 {_currentLevelNumber} 未配置，已回退到原型关卡。";
+            _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 原型关卡");
             InitializeProfileSelector();
             return;
         }
 
         ApplyLevelConfig(levelConfig);
-        _debugLabel.Text = $"已进入关卡 {_currentLevelNumber}，当前使用原型牌桌验证外围流程。";
+        _debugLabel.Text = $"已进入关卡 {_currentLevelNumber}，正在加载本关的小动物牌桌。";
         return;
     }
 
@@ -340,7 +337,7 @@ public partial class GameScene : Node2D
         StartLevel(_currentLevelNumber);
     }
 
-    /// <summary>响应底部“提示一对可消除麻将”。</summary>
+    /// <summary>响应底部“提示一对可配对的小动物牌”。</summary>
     private void OnHintPressed()
     {
         var usage = GetCurrentAssistUsage();
@@ -353,7 +350,7 @@ public partial class GameScene : Node2D
 
         if (!_boardController.TryShowHintPair())
         {
-            ShowInteractionTip("当前局面没有可提示的可消除牌。");
+            ShowInteractionTip("当前局面暂时没有可提示的配对。");
             return;
         }
 
@@ -361,14 +358,14 @@ public partial class GameScene : Node2D
         PersistProgressContext();
         RefreshAssistButtons();
         PlayButtonFeedback(_hintButton, new Color(1.0f, 0.86f, 0.45f, 1.0f));
-        ShowInteractionTip($"已高亮一对可消除麻将，剩余 {Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount)} 次。");
+        ShowInteractionTip($"已高亮一对可配对的小动物牌，剩余 {Math.Max(0, MaxHintCountPerLevel - usage.HintUsedCount)} 次。");
     }
 
     /// <summary>响应调试面板中的“随机生成”按钮。</summary>
     private void OnGeneratePressed()
     {
         GD.Print("[GameScene] 点击了随机生成按钮");
-        _debugLabel.Text = "正在生成新的随机堆叠结构...";
+        _debugLabel.Text = "正在生成新的调试随机关卡...";
         HighlightDebugLabel(new Color(0.98f, 0.92f, 0.55f, 1.0f));
         PlayButtonFeedback(_generateButton, new Color(0.95f, 0.78f, 0.32f, 1.0f));
         FlashBoard(new Color(0.20f, 0.54f, 0.40f, 1.0f));
@@ -379,11 +376,11 @@ public partial class GameScene : Node2D
     private void OnPrototypePressed()
     {
         GD.Print("[GameScene] 点击了固定原型按钮");
-        _debugLabel.Text = "正在恢复固定原型布局...";
+        _debugLabel.Text = "正在切回原型关卡...";
         HighlightDebugLabel(new Color(0.60f, 0.92f, 0.82f, 1.0f));
         PlayButtonFeedback(_prototypeButton, new Color(0.42f, 0.84f, 0.67f, 1.0f));
         FlashBoard(new Color(0.14f, 0.46f, 0.34f, 1.0f));
-        _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 调试原型布局");
+        _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 调试原型关卡");
     }
 
     /// <summary>响应 debug 面板中的“跳到该关”。</summary>
@@ -414,11 +411,11 @@ public partial class GameScene : Node2D
         PlayButtonFeedback(_autoMatchButton, new Color(1.0f, 0.82f, 0.58f, 1.0f));
         if (_boardController.TryAutoRemoveHintPair())
         {
-            ShowInteractionTip("已自动消除一对当前可配对的麻将。");
+            ShowInteractionTip("已自动消除一对当前可配对的小动物牌。");
             return;
         }
 
-        ShowInteractionTip("当前局面没有可自动消除的一对麻将。");
+        ShowInteractionTip("当前局面没有可自动消除的一对小动物牌。");
     }
 
     /// <summary>响应 debug 面板中的“重置账号数据”。</summary>
@@ -591,7 +588,7 @@ public partial class GameScene : Node2D
         var profile = profiles[index];
         _boardController.SetLayoutProfile(profile.ProfileId);
         RefreshDebugPanelSummary();
-        _debugLabel.Text = $"已切换规则档案：{profile.DisplayName}";
+        _debugLabel.Text = $"已切换玩法规则：{profile.DisplayName}";
         HighlightDebugLabel(new Color(0.77f, 0.92f, 1.0f, 1.0f));
         _boardController.GenerateRandomBoard(_currentLevelNumber, null, $"关卡 {_currentLevelNumber} 规则切换后随机布局");
     }
@@ -834,8 +831,8 @@ public partial class GameScene : Node2D
                 catch (Exception exception)
                 {
                     GD.PushError($"[GameScene] 离线关卡加载失败，回退到固定原型: level={levelConfig.LevelNumber}, path={levelConfig.OfflineLayoutJsonPath}, error={exception.Message}");
-                    _debugLabel.Text = $"离线关卡加载失败，已回退到固定原型: {levelConfig.LevelNumber}";
-                    _boardController.LoadPrototype(levelConfig.LevelNumber, $"关卡 {levelConfig.LevelNumber} 原型布局");
+                    _debugLabel.Text = $"离线正式关卡加载失败，已回退到原型关卡：{levelConfig.LevelNumber}";
+                    _boardController.LoadPrototype(levelConfig.LevelNumber, $"关卡 {levelConfig.LevelNumber} 原型关卡");
                 }
                 break;
 
@@ -852,10 +849,10 @@ public partial class GameScene : Node2D
     {
         return levelConfig.LayoutSourceMode switch
         {
-            LevelLayoutSourceMode.Prototype => "原型布局",
-            LevelLayoutSourceMode.RandomGenerated => "随机布局",
-            LevelLayoutSourceMode.OfflineJson => "离线关卡",
-            _ => "未知布局",
+            LevelLayoutSourceMode.Prototype => "原型关卡",
+            LevelLayoutSourceMode.RandomGenerated => "调试随机关卡",
+            LevelLayoutSourceMode.OfflineJson => "离线正式关卡",
+            _ => "默认关卡",
         };
     }
 

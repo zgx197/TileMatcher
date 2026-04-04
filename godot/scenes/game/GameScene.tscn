@@ -231,7 +231,7 @@ mouse_filter = 2
 [node name="Label" type="Label" parent="UI/Root/InteractionTip"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "被左右锁住"
+text = "这张小动物牌暂时不能移动"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -391,7 +391,6 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_backbutton")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_backbutton")
 theme_override_styles/focus = SubResource("StyleBoxFlat_backbutton")
 modulate = Color(1, 1, 1, 0.94)
-text = "< 返回主页"
 text = "返回主页"
 
 [node name="SettingsButton" type="Button" parent="UI/Root/TopBar/Layout"]

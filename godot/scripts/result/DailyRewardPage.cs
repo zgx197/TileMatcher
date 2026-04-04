@@ -56,14 +56,15 @@ public partial class DailyRewardPage : Control
         _headlineLabel.Text = _summary.RewardTitle;
         _rewardValueLabel.Text = $"+{_summary.RewardLeafCount}";
         _descriptionLabel.Text = _summary.RewardDescription;
-        _leafTotalLabel.Text = $"当前叶子：x{_summary.CurrentLeafTotal}";
+        _leafTotalLabel.Text = $"当前金币：x{_summary.CurrentLeafTotal}";
         _nextLevelLabel.Text = string.IsNullOrWhiteSpace(_summary.NextLevelName)
             ? $"下一关：关卡 {_summary.NextLevelNumber}"
             : $"下一关：{_summary.NextLevelName}";
         _nextSummaryLabel.Text = string.IsNullOrWhiteSpace(_summary.NextLevelSummary)
-            ? "下一关规则摘要待加载"
+            ? "下一关信息准备中"
             : _summary.NextLevelSummary;
         _continueButton.Text = $"继续前往 {_summary.NextLevelNumber}";
+        _homeButton.Text = "返回主页";
     }
 
     private void OnContinuePressed()

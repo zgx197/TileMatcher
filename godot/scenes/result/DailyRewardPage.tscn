@@ -106,7 +106,7 @@ theme_override_constants/separation = 24
 layout_mode = 2
 theme_override_font_sizes/font_size = 56
 modulate = Color(0.785156, 0.980469, 0.582031, 1)
-text = "每日首胜奖励"
+text = "今日金币奖励"
 horizontal_alignment = 1
 
 [node name="RewardCard" type="PanelContainer" parent="Root/Center/Card/Margin/Stack"]
@@ -123,7 +123,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 modulate = Color(0.894531, 0.980469, 0.808594, 0.9)
-text = "叶子奖励"
+text = "金币奖励"
 horizontal_alignment = 1
 
 [node name="RewardValue" type="Label" parent="Root/Center/Card/Margin/Stack/RewardCard/Stack"]
@@ -137,14 +137,14 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 modulate = Color(0.757812, 0.976562, 0.671875, 0.92)
-text = "当前叶子：x4"
+text = "当前金币：x4"
 horizontal_alignment = 1
 
 [node name="Description" type="Label" parent="Root/Center/Card/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 modulate = Color(0.914062, 0.957031, 0.894531, 0.86)
-text = "今日首次通关已发放奖励。"
+text = "今天第一次完成关卡，奖励已经到账。"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -168,7 +168,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 modulate = Color(0.898438, 0.945312, 0.851562, 0.86)
-text = "规则摘要待加载"
+text = "下一关信息准备中"
 horizontal_alignment = 1
 autowrap_mode = 2
 

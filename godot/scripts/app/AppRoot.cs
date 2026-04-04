@@ -110,9 +110,9 @@ public partial class AppRoot : Node
     {
         var bootPage = BootLoadingPageScene.Instantiate<BootLoadingPage>();
         bootPage.Configure(
-            _progress.PlayerName,
+            "毛球碰碰乐",
             $"已解锁 {_progress.HighestUnlockedLevel} 关",
-            "正在整理今日牌桌与旅程记录...");
+            "正在整理今天的小动物牌桌...");
         bootPage.LoadCompleted += OnBootLoadCompleted;
 
         SwitchToPage(bootPage);
@@ -128,7 +128,7 @@ public partial class AppRoot : Node
             _currentLevelNumber,
             _progress.PlayerName,
             _progress.LeafCount,
-            $"最高解锁 L{_progress.HighestUnlockedLevel} · 已通关 {_progress.TotalCompletedLevelCount} 局",
+            $"最高解锁 {_progress.HighestUnlockedLevel} 关 · 已完成 {_progress.TotalCompletedLevelCount} 关",
             BuildLevelTitle(level, _currentLevelNumber),
             BuildLevelSummary(level));
         homePage.StartGameRequested += OnStartGameRequested;
@@ -237,8 +237,8 @@ public partial class AppRoot : Node
             {
                 RewardLeafCount = grantedLeafCount,
                 CurrentLeafTotal = _progress.LeafCount,
-                RewardTitle = "每日首胜奖励",
-                RewardDescription = $"今日首次通关已发放 +{grantedLeafCount} 叶子，可用于后续外围功能扩展。",
+                RewardTitle = "今日金币奖励",
+                RewardDescription = $"今天第一次完成关卡，已获得 +{grantedLeafCount} 金币。",
                 NextLevelNumber = nextLevelNumber,
                 NextLevelName = completeResult.NextLevelName,
                 NextLevelSummary = completeResult.NextLevelSummary,
@@ -381,25 +381,21 @@ public partial class AppRoot : Node
     {
         if (level is null)
         {
-            return "未找到关卡配置，进入后将回退到默认布局。";
+            return "关卡资料暂未准备好，进入后会使用默认关卡。";
         }
 
         var profileName = ResolveProfileDisplayName(level.LayoutProfileId);
         var sourceText = level.LayoutSourceMode switch
         {
-            LevelLayoutSourceMode.Prototype => "固定原型牌桌",
+            LevelLayoutSourceMode.Prototype => "原型体验关卡",
             LevelLayoutSourceMode.RandomGenerated => level.UseFixedSeed
-                ? $"固定种子随机布局 #{level.RandomSeed}"
-                : "动态随机布局",
-            LevelLayoutSourceMode.OfflineJson => string.IsNullOrWhiteSpace(level.OfflineLayoutJsonPath)
-                ? string.IsNullOrWhiteSpace(level.OfflineCatalogJsonPath)
-                    ? "离线正式关卡 JSON"
-                    : $"离线关卡目录 | {level.OfflineCatalogJsonPath}"
-                : $"离线正式关卡 JSON | {level.OfflineLayoutJsonPath}",
-            _ => "未知布局模式",
+                ? $"调试随机关卡 #{level.RandomSeed}"
+                : "调试随机关卡",
+            LevelLayoutSourceMode.OfflineJson => "离线正式关卡",
+            _ => "默认关卡",
         };
 
-        return $"规则档案：{profileName} | 布局：{sourceText}";
+        return $"玩法规则：{profileName} | 当前关卡：{sourceText}";
     }
 
     /// <summary>把规则档案 id 解析为可读显示名。</summary>

@@ -62,19 +62,21 @@ public partial class LevelCompletePage : Control
 
         _rewardHintLabel.Visible = _result.HasDailyReward;
         _rewardHintLabel.Text = _result.HasDailyReward
-            ? $"今日首胜奖励待领取：+{_result.DailyRewardLeafCount} 叶子"
+            ? $"今日金币奖励待查看：+{_result.DailyRewardLeafCount} 金币"
             : "本次继续将直接进入下一关";
 
         _nextLevelLabel.Text = string.IsNullOrWhiteSpace(_result.NextLevelName)
             ? $"下一关：关卡 {_result.NextLevelNumber}"
             : $"下一关：{_result.NextLevelName}";
         _nextLevelSummaryLabel.Text = string.IsNullOrWhiteSpace(_result.NextLevelSummary)
-            ? "下一关规则摘要待加载"
+            ? "下一关信息准备中"
             : _result.NextLevelSummary;
 
         _continueButton.Text = _result.HasDailyReward
-            ? "继续领取奖励"
+            ? "继续查看奖励"
             : $"继续前往 {_result.NextLevelNumber}";
+
+        _homeButton.Text = "返回主页";
     }
 
     private void OnContinuePressed()
