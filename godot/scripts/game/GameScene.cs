@@ -535,7 +535,8 @@ public partial class GameScene : Node2D
         var buildSummary = $"构建信息 | 包名 {packageName} | 版本 {versionName} ({versionCode}) | 清单方向 {manifestOrientation}";
         var boardSummary = $"当前牌桌 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 可见层 <= L{_boardController.VisibleMaxLayer}";
         var rulesSummary = _boardController.GetCurrentRulesSummary();
-        return $"{buildSummary}\n{boardSummary}\n{rulesSummary}";
+        var sourceSummary = $"来源信息 | 类型 {_boardController.CurrentSourceKindLabel} | 来源 {_boardController.CurrentSourceName}";
+        return $"{buildSummary}\n{boardSummary}\n{sourceSummary}\n{rulesSummary}";
     }
 
     /// <summary>读取项目设置中的构建信息，并统一转成调试面板可直接展示的字符串。</summary>

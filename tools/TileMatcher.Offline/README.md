@@ -335,3 +335,66 @@ Godot 侧后续可以先从这里读取：
 2. 明确运行时关卡 JSON 的稳定字段约定
 3. 再接一个最小 Web 分析页读取 `analysis/` 下的结果
 4. 再继续增强评估指标与自动筛选规则
+## 当前默认批次与导出状态
+
+当前仓库内的默认样例配置已经更新为一条更接近正式使用的 MVP 批次：
+
+- `candidateCount = 120`
+- `maxAcceptedLevels = 20`
+
+也就是说，默认行为不再只是导出极少量示例，而是尝试筛出“前 20 关正式候选”。
+
+当前这一批结果已经成功导出为：
+
+- `artifacts/mahjong-mvp/runtime-levels/level-catalog.json`
+- `artifacts/mahjong-mvp/runtime-levels/levels/level_001.json` 到 `level_020.json`
+
+同时，这批结果也可以进一步同步到：
+
+- `godot/generated/runtime-levels/`
+
+供 Godot 运行时直接消费。
+
+## 与 Godot 的职责边界
+
+当前推荐的正式协作方式是：
+
+- 离线工具负责生成、评估、筛选、导出
+- Godot 负责按约定目录读取正式关卡文件
+
+换句话说，离线工具不需要依附 Godot 才能运行，Godot 也不需要关心候选生成细节，只需要消费导出结果。
+
+## 常用脚本
+
+### 1. 运行离线单测
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-offline-tests.ps1
+```
+
+用途：
+
+- 一键运行当前离线工具最小单测集合
+- 汇总测试结果
+- 输出测试摘要到 `artifacts/test-results/offline-tests/summary.json`
+
+### 2. 同步离线关卡到 Godot
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sync-offline-levels-to-godot.ps1
+```
+
+用途：
+
+- 把 `artifacts/mahjong-mvp/runtime-levels/` 下的正式关卡产物同步到 `godot/generated/runtime-levels/`
+- 让 Godot 可以直接读取最新一批离线正式关卡
+
+## 当前推荐工作流
+
+1. 调整 `batch-config.sample.json` 或自定义批次配置
+2. 运行离线导出
+3. 检查 `analysis/` 和 `runtime-levels/` 输出
+4. 运行 `sync-offline-levels-to-godot.ps1`
+5. 在 Godot 中按目录索引消费正式关卡
+
+这条链路已经是当前 MVP 的默认推荐路径。
