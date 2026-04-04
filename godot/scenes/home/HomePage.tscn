@@ -52,6 +52,18 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.824219, 0.628906, 0.257812, 0.9)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debug_button"]
+bg_color = Color(0.0823529, 0.133333, 0.121569, 0.92)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.819608, 0.929412, 0.831373, 0.4)
+
 [node name="HomePage" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -141,6 +153,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 modulate = Color(1, 0.960938, 0.851562, 1)
 text = "x1"
+
+[node name="Right" type="HBoxContainer" parent="Root/Header/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="DebugButton" type="Button" parent="Root/Header/Bar/Right"]
+custom_minimum_size = Vector2(110, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_debug_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_debug_button")
+text = "DEBUG"
 
 [node name="LogoBlock" type="CenterContainer" parent="Root"]
 layout_mode = 1

@@ -224,6 +224,26 @@ public partial class BoardController : Node2D
         return true;
     }
 
+    /// <summary>
+    /// 调试入口：直接消除当前局面中一对可立即消除的麻将。
+    /// </summary>
+    public bool TryAutoRemoveHintPair()
+    {
+        if (_interactionLocked || _currentLayout is null)
+        {
+            return false;
+        }
+
+        ClearHintPairVisual();
+        if (!TryFindHintPair(out var firstTile, out var secondTile))
+        {
+            return false;
+        }
+
+        LogBoard($"调试自动消除一对麻将: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
+        return TryStartMatch(firstTile, secondTile, "调试自动消除");
+    }
+
     public override void _Ready()
     {
         if (TileScene is null)

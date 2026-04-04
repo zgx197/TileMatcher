@@ -19,32 +19,50 @@ public partial class AppRoot : Node
     private const string DefaultProfileCatalogPath = "res://configs/layout_profiles/default_catalog.tres";
     private const int DailyRewardLeafCount = 3;
 
+    /// <summary>启动页场景资源。</summary>
     [Export]
     public PackedScene BootLoadingPageScene { get; set; } = null!;
 
+    /// <summary>主页场景资源。</summary>
     [Export]
     public PackedScene HomePageScene { get; set; } = null!;
 
+    /// <summary>游戏页场景资源。</summary>
     [Export]
     public PackedScene GamePageScene { get; set; } = null!;
 
+    /// <summary>通关结算页场景资源。</summary>
     [Export]
     public PackedScene LevelCompletePageScene { get; set; } = null!;
 
+    /// <summary>每日奖励页场景资源。</summary>
     [Export]
     public PackedScene DailyRewardPageScene { get; set; } = null!;
 
+    /// <summary>运行时使用的关卡目录资源。</summary>
     [Export]
     public LevelCatalog LevelCatalog { get; set; } = null!;
 
+    /// <summary>运行时使用的规则档案目录资源。</summary>
     [Export]
     public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
 
+    /// <summary>当前挂在根节点下的页面实例。</summary>
     private Node? _currentPage;
+
+    /// <summary>当前外围流程认定的关卡号。</summary>
     private int _currentLevelNumber = 1;
+
+    /// <summary>当前玩家进度存档对象。</summary>
     private PlayerProgressData _progress = new();
+
+    /// <summary>通关后待展示的每日奖励摘要，若为空则直接继续下一关。</summary>
     private DailyRewardSummary? _pendingDailyRewardSummary;
 
+    /// <summary>是否在下一次进入游戏页时自动展开调试面板。</summary>
+    private bool _openDebugOverlayOnNextGamePage;
+
+    /// <summary>初始化外围页面资源、进度数据和启动流程。</summary>
     public override void _Ready()
     {
         ApplyMobilePortraitOrientation();
@@ -90,6 +108,7 @@ public partial class AppRoot : Node
         GD.Print($"[AppRoot] 已执行运行时竖屏锁定。before={before}, after={after}");
     }
 
+    /// <summary>切到启动加载页。</summary>
     private void ShowBootLoadingPage()
     {
         var bootPage = BootLoadingPageScene.Instantiate<BootLoadingPage>();
@@ -102,6 +121,7 @@ public partial class AppRoot : Node
         SwitchToPage(bootPage);
     }
 
+    /// <summary>切到主页，并注入当前玩家进度摘要。</summary>
     private void ShowHomePage()
     {
         var homePage = HomePageScene.Instantiate<HomePage>();
@@ -115,10 +135,12 @@ public partial class AppRoot : Node
             BuildLevelTitle(level, _currentLevelNumber),
             BuildLevelSummary(level));
         homePage.StartGameRequested += OnStartGameRequested;
+        homePage.DebugEnterRequested += OnDebugEnterRequested;
 
         SwitchToPage(homePage);
     }
 
+    /// <summary>切到游戏页，并按关卡号启动当前局。</summary>
     private void ShowGamePage(int levelNumber)
     {
         var gamePage = GamePageScene.Instantiate<GameScene>();
@@ -126,12 +148,19 @@ public partial class AppRoot : Node
         gamePage.BindProgressContext(_progress, SaveProgress);
         gamePage.LevelCompleted += OnLevelCompleted;
         gamePage.BackToHomeRequested += OnBackToHomeRequested;
+        gamePage.DebugLevelJumpRequested += OnDebugLevelJumpRequested;
         gamePage.ResetProgressRequested += OnResetProgressRequested;
 
         SwitchToPage(gamePage);
         gamePage.StartLevel(levelNumber);
+        if (_openDebugOverlayOnNextGamePage)
+        {
+            _openDebugOverlayOnNextGamePage = false;
+            gamePage.OpenDebugOverlay();
+        }
     }
 
+    /// <summary>切到通关结算页。</summary>
     private void ShowLevelCompletePage(LevelCompleteResult result)
     {
         var completePage = LevelCompletePageScene.Instantiate<LevelCompletePage>();
@@ -142,6 +171,7 @@ public partial class AppRoot : Node
         SwitchToPage(completePage);
     }
 
+    /// <summary>切到每日奖励页。</summary>
     private void ShowDailyRewardPage(DailyRewardSummary summary)
     {
         var rewardPage = DailyRewardPageScene.Instantiate<DailyRewardPage>();
@@ -152,6 +182,7 @@ public partial class AppRoot : Node
         SwitchToPage(rewardPage);
     }
 
+    /// <summary>统一替换当前显示页面。</summary>
     private void SwitchToPage(Node nextPage)
     {
         if (_currentPage is not null)
@@ -164,11 +195,13 @@ public partial class AppRoot : Node
         AddChild(_currentPage);
     }
 
+    /// <summary>启动页加载完成后进入主页。</summary>
     private void OnBootLoadCompleted()
     {
         ShowHomePage();
     }
 
+    /// <summary>响应主页“开始游戏”请求。</summary>
     private void OnStartGameRequested(int levelNumber)
     {
         _currentLevelNumber = Math.Max(1, levelNumber);
@@ -177,6 +210,17 @@ public partial class AppRoot : Node
         ShowGamePage(_currentLevelNumber);
     }
 
+    /// <summary>响应主页 DEBUG 请求，进入关卡并自动展开调试面板。</summary>
+    private void OnDebugEnterRequested(int levelNumber)
+    {
+        _currentLevelNumber = Math.Max(1, levelNumber);
+        _progress.CurrentLevelNumber = _currentLevelNumber;
+        _openDebugOverlayOnNextGamePage = true;
+        SaveProgress();
+        ShowGamePage(_currentLevelNumber);
+    }
+
+    /// <summary>响应关卡完成事件，更新进度并决定是否展示奖励页。</summary>
     private void OnLevelCompleted(LevelCompleteResult result)
     {
         var nextLevelNumber = result.LevelNumber + 1;
@@ -220,6 +264,7 @@ public partial class AppRoot : Node
         ShowLevelCompletePage(completeResult);
     }
 
+    /// <summary>响应结算页继续按钮，必要时先进入每日奖励页。</summary>
     private void OnContinueRequested(int nextLevelNumber)
     {
         if (_pendingDailyRewardSummary is not null)
@@ -236,6 +281,7 @@ public partial class AppRoot : Node
         ShowGamePage(nextLevelNumber);
     }
 
+    /// <summary>响应每日奖励页继续按钮，直接进入下一关。</summary>
     private void OnDailyRewardContinueRequested(int nextLevelNumber)
     {
         _currentLevelNumber = nextLevelNumber;
@@ -244,11 +290,22 @@ public partial class AppRoot : Node
         ShowGamePage(nextLevelNumber);
     }
 
+    /// <summary>响应返回主页请求。</summary>
     private void OnBackToHomeRequested()
     {
         ShowHomePage();
     }
 
+    /// <summary>响应游戏页跳关请求，并通过外围流程重进目标关卡。</summary>
+    private void OnDebugLevelJumpRequested(int levelNumber)
+    {
+        _currentLevelNumber = Math.Max(1, levelNumber);
+        _progress.CurrentLevelNumber = _currentLevelNumber;
+        SaveProgress();
+        ShowGamePage(_currentLevelNumber);
+    }
+
+    /// <summary>响应清空账号数据请求，重置存档并回到主页。</summary>
     private void OnResetProgressRequested()
     {
         GD.Print("[AppRoot] 收到重置账号数据请求，正在清空进度并返回主页。");
@@ -261,6 +318,7 @@ public partial class AppRoot : Node
         ShowHomePage();
     }
 
+    /// <summary>确保关卡目录和规则目录已经从默认路径加载。</summary>
     private void EnsureCatalogsLoaded()
     {
         LevelCatalog ??= GD.Load<LevelCatalog>(DefaultLevelCatalogPath);
@@ -277,17 +335,20 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>从本地存档加载玩家进度。</summary>
     private void LoadProgress()
     {
         _progress = PlayerProgressStore.LoadOrCreate();
         _currentLevelNumber = Math.Max(1, _progress.CurrentLevelNumber);
     }
 
+    /// <summary>把当前进度写回本地存档。</summary>
     private void SaveProgress()
     {
         PlayerProgressStore.Save(_progress);
     }
 
+    /// <summary>尝试发放今日首胜奖励。</summary>
     private bool TryGrantDailyReward(out int grantedLeafCount)
     {
         var todayKey = DateTime.Now.ToString("yyyy-MM-dd");
@@ -303,11 +364,13 @@ public partial class AppRoot : Node
         return true;
     }
 
+    /// <summary>按关卡号查询关卡配置，必要时允许目录回退。</summary>
     private LevelConfig? GetLevelOrFallback(int levelNumber)
     {
         return LevelCatalog?.ResolveLevelOrFallback(levelNumber);
     }
 
+    /// <summary>构造主页和结算页使用的关卡标题。</summary>
     private static string BuildLevelTitle(LevelConfig? level, int fallbackLevelNumber)
     {
         if (level is null)
@@ -320,6 +383,7 @@ public partial class AppRoot : Node
             : level.DisplayName;
     }
 
+    /// <summary>构造主页和结算页使用的关卡摘要文本。</summary>
     private string BuildLevelSummary(LevelConfig? level)
     {
         if (level is null)
@@ -345,6 +409,7 @@ public partial class AppRoot : Node
         return $"规则档案：{profileName} | 布局：{sourceText}";
     }
 
+    /// <summary>把规则档案 id 解析为可读显示名。</summary>
     private string ResolveProfileDisplayName(string profileId)
     {
         if (ProfileCatalog is null || string.IsNullOrWhiteSpace(profileId))

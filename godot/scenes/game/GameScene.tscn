@@ -643,6 +643,42 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
 text = "固定原型"
 
+[node name="JumpRow" type="HBoxContainer" parent="UI/Root/DebugOverlay/Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JumpLabel" type="Label" parent="UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+text = "跳转关卡"
+vertical_alignment = 1
+
+[node name="JumpLevelInput" type="SpinBox" parent="UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+step = 1.0
+value = 1.0
+
+[node name="JumpButton" type="Button" parent="UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow"]
+custom_minimum_size = Vector2(132, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "跳到该关"
+
+[node name="ResetCurrentLevelAssistButton" type="Button" parent="UI/Root/DebugOverlay/Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "重置当前关卡辅助次数"
+
+[node name="AutoMatchButton" type="Button" parent="UI/Root/DebugOverlay/Panel/Margin/Stack"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "自动消除一对"
+
 [node name="ResetProgressButton" type="Button" parent="UI/Root/DebugOverlay/Panel/Margin/Stack"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2

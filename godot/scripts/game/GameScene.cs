@@ -80,6 +80,14 @@ public partial class GameScene : Node2D
     private Button _backHomeButton = null!;
     private Button _generateButton = null!;
     private Button _prototypeButton = null!;
+    /// <summary>调试面板中的跳关输入框。</summary>
+    private SpinBox _jumpLevelInput = null!;
+    /// <summary>确认跳到指定关卡的按钮。</summary>
+    private Button _jumpLevelButton = null!;
+    /// <summary>重置当前关卡辅助次数的按钮。</summary>
+    private Button _resetCurrentLevelAssistButton = null!;
+    /// <summary>触发自动消除一对的调试按钮。</summary>
+    private Button _autoMatchButton = null!;
     private Button _resetProgressButton = null!;
     private HSlider _layerFilterSlider = null!;
     private Label _layerFilterValue = null!;
@@ -101,11 +109,23 @@ public partial class GameScene : Node2D
     private Vector2 _debugButtonStartPosition;
     private Vector2 _debugPanelPressPosition;
     private Vector2 _debugPanelStartPosition;
+
+    /// <summary>当前正在游玩的关卡号。</summary>
     private int _currentLevelNumber = 1;
+
+    /// <summary>当前关卡开始时的毫秒时间戳。</summary>
     private ulong _levelStartTicksMsec;
+
+    /// <summary>当前关卡是否已经触发过通关事件。</summary>
     private bool _levelCompleted;
+
+    /// <summary>由外围流程绑定进来的玩家进度对象。</summary>
     private PlayerProgressData? _progressData;
+
+    /// <summary>由外围流程提供的存档保存回调。</summary>
     private Action? _saveProgressAction;
+
+    /// <summary>单独运行 GameScene 时使用的本地辅助次数缓存。</summary>
     private readonly Dictionary<int, LevelAssistUsageData> _standaloneAssistUsageByLevel = [];
 
     /// <summary>页面流程层使用的普通 C# 事件，不走 Godot Signal 序列化约束。</summary>
@@ -113,6 +133,9 @@ public partial class GameScene : Node2D
 
     /// <summary>请求返回主页的页面层事件。</summary>
     public event Action? BackToHomeRequested;
+
+    /// <summary>请求从外围流程直接跳转到指定关卡。</summary>
+    public event Action<int>? DebugLevelJumpRequested;
 
     /// <summary>请求清空账号数据并强制返回主页。</summary>
     public event Action? ResetProgressRequested;
@@ -132,6 +155,7 @@ public partial class GameScene : Node2D
         }
     }
 
+    /// <summary>绑定节点、初始化文本，并接通游戏页交互事件。</summary>
     public override void _Ready()
     {
         RenderingServer.SetDefaultClearColor(new Color(0.06f, 0.36f, 0.29f, 1.0f));
@@ -156,6 +180,10 @@ public partial class GameScene : Node2D
         _settingsButton = GetNode<Button>("UI/Root/TopBar/Layout/SettingsButton");
         _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
         _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
+        _jumpLevelInput = GetNode<SpinBox>("UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow/JumpLevelInput");
+        _jumpLevelButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/JumpRow/JumpButton");
+        _resetCurrentLevelAssistButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/ResetCurrentLevelAssistButton");
+        _autoMatchButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/AutoMatchButton");
         _resetProgressButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/ResetProgressButton");
         _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
         _layerFilterValue = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Value");
@@ -171,6 +199,9 @@ public partial class GameScene : Node2D
         _backHomeButton.Text = "主页";
         _generateButton.Text = "随机生成";
         _prototypeButton.Text = "固定原型";
+        _jumpLevelButton.Text = "跳到该关";
+        _resetCurrentLevelAssistButton.Text = "重置当前关卡辅助次数";
+        _autoMatchButton.Text = "自动消除一对";
         _resetProgressButton.Text = "重置账号数据";
         _debugLabel.Text = "点击牌桌中的可移动麻将，可以先验证基础配对消除逻辑。";
         _rulesSummaryLabel.Text = string.Empty;
@@ -183,6 +214,9 @@ public partial class GameScene : Node2D
         _layerFilterSlider.MaxValue = 0;
         _layerFilterSlider.Step = 1;
         _layerFilterSlider.Editable = false;
+        _jumpLevelInput.MinValue = 1;
+        _jumpLevelInput.Step = 1;
+        _jumpLevelInput.Value = _currentLevelNumber;
         _layerFilterValue.Text = "<= L0";
         _debugOverlay.Visible = false;
         _interactionTip.Visible = false;
@@ -198,6 +232,9 @@ public partial class GameScene : Node2D
         _hintButton.Pressed += OnHintPressed;
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
+        _jumpLevelButton.Pressed += OnJumpLevelPressed;
+        _resetCurrentLevelAssistButton.Pressed += OnResetCurrentLevelAssistPressed;
+        _autoMatchButton.Pressed += OnAutoMatchPressed;
         _resetProgressButton.Pressed += OnResetProgressPressed;
         _layerFilterSlider.ValueChanged += OnLayerFilterChanged;
         _debugToggleButton.GuiInput += OnDebugToggleGuiInput;
@@ -233,6 +270,7 @@ public partial class GameScene : Node2D
         _levelCompleted = false;
         _levelStartTicksMsec = Time.GetTicksMsec();
         _levelValue.Text = _currentLevelNumber.ToString();
+        _jumpLevelInput.Value = _currentLevelNumber;
         RefreshAssistButtons();
 
         var levelConfig = FindLevelConfig(_currentLevelNumber);
@@ -312,6 +350,41 @@ public partial class GameScene : Node2D
         PlayButtonFeedback(_prototypeButton, new Color(0.42f, 0.84f, 0.67f, 1.0f));
         FlashBoard(new Color(0.14f, 0.46f, 0.34f, 1.0f));
         _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 调试原型布局");
+    }
+
+    /// <summary>响应 debug 面板中的“跳到该关”。</summary>
+    private void OnJumpLevelPressed()
+    {
+        var targetLevel = Math.Max(1, Mathf.RoundToInt((float)_jumpLevelInput.Value));
+        _jumpLevelInput.Value = targetLevel;
+        PlayButtonFeedback(_jumpLevelButton, new Color(0.74f, 0.90f, 1.0f, 1.0f));
+        ShowInteractionTip($"正在跳转到关卡 {targetLevel}...");
+        DebugLevelJumpRequested?.Invoke(targetLevel);
+    }
+
+    /// <summary>响应 debug 面板中的“重置当前关卡辅助次数”。</summary>
+    private void OnResetCurrentLevelAssistPressed()
+    {
+        var usage = GetCurrentAssistUsage();
+        usage.RestartUsedCount = 0;
+        usage.HintUsedCount = 0;
+        PersistProgressContext();
+        RefreshAssistButtons();
+        PlayButtonFeedback(_resetCurrentLevelAssistButton, new Color(0.78f, 0.94f, 0.82f, 1.0f));
+        ShowInteractionTip("已重置当前关卡的重开和提示次数。");
+    }
+
+    /// <summary>响应 debug 面板中的“自动消除一对”。</summary>
+    private void OnAutoMatchPressed()
+    {
+        PlayButtonFeedback(_autoMatchButton, new Color(1.0f, 0.82f, 0.58f, 1.0f));
+        if (_boardController.TryAutoRemoveHintPair())
+        {
+            ShowInteractionTip("已自动消除一对当前可配对的麻将。");
+            return;
+        }
+
+        ShowInteractionTip("当前局面没有可自动消除的一对麻将。");
     }
 
     /// <summary>响应 debug 面板中的“重置账号数据”。</summary>
@@ -415,6 +488,18 @@ public partial class GameScene : Node2D
         _debugOverlay.Visible = !_debugOverlay.Visible;
         _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
         RefreshDebugPanelSummary();
+    }
+
+    /// <summary>供外围流程在进入关卡后直接展开调试面板。</summary>
+    public void OpenDebugOverlay()
+    {
+        if (_debugOverlay.Visible)
+        {
+            RefreshDebugPanelSummary();
+            return;
+        }
+
+        ToggleDebugOverlay();
     }
 
     /// <summary>显式可见的返回主页入口，避免当前流程只依赖键盘 `Esc`。</summary>
@@ -754,8 +839,13 @@ public partial class GameScene : Node2D
         _hintCountLabel.Text = hintRemainingCount.ToString();
         _restartButton.Disabled = restartRemainingCount <= 0;
         _hintButton.Disabled = hintRemainingCount <= 0;
+        _resetCurrentLevelAssistButton.Disabled = restartRemainingCount == MaxRestartCountPerLevel &&
+            hintRemainingCount == MaxHintCountPerLevel;
         _restartButton.Modulate = restartRemainingCount > 0 ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.52f);
         _hintButton.Modulate = hintRemainingCount > 0 ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.52f);
+        _resetCurrentLevelAssistButton.Modulate = _resetCurrentLevelAssistButton.Disabled
+            ? new Color(1.0f, 1.0f, 1.0f, 0.52f)
+            : Colors.White;
     }
 
     /// <summary>取得当前关卡对应的辅助资源使用状态。</summary>
