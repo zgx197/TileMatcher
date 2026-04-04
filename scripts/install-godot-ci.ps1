@@ -55,11 +55,12 @@ $templatesDownloadUrl = "https://github.com/godotengine/godot/releases/download/
 $downloadRoot = Join-Path $InstallRoot "downloads"
 $editorExtractRoot = Join-Path $InstallRoot "editor"
 $templatesExtractRoot = Join-Path $InstallRoot "templates"
-$exportTemplatesRoot = Join-Path $AppDataRoot "Godot\export_templates\$godotVersionLabel"
+$exportTemplatesParentRoot = Join-Path $AppDataRoot "Godot\export_templates"
 
 New-Item -ItemType Directory -Path $downloadRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $editorExtractRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $templatesExtractRoot -Force | Out-Null
+New-Item -ItemType Directory -Path $exportTemplatesParentRoot -Force | Out-Null
 
 $editorArchivePath = Join-Path $downloadRoot $editorArchiveName
 $templatesArchivePath = Join-Path $downloadRoot $templatesArchiveName
@@ -82,6 +83,14 @@ $godotExePath = $godotExe.FullName
 Write-Step "Install Godot export templates"
 Expand-ZipArchive -ArchivePath $templatesArchivePath -DestinationPath $templatesExtractRoot
 
+$versionFile = Get-ChildItem -LiteralPath $templatesExtractRoot -Recurse -Filter "version.txt" -File | Select-Object -First 1
+if ($null -eq $versionFile) {
+    throw "Godot export templates version file not found under: $templatesExtractRoot"
+}
+$versionFilePath = $versionFile.FullName
+
+$versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
+$exportTemplatesRoot = Join-Path $exportTemplatesParentRoot $versionFileContent
 if (Test-Path -LiteralPath $exportTemplatesRoot) {
     Remove-Item -LiteralPath $exportTemplatesRoot -Recurse -Force
 }
@@ -91,15 +100,9 @@ Get-ChildItem -LiteralPath $templatesExtractRoot -Force | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $exportTemplatesRoot -Recurse -Force
 }
 
-$versionFile = Get-ChildItem -LiteralPath $exportTemplatesRoot -Recurse -Filter "version.txt" -File | Select-Object -First 1
-if ($null -eq $versionFile) {
-    throw "Godot export templates version file not found under: $exportTemplatesRoot"
-}
-$versionFilePath = $versionFile.FullName
-
-$versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
-if ($versionFileContent -ne $godotVersionLabel) {
-    throw "Unexpected export templates version. Expected $godotVersionLabel, got $versionFileContent"
+$monoAliasTemplatesRoot = Join-Path $exportTemplatesParentRoot $godotVersionLabel
+if (($versionFileContent -ne $godotVersionLabel) -and (-not (Test-Path -LiteralPath $monoAliasTemplatesRoot))) {
+    cmd /c mklink /J "$monoAliasTemplatesRoot" "$exportTemplatesRoot" | Out-Null
 }
 
 Write-Host ""
