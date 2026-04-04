@@ -48,7 +48,7 @@ public static class TileInteractionRules
         {
             return MatchValidationResult.Fail(
                 MatchFailureKind.TypeMismatch,
-                "牌面不同，无法消除");
+                "类型不同，无法配对");
         }
 
         var firstState = Evaluate(first, activeTiles);
@@ -277,8 +277,8 @@ public readonly struct TileInteractionState(
         return PrimaryBlockReason switch
         {
             TileBlockReason.Above => "被上层压住",
-            TileBlockReason.LeftRight => "被左右锁住",
-            TileBlockReason.TopBottom => "被上下锁住",
+            TileBlockReason.LeftRight => "左右被挡住",
+            TileBlockReason.TopBottom => "上下被挡住",
             _ => "当前不可移动",
         };
     }

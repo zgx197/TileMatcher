@@ -12,7 +12,7 @@ public sealed class PlayerProgressData
     /// <summary>首页顶部默认显示名，当前用于展示游戏名称。</summary>
     public string PlayerName { get; set; } = "毛球碰碰乐";
 
-    /// <summary>外围可消耗资源“叶子”的当前数量。</summary>
+    /// <summary>外围可消耗资源“金币”的当前数量。</summary>
     public int LeafCount { get; set; } = 1;
 
     /// <summary>当前流程准备进入或继续的关卡号。</summary>

@@ -13,7 +13,7 @@ namespace TileMatcher.Game;
 /// </summary>
 /// <remarks>
 /// 它负责绑定调试界面，并把用户操作转成对 BoardController 的调用。
-/// 这一层不直接实现牌桌规则，只负责把状态呈现出来。
+/// 这一层不直接实现棋盘规则，只负责把状态呈现出来。
 /// </remarks>
 public partial class GameScene : Node2D
 {
@@ -26,7 +26,7 @@ public partial class GameScene : Node2D
     private const int MaxHintCountPerLevel = 3;
 
     /// <summary>
-    /// 当游戏页被单独作为主场景运行时，是否在 `_Ready` 后自动加载一局默认牌桌。
+    /// 当游戏页被单独作为主场景运行时，是否在 `_Ready` 后自动加载一局默认关卡。
     /// 如果它被 AppRoot 作为子页面驱动，则应关闭这个开关并由外层调用 `StartLevel`。
     /// </summary>
     [Export]
@@ -44,10 +44,10 @@ public partial class GameScene : Node2D
     /// <summary>调试面板距离屏幕边缘的安全间距。</summary>
     private const float FloatingPanelMargin = 18.0f;
 
-    /// <summary>负责牌桌运行时逻辑和交互的主控制器。</summary>
+    /// <summary>负责棋盘运行时逻辑和交互的主控制器。</summary>
     private BoardController _boardController = null!;
 
-    /// <summary>牌桌背景，用于做轻量闪烁反馈。</summary>
+    /// <summary>棋盘背景，用于做轻量闪烁反馈。</summary>
     private CanvasItem _boardBackground = null!;
 
     /// <summary>顶部关卡编号文本。</summary>
@@ -94,7 +94,7 @@ public partial class GameScene : Node2D
     private Button _backHomeButton = null!;
     /// <summary>调试面板中的随机生成按钮。</summary>
     private Button _generateButton = null!;
-    /// <summary>调试面板中的固定原型按钮。</summary>
+    /// <summary>调试面板中的原型关卡按钮。</summary>
     private Button _prototypeButton = null!;
     /// <summary>调试面板中的跳关输入框。</summary>
     private SpinBox _jumpLevelInput = null!;
@@ -292,7 +292,7 @@ public partial class GameScene : Node2D
     /// <summary>响应“随机生成”按钮。</summary>
     /// <summary>
     /// 由外围流程显式启动一局关卡。
-    /// 第一阶段先复用当前稳定的原型牌桌，确保 Home -> Game -> Result 的页面流转先跑通。
+    /// 第一阶段先复用当前稳定的原型关卡，确保 Home -> Game -> Result 的页面流转先跑通。
     /// </summary>
     public void StartLevel(int levelNumber)
     {
@@ -306,7 +306,7 @@ public partial class GameScene : Node2D
         var levelConfig = FindLevelConfig(_currentLevelNumber);
         if (levelConfig is null)
         {
-            GD.PushWarning($"[GameScene] 未找到关卡配置，回退到固定原型: level={_currentLevelNumber}");
+            GD.PushWarning($"[GameScene] 未找到关卡配置，回退到原型关卡: level={_currentLevelNumber}");
             _debugLabel.Text = $"关卡 {_currentLevelNumber} 未配置，已回退到原型关卡。";
             _boardController.LoadPrototype(_currentLevelNumber, $"关卡 {_currentLevelNumber} 原型关卡");
             InitializeProfileSelector();
@@ -372,10 +372,10 @@ public partial class GameScene : Node2D
         _boardController.GenerateRandomBoard(_currentLevelNumber, null, $"关卡 {_currentLevelNumber} 调试随机布局");
     }
 
-    /// <summary>响应“固定原型”按钮。</summary>
+    /// <summary>响应“原型关卡”按钮。</summary>
     private void OnPrototypePressed()
     {
-        GD.Print("[GameScene] 点击了固定原型按钮");
+        GD.Print("[GameScene] 点击了原型关卡按钮");
         _debugLabel.Text = "正在切回原型关卡...";
         HighlightDebugLabel(new Color(0.60f, 0.92f, 0.82f, 1.0f));
         PlayButtonFeedback(_prototypeButton, new Color(0.42f, 0.84f, 0.67f, 1.0f));
@@ -433,7 +433,7 @@ public partial class GameScene : Node2D
         ResetProgressRequested?.Invoke();
     }
 
-    /// <summary>牌桌生成完成后，同步摘要、统计和调试控件。</summary>
+    /// <summary>棋盘生成完成后，同步摘要、统计和调试控件。</summary>
     private void OnBoardGenerated(string summary)
     {
         GD.Print($"[GameScene] 布局生成完成: {summary}");
@@ -445,7 +445,7 @@ public partial class GameScene : Node2D
         FlashBoard(new Color(0.07f, 0.42f, 0.29f, 1.0f));
     }
 
-    /// <summary>牌桌内部状态变化后，同步顶部统计和调试文本。</summary>
+    /// <summary>棋盘内部状态变化后，同步顶部统计和调试文本。</summary>
     private void OnBoardStateChanged(string message)
     {
         SyncStats();
@@ -576,7 +576,7 @@ public partial class GameScene : Node2D
         BackToHomeRequested?.Invoke();
     }
 
-    /// <summary>切换规则 profile 并重新生成牌桌。</summary>
+    /// <summary>切换规则 profile 并重新生成棋盘。</summary>
     private void OnProfileSelected(long index)
     {
         var profiles = _boardController.GetProfiles();
@@ -675,7 +675,7 @@ public partial class GameScene : Node2D
             Mathf.Clamp(_debugPanel.Position.Y, FloatingPanelMargin, maxY));
     }
 
-    /// <summary>根据当前牌桌层数刷新层过滤滑杆。</summary>
+    /// <summary>根据当前棋盘层数刷新层过滤滑杆。</summary>
     private void SyncLayerInspector()
     {
         _layerFilterSlider.MinValue = 0;
@@ -741,17 +741,17 @@ public partial class GameScene : Node2D
         _rulesSummaryLabel.Text = BuildDebugPanelSummary();
     }
 
-    /// <summary>构造调试面板中展示的构建、牌桌和来源汇总信息。</summary>
+    /// <summary>构造调试面板中展示的构建、棋盘和来源汇总信息。</summary>
     private string BuildDebugPanelSummary()
     {
-        // 这里保留调试面板汇总，统一展示构建信息、当前牌桌状态和当前规则摘要。
+        // 这里保留调试面板汇总，统一展示构建信息、当前棋盘状态和当前规则摘要。
         var packageName = ReadProjectSetting(BuildPackageNameSettingPath, "unknown.package");
         var versionName = ReadProjectSetting(BuildVersionNameSettingPath, "0.0.0");
         var versionCode = ReadProjectSetting(BuildVersionCodeSettingPath, "0");
         var manifestOrientation = ReadProjectSetting(BuildOrientationSettingPath, "unspecified");
 
         var buildSummary = $"构建信息 | 包名 {packageName} | 版本 {versionName} ({versionCode}) | 清单方向 {manifestOrientation}";
-        var boardSummary = $"当前牌桌 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 可见层 <= L{_boardController.VisibleMaxLayer}";
+        var boardSummary = $"当前棋盘 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 可见层 <= L{_boardController.VisibleMaxLayer}";
         var rulesSummary = _boardController.GetCurrentRulesSummary();
         var sourceSummary = $"来源信息 | 类型 {_boardController.CurrentSourceKindLabel} | 来源 {_boardController.CurrentSourceName}";
         return $"{buildSummary}\n{boardSummary}\n{sourceSummary}\n{rulesSummary}";
@@ -830,7 +830,7 @@ public partial class GameScene : Node2D
                 }
                 catch (Exception exception)
                 {
-                    GD.PushError($"[GameScene] 离线关卡加载失败，回退到固定原型: level={levelConfig.LevelNumber}, path={levelConfig.OfflineLayoutJsonPath}, error={exception.Message}");
+                    GD.PushError($"[GameScene] 离线关卡加载失败，回退到原型关卡: level={levelConfig.LevelNumber}, path={levelConfig.OfflineLayoutJsonPath}, error={exception.Message}");
                     _debugLabel.Text = $"离线正式关卡加载失败，已回退到原型关卡：{levelConfig.LevelNumber}";
                     _boardController.LoadPrototype(levelConfig.LevelNumber, $"关卡 {levelConfig.LevelNumber} 原型关卡");
                 }
@@ -920,7 +920,7 @@ public partial class GameScene : Node2D
         tween.Chain().TweenProperty(button, "scale", Vector2.One, 0.12);
     }
 
-    /// <summary>让牌桌背景闪一下，用于强调一次重绘或刷新。</summary>
+    /// <summary>让棋盘背景闪一下，用于强调一次重绘或刷新。</summary>
     private void FlashBoard(Color targetColor)
     {
         _boardBackground.Modulate = new Color(1.16f, 1.16f, 1.16f, 1.0f);

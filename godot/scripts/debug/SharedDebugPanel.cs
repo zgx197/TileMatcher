@@ -47,13 +47,13 @@ public partial class SharedDebugPanel : Control
     /// <summary>层级过滤当前值文本。</summary>
     public Label LayerFilterValueLabel { get; private set; } = null!;
 
-    /// <summary>随机生成和固定原型按钮行。</summary>
+    /// <summary>随机生成和原型关卡按钮行。</summary>
     public Control GenerationButtonsRow { get; private set; } = null!;
 
     /// <summary>随机生成按钮。</summary>
     public Button GenerateButton { get; private set; } = null!;
 
-    /// <summary>固定原型按钮。</summary>
+    /// <summary>原型关卡按钮。</summary>
     public Button PrototypeButton { get; private set; } = null!;
 
     /// <summary>跳关区域容器。</summary>

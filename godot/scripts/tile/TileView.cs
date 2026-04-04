@@ -6,7 +6,7 @@ using AppTileData = TileMatcher.Data.TileData;
 namespace TileMatcher.Tile;
 
 /// <summary>
-/// 单张麻将的可视化节点。
+/// 单张牌的可视化节点。
 /// </summary>
 /// <remarks>
 /// 当前它仍然是一个偏渲染层的组件：

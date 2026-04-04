@@ -156,7 +156,7 @@ custom_minimum_size = Vector2(180, 62)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
-text = "固定原型"
+text = "原型关卡"
 
 [node name="JumpRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
 layout_mode = 2

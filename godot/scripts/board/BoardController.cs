@@ -12,7 +12,7 @@ using AppTileData = TileMatcher.Data.TileData;
 namespace TileMatcher.Board;
 
 /// <summary>
-/// 负责把布局数据转换成可见牌桌，并维护当前局内的基础交互状态。
+/// 负责把布局数据转换成可见棋盘，并维护当前局内的基础交互状态。
 /// </summary>
 /// <remarks>
 /// 当前版本已经支持两套输入结果：
@@ -30,7 +30,7 @@ public partial class BoardController : Node2D
     /// <summary>场景未显式绑定消除反馈配置时，回退使用这份默认资源。</summary>
     private const string DefaultMatchFeedbackPath = "res://configs/effects/default_match_feedback.tres";
 
-    /// <summary>棋盘左右留白，避免牌桌贴边。</summary>
+    /// <summary>棋盘左右留白，避免内容贴边。</summary>
     private const float SidePadding = 36.0f;
 
     /// <summary>顶部状态栏预留高度。</summary>
@@ -93,10 +93,10 @@ public partial class BoardController : Node2D
     /// <summary>分数弹字持续时间。</summary>
     private const double ScorePopupDuration = 0.82;
 
-    /// <summary>当前牌桌上真实存在的全部牌视图实例。</summary>
+    /// <summary>当前棋盘上真实存在的全部牌视图实例。</summary>
     private readonly List<TileView> _tileViews = [];
 
-    /// <summary>记录每张牌在牌桌中的最终落点，供开局发牌动画复用。</summary>
+    /// <summary>记录每张牌在棋盘中的最终落点，供开局发牌动画复用。</summary>
     private readonly Dictionary<int, Vector2> _dealTargetPositions = [];
 
     /// <summary>当前运行时规则对象。所有布局生成、校验与交互判定都以它为准。</summary>
@@ -108,11 +108,11 @@ public partial class BoardController : Node2D
     /// <summary>当前规则档案的显示名，用于 UI 和日志。</summary>
     private string _profileDisplayName = "未配置";
 
-    /// <summary>当前已经应用到牌桌上的布局数据。</summary>
+    /// <summary>当前已经应用到棋盘上的布局数据。</summary>
     private LevelLayout? _currentLayout;
     private string _currentSourceKindLabel = "未加载";
 
-    /// <summary>当前布局来源，用于调试摘要区分“固定原型 / 随机布局”。</summary>
+    /// <summary>当前布局来源，用于调试摘要区分“原型关卡 / 调试随机关卡”。</summary>
     private string _currentSourceName = "未加载";
 
     /// <summary>调试层过滤当前允许显示到哪一层。</summary>
@@ -181,11 +181,11 @@ public partial class BoardController : Node2D
     [Export]
     public MatchFeedbackConfig MatchFeedbackConfig { get; set; } = null!;
 
-    /// <summary>牌桌完成生成或加载后抛出的摘要事件。</summary>
+    /// <summary>棋盘完成生成或加载后抛出的摘要事件。</summary>
     [Signal]
     public delegate void BoardGeneratedEventHandler(string summary);
 
-    /// <summary>牌桌状态发生变化时抛出的说明事件。</summary>
+    /// <summary>棋盘状态发生变化时抛出的说明事件。</summary>
     [Signal]
     public delegate void BoardStateChangedEventHandler(string message);
 
@@ -223,14 +223,14 @@ public partial class BoardController : Node2D
     /// </summary>
     public int CurrentRemainingTileCount => GetActiveTiles().Count;
 
-    /// <summary>当前牌桌来源类型标签，例如原型、随机或离线正式关卡。</summary>
+    /// <summary>当前棋盘来源类型标签，例如原型、随机或离线正式关卡。</summary>
     public string CurrentSourceKindLabel => _currentSourceKindLabel;
 
-    /// <summary>当前牌桌来源名，主要用于调试摘要展示。</summary>
+    /// <summary>当前棋盘来源名，主要用于调试摘要展示。</summary>
     public string CurrentSourceName => _currentSourceName;
 
     /// <summary>
-    /// 尝试在当前局面中找出一对可直接消除的麻将，并播放提示反馈。
+    /// 尝试在当前局面中找出一对可直接配对的牌，并播放提示反馈。
     /// </summary>
     public bool TryShowHintPair()
     {
@@ -247,12 +247,12 @@ public partial class BoardController : Node2D
         secondTile.SetHintState(true);
         firstTile.PlayHintFeedback();
         secondTile.PlayHintFeedback();
-        LogBoard($"提示了一对可消除麻将: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
+        LogBoard($"提示了一对可直接配对的牌: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
         return true;
     }
 
     /// <summary>
-    /// 调试入口：直接消除当前局面中一对可立即消除的麻将。
+    /// 调试入口：直接消除当前局面中一对可立即配对的牌。
     /// </summary>
     public bool TryAutoRemoveHintPair()
     {
@@ -268,7 +268,7 @@ public partial class BoardController : Node2D
             return false;
         }
 
-        LogBoard($"调试自动消除一对麻将: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
+        LogBoard($"调试自动消除一对牌: a={DescribeTile(firstTile.Data)}, b={DescribeTile(secondTile.Data)}");
         return TryStartMatch(firstTile, secondTile, "调试自动消除");
     }
 
@@ -286,7 +286,7 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>
-    /// 统一处理牌桌级别的鼠标输入。
+    /// 统一处理棋盘级别的鼠标输入。
     /// </summary>
     /// <remarks>
     /// 当前只处理左键按下、左键松开和鼠标移动。
@@ -318,8 +318,8 @@ public partial class BoardController : Node2D
         }
     }
 
-    /// <summary>加载固定原型布局。</summary>
-    public void LoadPrototype(int levelId = 1, string sourceName = "固定原型")
+    /// <summary>加载原型关卡布局。</summary>
+    public void LoadPrototype(int levelId = 1, string sourceName = "原型关卡")
     {
         ApplyLayout(PrototypeLayoutFactory.CreateSingleLevelPrototype(_layoutRules), sourceName, "原型关卡");
     }
@@ -371,7 +371,7 @@ public partial class BoardController : Node2D
         RefreshVisibleLayers();
     }
 
-    /// <summary>构造当前牌桌摘要文本。</summary>
+    /// <summary>构造当前棋盘摘要文本。</summary>
     public string GetCurrentSummary()
     {
         return _currentLayout is null
@@ -399,11 +399,11 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>
-    /// 把一份布局真正应用到当前牌桌。
+    /// 把一份布局真正应用到当前棋盘。
     /// </summary>
     /// <remarks>
     /// 即使校验失败，当前阶段也仍然允许继续渲染，方便直接观察错误布局。
-    /// 因此“看得见牌桌”不等于“布局一定合法”。
+    /// 因此“看得见棋盘”不等于“布局一定合法”。
     /// </remarks>
     private async void ApplyLayout(LevelLayout layout, string sourceName, string sourceKindLabel)
     {
@@ -476,7 +476,7 @@ public partial class BoardController : Node2D
         var summary = GetCurrentSummary();
         LogBoard($"布局应用完成: {summary}");
         EmitSignal(SignalName.BoardGenerated, summary);
-        EmitSignal(SignalName.BoardStateChanged, $"牌桌已生成：{summary}");
+        EmitSignal(SignalName.BoardStateChanged, $"棋盘已生成：{summary}");
     }
 
     /// <summary>分派左键按下和松开事件。</summary>
@@ -509,7 +509,7 @@ public partial class BoardController : Node2D
         var clickedTile = PickTopTileAtScreenPoint(screenPosition);
         if (clickedTile is null)
         {
-            LogBoard("按下时未命中任何可见麻将");
+            LogBoard("按下时未命中任何可见牌");
             CollapseActiveFaceUpTile();
             ClearSelection(false);
             return;
@@ -525,7 +525,7 @@ public partial class BoardController : Node2D
         _dragTileStartPosition = clickedTile.GlobalPosition;
         _dragPointerOffset = clickedTile.GlobalPosition - screenPosition;
 
-        LogBoard($"按下命中麻将: {DescribeTile(clickedTile.Data)}, movable={clickedTile.Data.Movable}, z_index={clickedTile.ZIndex}");
+        LogBoard($"按下命中牌: {DescribeTile(clickedTile.Data)}, movable={clickedTile.Data.Movable}, z_index={clickedTile.ZIndex}");
         GetViewport().SetInputAsHandled();
     }
 
@@ -599,12 +599,12 @@ public partial class BoardController : Node2D
 
         if (TryActivateFaceDownTile(tileView))
         {
-            LogBoard($"开始拖拽前先翻开背面麻将: {DescribeTile(tileView.Data)}");
+            LogBoard($"开始拖拽前先翻开背面牌: {DescribeTile(tileView.Data)}");
         }
 
         if (!tileView.Data.Movable)
         {
-            LogBoard($"尝试开始拖拽失败，麻将不可移动: {DescribeTile(tileView.Data)}");
+            LogBoard($"尝试开始拖拽失败，当前牌不可移动: {DescribeTile(tileView.Data)}");
             var interactionState = TileInteractionRules.Evaluate(tileView.Data, GetInteractionTiles());
             ShowBlockedTileFeedback(tileView, interactionState);
             CollapseActiveFaceUpTile();
@@ -709,7 +709,7 @@ public partial class BoardController : Node2D
     }
 
     /// <summary>
-    /// 在当前可交互快照中寻找一对可直接消除的麻将。
+    /// 在当前可交互快照中寻找一对可直接配对的牌。
     /// </summary>
     private bool TryFindHintPair(out TileView firstTile, out TileView secondTile)
     {
@@ -878,7 +878,7 @@ public partial class BoardController : Node2D
 
         if (revealedFaceDownTile)
         {
-            LogBoard($"背面麻将本次未进入拖拽，点击处理后立即翻回背面: {DescribeTile(tileView.Data)}");
+            LogBoard($"背面牌本次未进入拖拽，点击处理后立即翻回背面: {DescribeTile(tileView.Data)}");
 
             if (!interactionState.CanBePicked)
             {
@@ -891,7 +891,7 @@ public partial class BoardController : Node2D
 
         if (!interactionState.CanBePicked)
         {
-            LogBoard($"麻将不可移动，交互结束: {DescribeTile(tileView.Data)}");
+            LogBoard($"当前牌不可移动，交互结束: {DescribeTile(tileView.Data)}");
             ShowBlockedTileFeedback(tileView, interactionState);
             return;
         }
@@ -900,22 +900,22 @@ public partial class BoardController : Node2D
         {
             _selectedTile = tileView;
             RefreshTileStates();
-            LogBoard($"首次选中麻将: {DescribeTile(tileView.Data)}");
-            EmitSignal(SignalName.BoardStateChanged, $"已选中 {tileView.Data.Type}，请再点一张可移动的同牌面麻将");
+            LogBoard($"首次选中牌: {DescribeTile(tileView.Data)}");
+            EmitSignal(SignalName.BoardStateChanged, $"已选中 {tileView.Data.Type}，请再点一张可移动的同类型牌");
             return;
         }
 
         if (_selectedTile == tileView)
         {
             ClearSelection(true);
-            LogBoard($"再次点击同一麻将，取消选中: {DescribeTile(tileView.Data)}");
+            LogBoard($"再次点击同一张牌，取消选中: {DescribeTile(tileView.Data)}");
             EmitSignal(SignalName.BoardStateChanged, $"已取消选择 {tileView.Data.Type}");
             return;
         }
 
         if (_selectedTile.Data.Type != tileView.Data.Type)
         {
-            LogBoard($"牌面不同，切换选中目标: old={DescribeTile(_selectedTile.Data)}, new={DescribeTile(tileView.Data)}");
+            LogBoard($"类型不同，切换选中目标: old={DescribeTile(_selectedTile.Data)}, new={DescribeTile(tileView.Data)}");
             _selectedTile = tileView;
             RefreshTileStates();
             EmitSignal(SignalName.BoardStateChanged, $"改为选中 {tileView.Data.Type}，不同牌面不会消除");
@@ -1014,7 +1014,7 @@ public partial class BoardController : Node2D
 
         // 消除动画必须始终显示在整桌最上层。
         // 这里不再沿用原始层级，而是把两张参与动画的牌临时提升到安全最高层附近，
-        // 避免预备位移动、碰撞和淡出过程被其他尚未移除的麻将遮住。
+        // 避免预备位移动、碰撞和淡出过程被其他尚未移除的牌遮住。
         a.ZIndex = SafeMaxDragZIndex - 2;
         b.ZIndex = SafeMaxDragZIndex - 1;
 
@@ -1328,7 +1328,7 @@ public partial class BoardController : Node2D
         return pickedTile;
     }
 
-    /// <summary>计算牌桌在可用显示区域内的居中原点。</summary>
+    /// <summary>计算棋盘在可用显示区域内的居中原点。</summary>
     private Vector2 ComputeCenteredOrigin(LevelLayout layout)
     {
         var viewportSize = GetViewportRect().Size;
@@ -1432,7 +1432,7 @@ public partial class BoardController : Node2D
         GD.Print($"[BoardController] {message}");
     }
 
-    /// <summary>构造适合日志输出的麻将摘要。</summary>
+    /// <summary>构造适合日志输出的牌摘要。</summary>
     private static string DescribeTile(AppTileData tile)
     {
         return $"Tile#{tile.Id} {tile.Type} @ ({tile.GX},{tile.GY},{tile.GZ})";

@@ -63,7 +63,7 @@ public partial class HomePage : Control
     /// <summary>节点 Ready 前暂存的品牌名。</summary>
     private string _pendingPlayerName = "毛球碰碰乐";
 
-    /// <summary>节点 Ready 前暂存的叶子数量。</summary>
+    /// <summary>节点 Ready 前暂存的金币数量。</summary>
     private int _pendingLeafCount = 1;
 
     /// <summary>节点 Ready 前暂存的进度摘要文本。</summary>
