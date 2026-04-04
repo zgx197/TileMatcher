@@ -1,15 +1,15 @@
 {
   "LevelNumber": 2,
-  "CandidateId": "candidate_0013_875818459",
+  "CandidateId": "candidate_0045_162246401",
   "DifficultyBucket": "hard_core",
-  "RecommendationScore": 0.812,
+  "RecommendationScore": 0.8278,
   "Layout": {
-    "CandidateId": "candidate_0013_875818459",
-    "LevelId": 13,
+    "CandidateId": "candidate_0045_162246401",
+    "LevelId": 45,
     "Tiles": [
       {
         "Id": 1,
-        "Type": "Chr4",
+        "Type": "North",
         "GX": 0,
         "GY": 0,
         "GZ": 0,
@@ -21,7 +21,7 @@
       },
       {
         "Id": 2,
-        "Type": "Chr6",
+        "Type": "North",
         "GX": 4,
         "GY": 0,
         "GZ": 0,
@@ -33,7 +33,7 @@
       },
       {
         "Id": 3,
-        "Type": "Dot7",
+        "Type": "North",
         "GX": 8,
         "GY": 0,
         "GZ": 0,
@@ -45,7 +45,7 @@
       },
       {
         "Id": 4,
-        "Type": "Chr1",
+        "Type": "North",
         "GX": 12,
         "GY": 0,
         "GZ": 0,
@@ -57,7 +57,7 @@
       },
       {
         "Id": 5,
-        "Type": "Bam2",
+        "Type": "Bam3",
         "GX": 16,
         "GY": 0,
         "GZ": 0,
@@ -69,7 +69,7 @@
       },
       {
         "Id": 6,
-        "Type": "Bam6",
+        "Type": "White",
         "GX": 4,
         "GY": 6,
         "GZ": 0,
@@ -81,7 +81,7 @@
       },
       {
         "Id": 7,
-        "Type": "Green",
+        "Type": "Bam6",
         "GX": 8,
         "GY": 6,
         "GZ": 0,
@@ -93,7 +93,7 @@
       },
       {
         "Id": 8,
-        "Type": "Red",
+        "Type": "Chr1",
         "GX": 12,
         "GY": 6,
         "GZ": 0,
@@ -105,7 +105,7 @@
       },
       {
         "Id": 9,
-        "Type": "Green",
+        "Type": "White",
         "GX": 16,
         "GY": 6,
         "GZ": 0,
@@ -117,8 +117,8 @@
       },
       {
         "Id": 10,
-        "Type": "Dot4",
-        "GX": 4,
+        "Type": "Red",
+        "GX": 0,
         "GY": 12,
         "GZ": 0,
         "Shape": {
@@ -129,8 +129,8 @@
       },
       {
         "Id": 11,
-        "Type": "Red",
-        "GX": 8,
+        "Type": "Bam6",
+        "GX": 4,
         "GY": 12,
         "GZ": 0,
         "Shape": {
@@ -141,6 +141,18 @@
       },
       {
         "Id": 12,
+        "Type": "Bam6",
+        "GX": 8,
+        "GY": 12,
+        "GZ": 0,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 13,
         "Type": "North",
         "GX": 12,
         "GY": 12,
@@ -152,8 +164,8 @@
         "Removed": false
       },
       {
-        "Id": 13,
-        "Type": "Chr1",
+        "Id": 14,
+        "Type": "Bam8",
         "GX": 16,
         "GY": 12,
         "GZ": 0,
@@ -164,8 +176,8 @@
         "Removed": false
       },
       {
-        "Id": 14,
-        "Type": "Chr3",
+        "Id": 15,
+        "Type": "Bam9",
         "GX": 0,
         "GY": 18,
         "GZ": 0,
@@ -176,8 +188,8 @@
         "Removed": false
       },
       {
-        "Id": 15,
-        "Type": "Bam8",
+        "Id": 16,
+        "Type": "Chr1",
         "GX": 4,
         "GY": 18,
         "GZ": 0,
@@ -188,8 +200,8 @@
         "Removed": false
       },
       {
-        "Id": 16,
-        "Type": "Dot4",
+        "Id": 17,
+        "Type": "Bam6",
         "GX": 8,
         "GY": 18,
         "GZ": 0,
@@ -200,8 +212,8 @@
         "Removed": false
       },
       {
-        "Id": 17,
-        "Type": "Bam8",
+        "Id": 18,
+        "Type": "North",
         "GX": 12,
         "GY": 18,
         "GZ": 0,
@@ -212,7 +224,7 @@
         "Removed": false
       },
       {
-        "Id": 18,
+        "Id": 19,
         "Type": "Bam3",
         "GX": 16,
         "GY": 18,
@@ -224,21 +236,9 @@
         "Removed": false
       },
       {
-        "Id": 19,
-        "Type": "Chr4",
-        "GX": 0,
-        "GY": 24,
-        "GZ": 0,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
         "Id": 20,
-        "Type": "Red",
-        "GX": 4,
+        "Type": "Dot4",
+        "GX": 0,
         "GY": 24,
         "GZ": 0,
         "Shape": {
@@ -261,19 +261,7 @@
       },
       {
         "Id": 22,
-        "Type": "Bam3",
-        "GX": 12,
-        "GY": 24,
-        "GZ": 0,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
-        "Id": 23,
-        "Type": "Red",
+        "Type": "Chr2",
         "GX": 16,
         "GY": 24,
         "GZ": 0,
@@ -284,11 +272,23 @@
         "Removed": false
       },
       {
+        "Id": 23,
+        "Type": "North",
+        "GX": 0,
+        "GY": 30,
+        "GZ": 0,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
         "Id": 24,
-        "Type": "Dot7",
-        "GX": 6,
-        "GY": 3,
-        "GZ": 1,
+        "Type": "Dot9",
+        "GX": 4,
+        "GY": 30,
+        "GZ": 0,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -297,10 +297,10 @@
       },
       {
         "Id": 25,
-        "Type": "Dot7",
-        "GX": 14,
-        "GY": 3,
-        "GZ": 1,
+        "Type": "Bam7",
+        "GX": 8,
+        "GY": 30,
+        "GZ": 0,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -309,10 +309,10 @@
       },
       {
         "Id": 26,
-        "Type": "Chr4",
-        "GX": 6,
-        "GY": 9,
-        "GZ": 1,
+        "Type": "Bam8",
+        "GX": 12,
+        "GY": 30,
+        "GZ": 0,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -321,10 +321,10 @@
       },
       {
         "Id": 27,
-        "Type": "Dot7",
-        "GX": 10,
-        "GY": 9,
-        "GZ": 1,
+        "Type": "Red",
+        "GX": 16,
+        "GY": 30,
+        "GZ": 0,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -333,9 +333,9 @@
       },
       {
         "Id": 28,
-        "Type": "West",
-        "GX": 14,
-        "GY": 9,
+        "Type": "South",
+        "GX": 6,
+        "GY": 3,
         "GZ": 1,
         "Shape": {
           "WidthUnits": 4,
@@ -345,9 +345,9 @@
       },
       {
         "Id": 29,
-        "Type": "Chr1",
-        "GX": 6,
-        "GY": 15,
+        "Type": "Dot9",
+        "GX": 10,
+        "GY": 3,
         "GZ": 1,
         "Shape": {
           "WidthUnits": 4,
@@ -357,9 +357,9 @@
       },
       {
         "Id": 30,
-        "Type": "Chr1",
-        "GX": 10,
-        "GY": 15,
+        "Type": "South",
+        "GX": 14,
+        "GY": 3,
         "GZ": 1,
         "Shape": {
           "WidthUnits": 4,
@@ -369,7 +369,79 @@
       },
       {
         "Id": 31,
-        "Type": "Dot1",
+        "Type": "Dot5",
+        "GX": 6,
+        "GY": 9,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 32,
+        "Type": "Bam7",
+        "GX": 10,
+        "GY": 9,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 33,
+        "Type": "Dot5",
+        "GX": 14,
+        "GY": 9,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 34,
+        "Type": "Red",
+        "GX": 2,
+        "GY": 15,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 35,
+        "Type": "Chr6",
+        "GX": 6,
+        "GY": 15,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 36,
+        "Type": "Red",
+        "GX": 10,
+        "GY": 15,
+        "GZ": 1,
+        "Shape": {
+          "WidthUnits": 4,
+          "HeightUnits": 6
+        },
+        "Removed": false
+      },
+      {
+        "Id": 37,
+        "Type": "Bam9",
         "GX": 14,
         "GY": 15,
         "GZ": 1,
@@ -380,11 +452,11 @@
         "Removed": false
       },
       {
-        "Id": 32,
-        "Type": "West",
-        "GX": 2,
-        "GY": 21,
-        "GZ": 1,
+        "Id": 38,
+        "Type": "Dot6",
+        "GX": 8,
+        "GY": 6,
+        "GZ": 2,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -392,11 +464,11 @@
         "Removed": false
       },
       {
-        "Id": 33,
-        "Type": "Dot1",
-        "GX": 6,
-        "GY": 21,
-        "GZ": 1,
+        "Id": 39,
+        "Type": "Dot6",
+        "GX": 12,
+        "GY": 6,
+        "GZ": 2,
         "Shape": {
           "WidthUnits": 4,
           "HeightUnits": 6
@@ -404,32 +476,8 @@
         "Removed": false
       },
       {
-        "Id": 34,
-        "Type": "Bam6",
-        "GX": 10,
-        "GY": 21,
-        "GZ": 1,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
-        "Id": 35,
-        "Type": "Bam2",
-        "GX": 14,
-        "GY": 21,
-        "GZ": 1,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
-        "Id": 36,
-        "Type": "West",
+        "Id": 40,
+        "Type": "Chr2",
         "GX": 8,
         "GY": 12,
         "GZ": 2,
@@ -440,7 +488,7 @@
         "Removed": false
       },
       {
-        "Id": 37,
+        "Id": 41,
         "Type": "Chr6",
         "GX": 12,
         "GY": 12,
@@ -452,34 +500,10 @@
         "Removed": false
       },
       {
-        "Id": 38,
-        "Type": "Chr3",
-        "GX": 8,
-        "GY": 18,
-        "GZ": 2,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
-        "Id": 39,
-        "Type": "West",
-        "GX": 12,
-        "GY": 18,
-        "GZ": 2,
-        "Shape": {
-          "WidthUnits": 4,
-          "HeightUnits": 6
-        },
-        "Removed": false
-      },
-      {
-        "Id": 40,
-        "Type": "Chr4",
+        "Id": 42,
+        "Type": "Dot4",
         "GX": 10,
-        "GY": 15,
+        "GY": 9,
         "GZ": 3,
         "Shape": {
           "WidthUnits": 4,

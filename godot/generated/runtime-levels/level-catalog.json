@@ -1,44 +1,142 @@
 [
   {
     "LevelNumber": 1,
-    "CandidateId": "candidate_0016_963210004",
+    "CandidateId": "candidate_0042_46534889",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.826,
+    "RecommendationScore": 0.8325,
     "FileName": "level_001.json"
   },
   {
     "LevelNumber": 2,
-    "CandidateId": "candidate_0013_875818459",
+    "CandidateId": "candidate_0045_162246401",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.812,
+    "RecommendationScore": 0.8278,
     "FileName": "level_002.json"
   },
   {
     "LevelNumber": 3,
-    "CandidateId": "candidate_0002_1182880116",
+    "CandidateId": "candidate_0016_963210004",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.802,
+    "RecommendationScore": 0.826,
     "FileName": "level_003.json"
   },
   {
     "LevelNumber": 4,
-    "CandidateId": "candidate_0010_1046639693",
+    "CandidateId": "candidate_0120_2066259693",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.7933,
+    "RecommendationScore": 0.8258,
     "FileName": "level_004.json"
   },
   {
     "LevelNumber": 5,
-    "CandidateId": "candidate_0012_1750740149",
+    "CandidateId": "candidate_0084_1540386394",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.7711,
+    "RecommendationScore": 0.8175,
     "FileName": "level_005.json"
   },
   {
     "LevelNumber": 6,
-    "CandidateId": "candidate_0023_105768940",
+    "CandidateId": "candidate_0103_786699911",
     "DifficultyBucket": "hard_core",
-    "RecommendationScore": 0.6697,
+    "RecommendationScore": 0.8122,
     "FileName": "level_006.json"
+  },
+  {
+    "LevelNumber": 7,
+    "CandidateId": "candidate_0013_875818459",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.812,
+    "FileName": "level_007.json"
+  },
+  {
+    "LevelNumber": 8,
+    "CandidateId": "candidate_0097_1894658245",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.8096,
+    "FileName": "level_008.json"
+  },
+  {
+    "LevelNumber": 9,
+    "CandidateId": "candidate_0002_1182880116",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.802,
+    "FileName": "level_009.json"
+  },
+  {
+    "LevelNumber": 10,
+    "CandidateId": "candidate_0010_1046639693",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7933,
+    "FileName": "level_010.json"
+  },
+  {
+    "LevelNumber": 11,
+    "CandidateId": "candidate_0038_817190913",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7897,
+    "FileName": "level_011.json"
+  },
+  {
+    "LevelNumber": 12,
+    "CandidateId": "candidate_0044_352645987",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7824,
+    "FileName": "level_012.json"
+  },
+  {
+    "LevelNumber": 13,
+    "CandidateId": "candidate_0012_1750740149",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7711,
+    "FileName": "level_013.json"
+  },
+  {
+    "LevelNumber": 14,
+    "CandidateId": "candidate_0034_1628260689",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7624,
+    "FileName": "level_014.json"
+  },
+  {
+    "LevelNumber": 15,
+    "CandidateId": "candidate_0067_1367598660",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7514,
+    "FileName": "level_015.json"
+  },
+  {
+    "LevelNumber": 16,
+    "CandidateId": "candidate_0094_991858086",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7503,
+    "FileName": "level_016.json"
+  },
+  {
+    "LevelNumber": 17,
+    "CandidateId": "candidate_0070_1491078764",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7462,
+    "FileName": "level_017.json"
+  },
+  {
+    "LevelNumber": 18,
+    "CandidateId": "candidate_0079_810732823",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7376,
+    "FileName": "level_018.json"
+  },
+  {
+    "LevelNumber": 19,
+    "CandidateId": "candidate_0043_1751991748",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.7306,
+    "FileName": "level_019.json"
+  },
+  {
+    "LevelNumber": 20,
+    "CandidateId": "candidate_0065_148676823",
+    "DifficultyBucket": "hard_core",
+    "RecommendationScore": 0.729,
+    "FileName": "level_020.json"
   }
 ]
