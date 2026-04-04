@@ -81,6 +81,86 @@ function Set-RegexValue {
     [System.IO.File]::WriteAllText($Path, $updated, $utf8NoBom)
 }
 
+function Write-Utf8NoBomFile {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $directory = Split-Path -Parent $Path
+    if (-not [string]::IsNullOrWhiteSpace($directory)) {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    }
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
+function Get-ProjectDisplayName {
+    param([string]$ProjectDir)
+
+    $projectSettingsPath = Join-Path $ProjectDir "project.godot"
+    Assert-PathExists -Path $projectSettingsPath -Label "project.godot"
+
+    $projectSettings = Get-Content -LiteralPath $projectSettingsPath -Raw -Encoding UTF8
+    $match = [regex]::Match(
+        $projectSettings,
+        '^\s*config/name="([^"]+)"\r?$',
+        [System.Text.RegularExpressions.RegexOptions]::Multiline)
+
+    if (-not $match.Success) {
+        throw "Failed to resolve application display name from project.godot"
+    }
+
+    return $match.Groups[1].Value
+}
+
+function Ensure-AndroidExportResources {
+    param(
+        [string]$ProjectDir,
+        [string]$ProjectDisplayName
+    )
+
+    Write-Step "Prepare Android export resources"
+
+    $valuesDirectory = Join-Path $ProjectDir "android/build/res/values"
+    $projectNamePath = Join-Path $valuesDirectory "godot_project_name_string.xml"
+    $themesPath = Join-Path $valuesDirectory "themes.xml"
+
+    # In clean CI checkouts these generated files do not exist yet, but the
+    # Android source template still references them during Gradle packaging.
+    # We materialize the minimum required files here so local builds and
+    # hosted-runner builds follow the same deterministic path.
+    $escapedDisplayName = [System.Security.SecurityElement]::Escape($ProjectDisplayName)
+    $projectNameXml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="godot_project_name_string">$escapedDisplayName</string>
+</resources>
+"@
+
+    $themesXml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="GodotAppMainTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowSwipeToDismiss">false</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowBackground">#000000</item>
+    </style>
+
+    <style name="GodotAppSplashTheme" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">@mipmap/icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/icon_foreground</item>
+        <item name="postSplashScreenTheme">@style/GodotAppMainTheme</item>
+        <item name="android:windowIsTranslucent">false</item>
+    </style>
+</resources>
+"@
+
+    Write-Utf8NoBomFile -Path $projectNamePath -Content $projectNameXml
+    Write-Utf8NoBomFile -Path $themesPath -Content $themesXml
+}
+
 function Resolve-BuildTool {
     param([string]$AndroidSdkRoot)
 
@@ -396,6 +476,11 @@ Update-BuildMetadata `
     -VersionName $VersionName `
     -VersionCode $VersionCode `
     -ManifestOrientation $ManifestOrientation
+
+$projectDisplayName = Get-ProjectDisplayName -ProjectDir $ProjectDir
+Ensure-AndroidExportResources `
+    -ProjectDir $ProjectDir `
+    -ProjectDisplayName $projectDisplayName
 
 Write-Step "Run Godot export"
 $exportStartedAt = Get-Date
