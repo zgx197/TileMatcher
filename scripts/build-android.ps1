@@ -115,6 +115,90 @@ function Get-ProjectDisplayName {
     return $match.Groups[1].Value
 }
 
+function Resolve-GodotAndroidSourceArchive {
+    $exportTemplatesRoot = Join-Path $env:APPDATA "Godot\export_templates"
+    Assert-PathExists -Path $exportTemplatesRoot -Label "Godot export templates directory"
+
+    $archive = Get-ChildItem -LiteralPath $exportTemplatesRoot -Recurse -Filter "android_source.zip" -File |
+        Sort-Object LastWriteTimeUtc -Descending |
+        Select-Object -First 1
+
+    if ($null -eq $archive) {
+        throw "android_source.zip was not found under: $exportTemplatesRoot"
+    }
+
+    return $archive.FullName
+}
+
+function Expand-ZipEntryToFile {
+    param(
+        [System.IO.Compression.ZipArchive]$Archive,
+        [string]$EntryPath,
+        [string]$DestinationPath
+    )
+
+    $entry = $Archive.GetEntry($EntryPath)
+    if ($null -eq $entry) {
+        throw "Zip entry not found: $EntryPath"
+    }
+
+    $destinationDirectory = Split-Path -Parent $DestinationPath
+    if (-not [string]::IsNullOrWhiteSpace($destinationDirectory)) {
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+    }
+
+    $entryStream = $entry.Open()
+    try {
+        $destinationStream = [System.IO.File]::Open($DestinationPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+        try {
+            $entryStream.CopyTo($destinationStream)
+        }
+        finally {
+            $destinationStream.Dispose()
+        }
+    }
+    finally {
+        $entryStream.Dispose()
+    }
+}
+
+function Ensure-GodotAndroidTemplateAars {
+    param([string]$ProjectDir)
+
+    Write-Step "Prepare Godot Android template archives"
+
+    $debugAarPath = Join-Path $ProjectDir "android/build/libs/debug/godot-lib.template_debug.aar"
+    $releaseAarPath = Join-Path $ProjectDir "android/build/libs/release/godot-lib.template_release.aar"
+
+    if ((Test-Path -LiteralPath $debugAarPath) -and (Test-Path -LiteralPath $releaseAarPath)) {
+        return
+    }
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $androidSourceArchivePath = Resolve-GodotAndroidSourceArchive
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($androidSourceArchivePath)
+    try {
+        if (-not (Test-Path -LiteralPath $debugAarPath)) {
+            Expand-ZipEntryToFile `
+                -Archive $archive `
+                -EntryPath "libs/debug/godot-lib.template_debug.aar" `
+                -DestinationPath $debugAarPath
+        }
+
+        if (-not (Test-Path -LiteralPath $releaseAarPath)) {
+            Expand-ZipEntryToFile `
+                -Archive $archive `
+                -EntryPath "libs/release/godot-lib.template_release.aar" `
+                -DestinationPath $releaseAarPath
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
 function Ensure-AndroidExportResources {
     param(
         [string]$ProjectDir,
@@ -491,6 +575,7 @@ $projectDisplayName = Get-ProjectDisplayName -ProjectDir $ProjectDir
 Ensure-AndroidExportResources `
     -ProjectDir $ProjectDir `
     -ProjectDisplayName $projectDisplayName
+Ensure-GodotAndroidTemplateAars -ProjectDir $ProjectDir
 
 Write-Step "Run Godot export"
 $exportStartedAt = Get-Date
