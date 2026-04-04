@@ -56,6 +56,24 @@
 - `godot-log-capture`
 - `capture-godot-logs.ps1`
 
+后续又补充确认了一个 Windows + Godot 4.6.1 Mono 的诊断细节：
+
+- 如果用 PowerShell 管道或 stdout/stderr 重定向去包裹 `Godot.exe --headless`
+- Godot 可能会先报 `Failed to open 'user://logs/...'`
+- 随后 headless 进程直接崩溃
+
+因此仓库内新增了稳定版脚本：
+
+- `scripts/capture-godot-logs.ps1`
+
+这份脚本的策略是：
+
+- 不再用 PowerShell 管道包裹 Godot 进程
+- 改为让 Godot 自己通过 `--log-file` 直接落盘
+- 再由脚本读取退出码、复制 runtime logs 和 Mono build logs
+
+这样可以绕开 `user://logs` 链路在诊断场景下的崩溃点。
+
 ### 当前结论
 
 后续遇到以下问题时，优先抓日志而不是先猜：
