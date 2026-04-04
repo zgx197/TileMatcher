@@ -1,0 +1,61 @@
+name: Android Export
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Android version name
+        required: true
+        default: 0.1.5
+      version_code:
+        description: Android version code
+        required: true
+        default: "6"
+      package_name:
+        description: Android package name
+        required: true
+        default: com.zgx197.tilematcher
+      orientation:
+        description: Manifest orientation
+        required: true
+        default: portrait
+
+jobs:
+  export-android:
+    runs-on:
+      - self-hosted
+      - windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Export Android APK
+        shell: pwsh
+        env:
+          GODOT_EXE: ${{ vars.GODOT_EXE }}
+          ANDROID_SDK_ROOT: ${{ vars.ANDROID_SDK_ROOT }}
+          JAVA_HOME: ${{ vars.JAVA_HOME }}
+          ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
+          ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
+          ANDROID_DEBUG_KEY_ALIAS: ${{ secrets.ANDROID_DEBUG_KEY_ALIAS }}
+          ANDROID_DEBUG_KEY_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEY_PASSWORD }}
+        run: >
+          .\scripts\build-android.ps1
+          -GodotExe "$env:GODOT_EXE"
+          -AndroidSdkRoot "$env:ANDROID_SDK_ROOT"
+          -JavaHome "$env:JAVA_HOME"
+          -KeystorePath "$env:ANDROID_DEBUG_KEYSTORE"
+          -KeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD"
+          -KeyAlias "$env:ANDROID_DEBUG_KEY_ALIAS"
+          -KeyPassword "$env:ANDROID_DEBUG_KEY_PASSWORD"
+          -PackageName "${{ inputs.package_name }}"
+          -VersionName "${{ inputs.version_name }}"
+          -VersionCode ${{ inputs.version_code }}
+          -ManifestOrientation "${{ inputs.orientation }}"
+          -OutputName "TileMatcher-${{ inputs.version_name }}-android-debug.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: godot/build/android/TileMatcher-*-android-debug.apk

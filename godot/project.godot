@@ -12,19 +12,27 @@ config_version=5
 
 config/name="TileMatcher"
 run/main_scene="res://scenes/app/AppRoot.tscn"
-config/features=PackedStringArray("4.6", "GL Compatibility")
+config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
-[dotnet]
+[tilematcher_build]
 
-project/assembly_name="TileMatcher"
+package_name="com.zgx197.tilematcher"
+version_name="0.1.5"
+version_code=6
+manifest_orientation="portrait"
 
 [display]
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
+window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="TileMatcher"
 
 [physics]
 
@@ -35,3 +43,8 @@ window/stretch/aspect="expand"
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+
+
+
+
