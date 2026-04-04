@@ -12,6 +12,8 @@ godot/android/build/src/main/assets/
 godot/android/build/src/instrumented/
 godot/android/build/src/androidTestInstrumented/
 godot/android/build/libs/debug/arm64-v8a/
+godot/android/build/libs/debug/*.aar
+godot/android/build/libs/release/*.aar
 godot/android/build/res/mipmap/
 godot/android/build/res/mipmap-anydpi-v26/
 godot/android/build/res/mipmap-hdpi-v4/
