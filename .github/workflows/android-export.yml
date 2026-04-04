@@ -112,10 +112,10 @@ jobs:
             return $match.Groups[1].Value
           }
 
-          $defaultVersionName = Get-MatchValue '^version_name="([^"]+)"$' "version_name"
-          $defaultVersionCode = Get-MatchValue '^version_code=(\d+)$' "version_code"
-          $defaultPackageName = Get-MatchValue '^package_name="([^"]+)"$' "package_name"
-          $defaultOrientation = Get-MatchValue '^manifest_orientation="([^"]+)"$' "manifest_orientation"
+          $defaultVersionName = Get-MatchValue '^\s*version_name="([^"]+)"\r?$' "version_name"
+          $defaultVersionCode = Get-MatchValue '^\s*version_code=(\d+)\r?$' "version_code"
+          $defaultPackageName = Get-MatchValue '^\s*package_name="([^"]+)"\r?$' "package_name"
+          $defaultOrientation = Get-MatchValue '^\s*manifest_orientation="([^"]+)"\r?$' "manifest_orientation"
 
           $versionName = if ([string]::IsNullOrWhiteSpace($env:INPUT_VERSION_NAME)) { $defaultVersionName } else { $env:INPUT_VERSION_NAME.Trim() }
           $versionCode = if ([string]::IsNullOrWhiteSpace($env:INPUT_VERSION_CODE)) { $defaultVersionCode } else { $env:INPUT_VERSION_CODE.Trim() }
