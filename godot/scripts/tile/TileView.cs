@@ -232,7 +232,7 @@ public partial class TileView : Node2D
 
     public override void _Draw()
     {
-        // Data 尚未绑定时退回标准牌尺寸，避免编辑器或初始化阶段 Draw 崩溃。
+        // 数据尚未绑定时退回标准牌尺寸，避免编辑器或初始化阶段绘制崩溃。
         var tileSize = Data is null ? GridConfig.TileSize : GridMath.GetWorldSize(Data);
         DrawStyleBox(_shadowStyle, new Rect2(9.0f, 10.0f, tileSize.X, tileSize.Y));
         DrawStyleBox(_depthStyle, new Rect2(4.0f, 6.0f, tileSize.X, tileSize.Y));

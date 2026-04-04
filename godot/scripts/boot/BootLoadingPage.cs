@@ -4,7 +4,8 @@ namespace TileMatcher.Boot;
 
 /// <summary>
 /// 启动加载页。
-/// 当前不接入真实资源异步加载器，而是承担正式启动氛围、最短展示时长和页面过渡职责。
+/// 当前只负责承接正式启动氛围和最短展示时长，
+/// 之前为了排查移动端朝向临时加入的诊断 UI 已经移除。
 /// </summary>
 public partial class BootLoadingPage : Control
 {

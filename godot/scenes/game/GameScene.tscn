@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=4 uid="uid://csj5buw4bn8l"]
+[gd_scene load_steps=15 format=4 uid="uid://csj5buw4bn8l"]
 
 [ext_resource type="Script" path="res://scripts/game/GameScene.cs" id="1_te16v"]
 [ext_resource type="Script" path="res://scripts/board/BoardController.cs" id="2_qvnq0"]
@@ -27,6 +27,20 @@ corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_backbutton"]
+bg_color = Color(0.964706, 0.780392, 0.470588, 0.96)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.588235, 0.337255, 0.109804, 0.94)
+shadow_color = Color(0.203922, 0.101961, 0.0196078, 0.22)
+shadow_size = 8
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugpanel"]
 bg_color = Color(0.0235294, 0.156863, 0.117647, 0.760784)
 corner_radius_top_left = 26
@@ -43,10 +57,10 @@ shadow_size = 18
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debugbutton"]
 bg_color = Color(0.0156863, 0.101961, 0.0784314, 0.501961)
-corner_radius_top_left = 22
-corner_radius_top_right = 22
-corner_radius_bottom_right = 22
-corner_radius_bottom_left = 22
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -64,6 +78,44 @@ corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 shadow_color = Color(0, 0, 0, 0.28)
 shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_leave_panel"]
+bg_color = Color(0.996078, 0.956863, 0.87451, 0.98)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.678431, 0.470588, 0.196078, 0.9)
+shadow_color = Color(0, 0, 0, 0.25)
+shadow_size = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_leave_cancel"]
+bg_color = Color(0.917647, 0.878431, 0.784314, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.572549, 0.482353, 0.313726, 0.92)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_leave_confirm"]
+bg_color = Color(0.913725, 0.482353, 0.196078, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.615686, 0.258824, 0.0627451, 0.94)
 
 [node name="GameScene" type="Node2D"]
 script = ExtResource("1_te16v")
@@ -107,6 +159,11 @@ theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 10
 mouse_filter = 2
 
+[node name="Layout" type="HBoxContainer" parent="UI/Root/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
 [node name="InteractionTip" type="PanelContainer" parent="UI/Root"]
 visible = false
 custom_minimum_size = Vector2(0, 46)
@@ -130,98 +187,108 @@ text = "被左右锁住"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Stats" type="HBoxContainer" parent="UI/Root/TopBar"]
+[node name="Stats" type="HBoxContainer" parent="UI/Root/TopBar/Layout"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="LevelBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+[node name="LevelBox" type="PanelContainer" parent="UI/Root/TopBar/Layout/Stats"]
 custom_minimum_size = Vector2(140, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
 
-[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/LevelBox"]
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Layout/Stats/LevelBox"]
 layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/LevelBox/VBox"]
+[node name="Title" type="Label" parent="UI/Root/TopBar/Layout/Stats/LevelBox/VBox"]
 layout_mode = 2
 text = "关卡"
 horizontal_alignment = 1
 
-[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/LevelBox/VBox"]
+[node name="Value" type="Label" parent="UI/Root/TopBar/Layout/Stats/LevelBox/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "1"
 horizontal_alignment = 1
 
-[node name="ScoreBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+[node name="ScoreBox" type="PanelContainer" parent="UI/Root/TopBar/Layout/Stats"]
 custom_minimum_size = Vector2(160, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
 
-[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/ScoreBox"]
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Layout/Stats/ScoreBox"]
 layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/ScoreBox/VBox"]
+[node name="Title" type="Label" parent="UI/Root/TopBar/Layout/Stats/ScoreBox/VBox"]
 layout_mode = 2
 text = "分数"
 horizontal_alignment = 1
 
-[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/ScoreBox/VBox"]
+[node name="Value" type="Label" parent="UI/Root/TopBar/Layout/Stats/ScoreBox/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "0"
 horizontal_alignment = 1
 
-[node name="MatchBox" type="PanelContainer" parent="UI/Root/TopBar/Stats"]
+[node name="MatchBox" type="PanelContainer" parent="UI/Root/TopBar/Layout/Stats"]
 custom_minimum_size = Vector2(140, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_topbox")
 
-[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Stats/MatchBox"]
+[node name="VBox" type="VBoxContainer" parent="UI/Root/TopBar/Layout/Stats/MatchBox"]
 layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="UI/Root/TopBar/Stats/MatchBox/VBox"]
+[node name="Title" type="Label" parent="UI/Root/TopBar/Layout/Stats/MatchBox/VBox"]
 layout_mode = 2
 text = "匹配"
 horizontal_alignment = 1
 
-[node name="Value" type="Label" parent="UI/Root/TopBar/Stats/MatchBox/VBox"]
+[node name="Value" type="Label" parent="UI/Root/TopBar/Layout/Stats/MatchBox/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "0"
 horizontal_alignment = 1
 
-[node name="BackHomeButton" type="Button" parent="UI/Root"]
-custom_minimum_size = Vector2(92, 44)
-offset_left = 28.0
-offset_top = 28.0
-offset_right = 120.0
-offset_bottom = 72.0
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_debugbutton")
-theme_override_styles/hover = SubResource("StyleBoxFlat_debugbutton")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_debugbutton")
-theme_override_styles/focus = SubResource("StyleBoxFlat_debugbutton")
+[node name="BackHomeButton" type="Button" parent="UI/Root/TopBar/Layout"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+theme_override_styles/normal = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/hover = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/focus = SubResource("StyleBoxFlat_backbutton")
 modulate = Color(1, 1, 1, 0.94)
-text = "主页"
+text = "< 返回主页"
+text = "返回主页"
+
+[node name="SettingsButton" type="Button" parent="UI/Root/TopBar/Layout"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/hover = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_backbutton")
+theme_override_styles/focus = SubResource("StyleBoxFlat_backbutton")
+modulate = Color(1, 1, 1, 0.94)
+text = "≡"
 
 [node name="DebugToggleButton" type="Button" parent="UI/Root"]
-custom_minimum_size = Vector2(88, 44)
-offset_left = 610.0
+custom_minimum_size = Vector2(120, 56)
+offset_left = 578.0
 offset_top = 22.0
 offset_right = 698.0
-offset_bottom = 66.0
-theme_override_font_sizes/font_size = 18
+offset_bottom = 78.0
+theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleBoxFlat_debugbutton")
 theme_override_styles/hover = SubResource("StyleBoxFlat_debugbutton")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_debugbutton")
@@ -238,6 +305,94 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="LeaveConfirmOverlay" type="Control" parent="UI/Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Mask" type="ColorRect" parent="UI/Root/LeaveConfirmOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.34)
+
+[node name="Panel" type="PanelContainer" parent="UI/Root/LeaveConfirmOverlay"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -140.0
+offset_right = 260.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_leave_panel")
+
+[node name="Margin" type="MarginContainer" parent="UI/Root/LeaveConfirmOverlay/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="Stack" type="VBoxContainer" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+modulate = Color(0.278431, 0.14902, 0.0588235, 1)
+text = "离开当前关卡？"
+horizontal_alignment = 1
+
+[node name="Message" type="Label" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+modulate = Color(0.360784, 0.239216, 0.129412, 0.92)
+text = "返回主页后，本局不会直接结算。\n如果只是误触，可以继续留在当前牌桌。"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="CancelButton" type="Button" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_leave_cancel")
+theme_override_styles/hover = SubResource("StyleBoxFlat_leave_cancel")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_leave_cancel")
+theme_override_styles/focus = SubResource("StyleBoxFlat_leave_cancel")
+text = "继续游玩"
+
+[node name="ConfirmButton" type="Button" parent="UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack/Buttons"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_leave_confirm")
+theme_override_styles/hover = SubResource("StyleBoxFlat_leave_confirm")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_leave_confirm")
+theme_override_styles/focus = SubResource("StyleBoxFlat_leave_confirm")
+text = "确认离开"
 
 [node name="Mask" type="Panel" parent="UI/Root/DebugOverlay"]
 layout_mode = 1

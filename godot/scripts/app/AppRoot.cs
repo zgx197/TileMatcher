@@ -9,8 +9,9 @@ using TileMatcher.Result;
 namespace TileMatcher.App;
 
 /// <summary>
-/// 外围流程主路由。
-/// 当前版本负责把启动页、主页、游戏页、结算页和每日奖励页串成一条完整的外壳流程。
+/// 外围流程主入口。
+/// 这一层负责在启动页、主页、游戏页、结算页、每日奖励页之间切换，
+/// 同时统一管理玩家进度、当前关卡号和运行时竖屏锁定。
 /// </summary>
 public partial class AppRoot : Node
 {
@@ -39,13 +40,15 @@ public partial class AppRoot : Node
     [Export]
     public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
 
-    private Node _currentPage = null!;
+    private Node? _currentPage;
     private int _currentLevelNumber = 1;
     private PlayerProgressData _progress = new();
     private DailyRewardSummary? _pendingDailyRewardSummary;
 
     public override void _Ready()
     {
+        ApplyMobilePortraitOrientation();
+
         BootLoadingPageScene ??= GD.Load<PackedScene>("res://scenes/boot/BootLoadingPage.tscn");
         HomePageScene ??= GD.Load<PackedScene>("res://scenes/home/HomePage.tscn");
         GamePageScene ??= GD.Load<PackedScene>("res://scenes/game/GameScene.tscn");
@@ -55,12 +58,38 @@ public partial class AppRoot : Node
         EnsureCatalogsLoaded();
         LoadProgress();
         ShowBootLoadingPage();
+
+        // 某些安卓设备会在宿主界面刚建立时短暂覆盖方向设置，
+        // 因此延后到下一帧再执行一次竖屏锁定。
+        CallDeferred(MethodName.ApplyMobilePortraitOrientation);
     }
 
     /// <summary>
-    /// 先显示启动页，再进入主页。
-    /// 这样项目启动时就有正式应用外壳，而不再是直接裸切到主页或游戏页。
+    /// 在支持方向控制的平台上显式请求竖屏。
+    /// 主页、启动页和游戏页中的临时朝向诊断界面已经移除，
+    /// 但真正生效的竖屏锁定逻辑仍然保留在这里。
     /// </summary>
+    private void ApplyMobilePortraitOrientation()
+    {
+        var osName = OS.GetName();
+        if (osName != "Android")
+        {
+            GD.Print($"[AppRoot] 非安卓平台，跳过运行时竖屏锁定。系统={osName}");
+            return;
+        }
+
+        if (!DisplayServer.HasFeature(DisplayServer.Feature.Orientation))
+        {
+            GD.Print("[AppRoot] 当前平台不支持运行时方向控制，无法调用 ScreenSetOrientation。");
+            return;
+        }
+
+        var before = DisplayServer.ScreenGetOrientation();
+        DisplayServer.ScreenSetOrientation(DisplayServer.ScreenOrientation.Portrait);
+        var after = DisplayServer.ScreenGetOrientation();
+        GD.Print($"[AppRoot] 已执行运行时竖屏锁定。before={before}, after={after}");
+    }
+
     private void ShowBootLoadingPage()
     {
         var bootPage = BootLoadingPageScene.Instantiate<BootLoadingPage>();
@@ -73,10 +102,6 @@ public partial class AppRoot : Node
         SwitchToPage(bootPage);
     }
 
-    /// <summary>
-    /// 主页只接收轻量展示数据，不直接读取目录资源或牌桌运行时对象。
-    /// 这样页面层始终是展示层，流程入口仍然只在 AppRoot。
-    /// </summary>
     private void ShowHomePage()
     {
         var homePage = HomePageScene.Instantiate<HomePage>();
@@ -150,10 +175,6 @@ public partial class AppRoot : Node
         ShowGamePage(_currentLevelNumber);
     }
 
-    /// <summary>
-    /// 结算发生时先更新持久化进度，再决定是否要插入每日奖励页。
-    /// 奖励是否展示由流程层控制，不让游戏页自己承担外围页面编排。
-    /// </summary>
     private void OnLevelCompleted(LevelCompleteResult result)
     {
         var nextLevelNumber = result.LevelNumber + 1;
@@ -187,7 +208,7 @@ public partial class AppRoot : Node
                 RewardLeafCount = grantedLeafCount,
                 CurrentLeafTotal = _progress.LeafCount,
                 RewardTitle = "每日首胜奖励",
-                RewardDescription = $"今日首次通关已发放 +{grantedLeafCount} 叶子，可用于后续外层功能扩展。",
+                RewardDescription = $"今日首次通关已发放 +{grantedLeafCount} 叶子，可用于后续外围功能扩展。",
                 NextLevelNumber = nextLevelNumber,
                 NextLevelName = completeResult.NextLevelName,
                 NextLevelSummary = completeResult.NextLevelSummary,
@@ -253,10 +274,6 @@ public partial class AppRoot : Node
         PlayerProgressStore.Save(_progress);
     }
 
-    /// <summary>
-    /// 每日奖励当前按本地日期做一次性领取。
-    /// 这是外围产品层规则，不进入牌桌交互层。
-    /// </summary>
     private bool TryGrantDailyReward(out int grantedLeafCount)
     {
         var todayKey = DateTime.Now.ToString("yyyy-MM-dd");

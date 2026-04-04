@@ -10,12 +10,16 @@ namespace TileMatcher.Game;
 /// 当前游戏页主场景控制器。
 /// </summary>
 /// <remarks>
-/// 它负责绑定调试 UI，并把用户操作转成对 BoardController 的调用。
+/// 它负责绑定调试界面，并把用户操作转成对 BoardController 的调用。
 /// 这一层不直接实现牌桌规则，只负责把状态呈现出来。
 /// </remarks>
 public partial class GameScene : Node2D
 {
     private const string DefaultLevelCatalogPath = "res://configs/levels/default_levels.tres";
+    private const string BuildPackageNameSettingPath = "tilematcher_build/package_name";
+    private const string BuildVersionNameSettingPath = "tilematcher_build/version_name";
+    private const string BuildVersionCodeSettingPath = "tilematcher_build/version_code";
+    private const string BuildOrientationSettingPath = "tilematcher_build/manifest_orientation";
 
     /// <summary>
     /// 当游戏页被单独作为主场景运行时，是否在 `_Ready` 后自动加载一局默认牌桌。
@@ -26,11 +30,11 @@ public partial class GameScene : Node2D
 
     /// <summary>
     /// 关卡目录资源。
-    /// GameScene 只负责“按关卡号启动”，真正的关卡参数来源都收敛在这里。
+    /// GameScene 只负责“按关卡号启动”，真正的关卡参数来源都集中在这里。
     /// </summary>
     [Export]
     public LevelCatalog LevelCatalog { get; set; } = null!;
-    /// <summary>DEBUG 悬浮按钮距离屏幕边缘的安全间距。</summary>
+    /// <summary>调试悬浮按钮距离屏幕边缘的安全间距。</summary>
     private const float FloatingButtonMargin = 22.0f;
 
     /// <summary>调试面板距离屏幕边缘的安全间距。</summary>
@@ -74,6 +78,11 @@ public partial class GameScene : Node2D
     private Button _debugToggleButton = null!;
     private Button _debugCloseButton = null!;
     private OptionButton _profileSelector = null!;
+    private Button _settingsButton = null!;
+    private Control _leaveConfirmOverlay = null!;
+    private Control _leaveConfirmPanel = null!;
+    private Button _leaveConfirmCancelButton = null!;
+    private Button _leaveConfirmConfirmButton = null!;
 
     /// <summary>以下状态用于区分“点击”和“拖动”，避免浮动控件误触。</summary>
     private bool _debugButtonPressed;
@@ -100,9 +109,9 @@ public partial class GameScene : Node2D
 
         _boardController = GetNode<BoardController>("BoardController");
         _boardBackground = GetNode<CanvasItem>("UI/Root/BoardBackground");
-        _levelValue = GetNode<Label>("UI/Root/TopBar/Stats/LevelBox/VBox/Value");
-        _scoreValue = GetNode<Label>("UI/Root/TopBar/Stats/ScoreBox/VBox/Value");
-        _matchValue = GetNode<Label>("UI/Root/TopBar/Stats/MatchBox/VBox/Value");
+        _levelValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/LevelBox/VBox/Value");
+        _scoreValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/ScoreBox/VBox/Value");
+        _matchValue = GetNode<Label>("UI/Root/TopBar/Layout/Stats/MatchBox/VBox/Value");
         _interactionTip = GetNode<Control>("UI/Root/InteractionTip");
         _interactionTipLabel = GetNode<Label>("UI/Root/InteractionTip/Label");
         _debugOverlay = GetNode<Control>("UI/Root/DebugOverlay");
@@ -110,7 +119,8 @@ public partial class GameScene : Node2D
         _debugHeader = GetNode<Control>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header");
         _debugLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/DebugLabel");
         _rulesSummaryLabel = GetNode<Label>("UI/Root/DebugOverlay/Panel/Margin/Stack/RulesSummary");
-        _backHomeButton = GetNode<Button>("UI/Root/BackHomeButton");
+        _backHomeButton = GetNode<Button>("UI/Root/TopBar/Layout/BackHomeButton");
+        _settingsButton = GetNode<Button>("UI/Root/TopBar/Layout/SettingsButton");
         _generateButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/ShuffleButton");
         _prototypeButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Buttons/PrototypeButton");
         _layerFilterSlider = GetNode<HSlider>("UI/Root/DebugOverlay/Panel/Margin/Stack/LayerInspector/Controls/Slider");
@@ -118,6 +128,10 @@ public partial class GameScene : Node2D
         _debugToggleButton = GetNode<Button>("UI/Root/DebugToggleButton");
         _debugCloseButton = GetNode<Button>("UI/Root/DebugOverlay/Panel/Margin/Stack/Header/CloseButton");
         _profileSelector = GetNode<OptionButton>("UI/Root/DebugOverlay/Panel/Margin/Stack/ProfileRow/ProfileSelector");
+        _leaveConfirmOverlay = GetNode<Control>("UI/Root/LeaveConfirmOverlay");
+        _leaveConfirmPanel = GetNode<Control>("UI/Root/LeaveConfirmOverlay/Panel");
+        _leaveConfirmCancelButton = GetNode<Button>("UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack/Buttons/CancelButton");
+        _leaveConfirmConfirmButton = GetNode<Button>("UI/Root/LeaveConfirmOverlay/Panel/Margin/Stack/Buttons/ConfirmButton");
 
         _levelValue.Text = "1";
         _backHomeButton.Text = "主页";
@@ -125,6 +139,11 @@ public partial class GameScene : Node2D
         _prototypeButton.Text = "固定原型";
         _debugLabel.Text = "点击牌桌中的可移动麻将，可以先验证基础配对消除逻辑。";
         _rulesSummaryLabel.Text = string.Empty;
+        _backHomeButton.Text = "< 返回主页";
+        _backHomeButton.Text = "返回主页";
+        _backHomeButton.Text = "< 返回主页";
+        _backHomeButton.Text = "←";
+        _settingsButton.Text = "≡";
         _layerFilterSlider.MinValue = 0;
         _layerFilterSlider.MaxValue = 0;
         _layerFilterSlider.Step = 1;
@@ -133,9 +152,11 @@ public partial class GameScene : Node2D
         _debugOverlay.Visible = false;
         _interactionTip.Visible = false;
         _interactionTipLabel.Text = string.Empty;
+        _leaveConfirmOverlay.Visible = false;
 
         EnsureLevelCatalogLoaded();
         _backHomeButton.Pressed += OnBackHomePressed;
+        _settingsButton.Pressed += OnSettingsPressed;
         _generateButton.Pressed += OnGeneratePressed;
         _prototypeButton.Pressed += OnPrototypePressed;
         _layerFilterSlider.ValueChanged += OnLayerFilterChanged;
@@ -143,6 +164,8 @@ public partial class GameScene : Node2D
         _debugHeader.GuiInput += OnDebugPanelGuiInput;
         _debugCloseButton.Pressed += OnDebugClosePressed;
         _profileSelector.ItemSelected += OnProfileSelected;
+        _leaveConfirmCancelButton.Pressed += OnLeaveConfirmCancelPressed;
+        _leaveConfirmConfirmButton.Pressed += OnLeaveConfirmConfirmPressed;
         _boardController.BoardGenerated += OnBoardGenerated;
         _boardController.BoardStateChanged += OnBoardStateChanged;
         _boardController.InteractionTipRequested += OnInteractionTipRequested;
@@ -151,6 +174,7 @@ public partial class GameScene : Node2D
         InitializeProfileSelector();
         InitializeDebugButtonPosition();
         SyncStats();
+        RefreshDebugPanelSummary();
         if (AutoStartPrototype)
         {
             StartLevel(_currentLevelNumber);
@@ -212,7 +236,7 @@ public partial class GameScene : Node2D
         SyncLayerInspector();
         SyncStats();
         _debugLabel.Text = _boardController.GetCurrentSummary();
-        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
+        RefreshDebugPanelSummary();
         HighlightDebugLabel(new Color(0.92f, 0.97f, 0.86f, 1.0f));
         FlashBoard(new Color(0.07f, 0.42f, 0.29f, 1.0f));
     }
@@ -222,7 +246,7 @@ public partial class GameScene : Node2D
     {
         SyncStats();
         _debugLabel.Text = message;
-        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
+        RefreshDebugPanelSummary();
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
         TryEmitLevelCompleted();
     }
@@ -243,7 +267,7 @@ public partial class GameScene : Node2D
         HighlightDebugLabel(new Color(0.82f, 0.90f, 0.99f, 1.0f));
     }
 
-    /// <summary>处理 DEBUG 悬浮按钮的点击与拖动。</summary>
+    /// <summary>处理调试悬浮按钮的点击与拖动。</summary>
     private void OnDebugToggleGuiInput(InputEvent inputEvent)
     {
         switch (inputEvent)
@@ -290,22 +314,50 @@ public partial class GameScene : Node2D
     {
         _debugOverlay.Visible = !_debugOverlay.Visible;
         _debugOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
+        RefreshDebugPanelSummary();
     }
 
-    /// <summary>显式可见的返回主页入口，避免当前流程只依赖键盘 Esc。</summary>
+    /// <summary>显式可见的返回主页入口，避免当前流程只依赖键盘 `Esc`。</summary>
     private void OnBackHomePressed()
     {
         GD.Print("[GameScene] 点击了返回主页按钮");
-        BackToHomeRequested?.Invoke();
+        PlayButtonFeedback(_backHomeButton, new Color(1.0f, 0.90f, 0.70f, 1.0f));
+        ShowLeaveConfirmDialog();
     }
 
     /// <summary>关闭调试浮窗。</summary>
+    /// <summary>顶部设置按钮当前先作为设置/开发入口，点击后打开现有调试面板。</summary>
+    private void OnSettingsPressed()
+    {
+        GD.Print("[GameScene] 点击了顶部设置按钮");
+        PlayButtonFeedback(_settingsButton, new Color(1.0f, 0.90f, 0.70f, 1.0f));
+        if (!_debugOverlay.Visible)
+        {
+            ToggleDebugOverlay();
+        }
+    }
+
     private void OnDebugClosePressed()
     {
         if (_debugOverlay.Visible)
         {
             ToggleDebugOverlay();
         }
+    }
+
+    /// <summary>点击“继续游玩”后关闭离开确认弹窗。</summary>
+    private void OnLeaveConfirmCancelPressed()
+    {
+        PlayButtonFeedback(_leaveConfirmCancelButton, new Color(0.97f, 0.92f, 0.82f, 1.0f));
+        HideLeaveConfirmDialog();
+    }
+
+    /// <summary>点击“确认离开”后真正返回主页。</summary>
+    private void OnLeaveConfirmConfirmPressed()
+    {
+        PlayButtonFeedback(_leaveConfirmConfirmButton, new Color(1.0f, 0.78f, 0.58f, 1.0f));
+        HideLeaveConfirmDialog();
+        BackToHomeRequested?.Invoke();
     }
 
     /// <summary>切换规则 profile 并重新生成牌桌。</summary>
@@ -319,7 +371,7 @@ public partial class GameScene : Node2D
 
         var profile = profiles[index];
         _boardController.SetLayoutProfile(profile.ProfileId);
-        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
+        RefreshDebugPanelSummary();
         _debugLabel.Text = $"已切换规则档案：{profile.DisplayName}";
         HighlightDebugLabel(new Color(0.77f, 0.92f, 1.0f, 1.0f));
         _boardController.GenerateRandomBoard(_currentLevelNumber, null, $"关卡 {_currentLevelNumber} 规则切换后随机布局");
@@ -332,6 +384,7 @@ public partial class GameScene : Node2D
         {
             ClampDebugToggleButton();
             ClampDebugPanel();
+            RefreshDebugPanelSummary();
         }
     }
 
@@ -371,18 +424,18 @@ public partial class GameScene : Node2D
         }
     }
 
-    /// <summary>初始化 DEBUG 按钮位置。</summary>
+    /// <summary>初始化调试按钮位置。</summary>
     private void InitializeDebugButtonPosition()
     {
         var viewportSize = GetViewportRect().Size;
         _debugToggleButton.Position = new Vector2(
             viewportSize.X - _debugToggleButton.Size.X - FloatingButtonMargin,
-            FloatingButtonMargin);
+            viewportSize.Y - _debugToggleButton.Size.Y - FloatingButtonMargin);
         ClampDebugToggleButton();
         ClampDebugPanel();
     }
 
-    /// <summary>限制 DEBUG 按钮始终落在屏幕内。</summary>
+    /// <summary>限制调试按钮始终落在屏幕内。</summary>
     private void ClampDebugToggleButton()
     {
         var viewportSize = GetViewportRect().Size;
@@ -431,7 +484,7 @@ public partial class GameScene : Node2D
             }
         }
 
-        _rulesSummaryLabel.Text = _boardController.GetCurrentRulesSummary();
+        RefreshDebugPanelSummary();
     }
 
     /// <summary>刷新“&lt;= Lx”层过滤文字。</summary>
@@ -441,10 +494,63 @@ public partial class GameScene : Node2D
         _layerFilterValue.Text = $"<= L{visibleLayer}";
     }
 
+    /// <summary>显示正式的离开确认弹窗，避免误触后直接中断当前关卡。</summary>
+    private void ShowLeaveConfirmDialog()
+    {
+        _leaveConfirmOverlay.Visible = true;
+        _leaveConfirmOverlay.MouseFilter = Control.MouseFilterEnum.Stop;
+        _leaveConfirmPanel.PivotOffset = _leaveConfirmPanel.Size * 0.5f;
+        _leaveConfirmPanel.Scale = new Vector2(0.94f, 0.94f);
+        _leaveConfirmPanel.Modulate = new Color(1.0f, 1.0f, 1.0f, 0.0f);
+
+        var tween = CreateTween();
+        tween.SetParallel(true);
+        tween.TweenProperty(_leaveConfirmPanel, "scale", Vector2.One, 0.12);
+        tween.TweenProperty(_leaveConfirmPanel, "modulate", Colors.White, 0.12);
+    }
+
+    /// <summary>关闭离开确认弹窗，恢复正常游戏界面。</summary>
+    private void HideLeaveConfirmDialog()
+    {
+        _leaveConfirmOverlay.Visible = false;
+    }
+
     /// <summary>
     /// 若场景未在 Inspector 中显式绑定关卡目录，则从默认路径回退加载。
     /// 这样 `GameScene` 既能被 AppRoot 驱动，也能单独运行调试。
     /// </summary>
+    private void RefreshDebugPanelSummary()
+    {
+        _rulesSummaryLabel.Text = BuildDebugPanelSummary();
+    }
+
+    private string BuildDebugPanelSummary()
+    {
+        // 这里保留调试面板汇总，统一展示构建信息、当前牌桌状态和当前规则摘要。
+        var packageName = ReadProjectSetting(BuildPackageNameSettingPath, "unknown.package");
+        var versionName = ReadProjectSetting(BuildVersionNameSettingPath, "0.0.0");
+        var versionCode = ReadProjectSetting(BuildVersionCodeSettingPath, "0");
+        var manifestOrientation = ReadProjectSetting(BuildOrientationSettingPath, "unspecified");
+
+        var buildSummary = $"构建信息 | 包名 {packageName} | 版本 {versionName} ({versionCode}) | 清单方向 {manifestOrientation}";
+        var boardSummary = $"当前牌桌 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 可见层 <= L{_boardController.VisibleMaxLayer}";
+        var rulesSummary = _boardController.GetCurrentRulesSummary();
+        return $"{buildSummary}\n{boardSummary}\n{rulesSummary}";
+    }
+
+    /// <summary>读取项目设置中的构建信息，并统一转成调试面板可直接展示的字符串。</summary>
+    private static string ReadProjectSetting(string settingPath, string fallback)
+    {
+        if (!ProjectSettings.HasSetting(settingPath))
+        {
+            return fallback;
+        }
+
+        var value = ProjectSettings.GetSetting(settingPath);
+        var text = value.AsString();
+        return string.IsNullOrWhiteSpace(text) ? fallback : text;
+    }
+
     private void EnsureLevelCatalogLoaded()
     {
         if (LevelCatalog is not null)
@@ -519,7 +625,7 @@ public partial class GameScene : Node2D
         }
     }
 
-    /// <summary>同步顶部 Score / Match 数值。</summary>
+    /// <summary>同步顶部“分数 / 已消除对数”数值。</summary>
     private void SyncStats()
     {
         _scoreValue.Text = _boardController.CurrentScore.ToString();
@@ -593,8 +699,17 @@ public partial class GameScene : Node2D
             !keyEvent.Echo &&
             keyEvent.Keycode == Key.Escape)
         {
-            GD.Print("[GameScene] 收到返回主页请求：Esc");
-            BackToHomeRequested?.Invoke();
+            if (_leaveConfirmOverlay.Visible)
+            {
+                GD.Print("[GameScene] 收到返回键：关闭离开确认弹窗");
+                HideLeaveConfirmDialog();
+            }
+            else
+            {
+                GD.Print("[GameScene] 收到返回键：弹出离开确认");
+                ShowLeaveConfirmDialog();
+            }
+
             GetViewport().SetInputAsHandled();
         }
     }

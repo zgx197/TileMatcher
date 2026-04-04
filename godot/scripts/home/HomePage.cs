@@ -4,7 +4,8 @@ namespace TileMatcher.Home;
 
 /// <summary>
 /// 外围流程主页。
-/// 当前会同时展示玩家基础资料、进度摘要和即将进入的关卡信息。
+/// 当前只展示玩家资料、进度摘要和即将进入的关卡信息，
+/// 之前为了排查移动端朝向加入的诊断文本已移除。
 /// </summary>
 public partial class HomePage : Control
 {
@@ -18,7 +19,7 @@ public partial class HomePage : Control
     private int _levelNumber = 1;
     private string _pendingPlayerName = "青瓷旅人";
     private int _pendingLeafCount = 1;
-    private string _pendingProgressSummary = "最高解锁 L1 · 已通关 0 局";
+    private string _pendingProgressSummary = "最高解锁 L1 / 已通关 0 局";
     private string _pendingLevelTitle = "关卡 1";
     private string _pendingLevelSummary = "规则摘要待加载";
 
