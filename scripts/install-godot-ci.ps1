@@ -104,7 +104,7 @@ if ($null -eq $versionFile) {
     throw "Godot export templates version file not found under: $templatesExtractRoot"
 }
 $versionFilePath = $versionFile.FullName
-$templatesContentRoot = Split-Path -LiteralPath $versionFilePath -Parent
+$templatesContentRoot = [System.IO.Path]::GetDirectoryName($versionFilePath)
 
 $versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
 $exportTemplatesRoot = Join-Path $exportTemplatesParentRoot $versionFileContent
