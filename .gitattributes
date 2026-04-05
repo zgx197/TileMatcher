@@ -1,0 +1,43 @@
+# Normalize all text files in the repository to LF in Git and on checkout.
+* text=auto eol=lf
+
+# Common binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.bmp binary
+*.psd binary
+*.aseprite binary
+*.ase binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.flac binary
+*.mp4 binary
+*.mov binary
+*.avi binary
+*.webm binary
+*.zip binary
+*.7z binary
+*.rar binary
+*.dll binary
+*.exe binary
+*.so binary
+*.dylib binary
+*.pdb binary
+*.a binary
+*.lib binary
+*.apk binary
+*.aab binary
+*.keystore binary
+*.jar binary
+*.wasm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.icns binary
