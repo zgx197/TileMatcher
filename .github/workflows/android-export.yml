@@ -157,10 +157,10 @@ jobs:
             throw "orientation must be portrait or landscape, got: $orientation"
           }
 
-          $targets = New-Object System.Collections.Generic.List[object]
+          $targets = @()
 
           if ($buildAndroid) {
-            $targets.Add([ordered]@{
+            $targets += [pscustomobject][ordered]@{
               target = "android"
               runner = "windows-2022"
               upload_name = "release-android-$versionName"
@@ -168,11 +168,11 @@ jobs:
               artifact_relative_path = "godot/build/android/TileMatcher-$versionName-android-debug.apk"
               hash_relative_path = "godot/build/android/TileMatcher-$versionName-android-debug.apk.sha256.txt"
               summary_name = "Android"
-            })
+            }
           }
 
           if ($buildWindows) {
-            $targets.Add([ordered]@{
+            $targets += [pscustomobject][ordered]@{
               target = "windows"
               runner = "windows-2022"
               upload_name = "release-windows-$versionName"
@@ -180,7 +180,7 @@ jobs:
               artifact_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip"
               hash_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip.sha256.txt"
               summary_name = "Windows Desktop"
-            })
+            }
           }
 
           if ($targets.Count -eq 0) {
