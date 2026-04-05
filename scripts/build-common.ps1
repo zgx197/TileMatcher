@@ -71,6 +71,28 @@ function Resolve-GodotExe {
     return (Resolve-Path -LiteralPath $resolved).Path
 }
 
+function Resolve-GodotNuGetSource {
+    param([string]$GodotExe)
+
+    if (-not [string]::IsNullOrWhiteSpace($env:GODOT_NUGET_SOURCE) -and (Test-Path -LiteralPath $env:GODOT_NUGET_SOURCE)) {
+        return (Resolve-Path -LiteralPath $env:GODOT_NUGET_SOURCE).Path
+    }
+
+    $godotExePath = Resolve-GodotExe -GodotExe $GodotExe
+    $godotRoot = Split-Path -Parent $godotExePath
+    $candidate = Join-Path $godotRoot "GodotSharp\Tools\nupkgs"
+    Assert-PathExists -Path $candidate -Label "Godot NuGet source"
+    return (Resolve-Path -LiteralPath $candidate).Path
+}
+
+function Set-GodotNuGetSourceEnvironment {
+    param([string]$GodotExe)
+
+    $resolvedSource = Resolve-GodotNuGetSource -GodotExe $GodotExe
+    $env:GODOT_NUGET_SOURCE = $resolvedSource
+    return $resolvedSource
+}
+
 function Remove-PathIfExists {
     param([string]$Path)
 
@@ -287,6 +309,8 @@ function Invoke-GodotExport {
     if (-not [string]::IsNullOrWhiteSpace($exportDirectory)) {
         New-Item -ItemType Directory -Path $exportDirectory -Force | Out-Null
     }
+
+    Set-GodotNuGetSourceEnvironment -GodotExe $GodotExe | Out-Null
 
     $exportFlag = if ($BuildKind -eq "debug") { "--export-debug" } else { "--export-release" }
 

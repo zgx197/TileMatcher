@@ -58,6 +58,28 @@ function Assert-PathExists {
     }
 }
 
+function Resolve-GodotNuGetSource {
+    param([string]$GodotExe)
+
+    if (-not [string]::IsNullOrWhiteSpace($env:GODOT_NUGET_SOURCE) -and (Test-Path -LiteralPath $env:GODOT_NUGET_SOURCE)) {
+        return (Resolve-Path -LiteralPath $env:GODOT_NUGET_SOURCE).Path
+    }
+
+    Assert-PathExists -Path $GodotExe -Label "Godot executable"
+    $godotRoot = Split-Path -Parent $GodotExe
+    $candidate = Join-Path $godotRoot "GodotSharp\Tools\nupkgs"
+    Assert-PathExists -Path $candidate -Label "Godot NuGet source"
+    return (Resolve-Path -LiteralPath $candidate).Path
+}
+
+function Set-GodotNuGetSourceEnvironment {
+    param([string]$GodotExe)
+
+    $resolvedSource = Resolve-GodotNuGetSource -GodotExe $GodotExe
+    $env:GODOT_NUGET_SOURCE = $resolvedSource
+    return $resolvedSource
+}
+
 # 用正则同步替换配置文件中的单个键值。
 function Set-RegexValue {
     param(
@@ -327,6 +349,8 @@ function Invoke-GodotExport {
     $stdoutLogPath = Join-Path $env:TEMP "tilematcher-godot-export-stdout.log"
     $stderrLogPath = Join-Path $env:TEMP "tilematcher-godot-export-stderr.log"
     $exportStartedAt = Get-Date
+
+    Set-GodotNuGetSourceEnvironment -GodotExe $GodotExe | Out-Null
 
     Remove-Item -LiteralPath $stdoutLogPath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $stderrLogPath -Force -ErrorAction SilentlyContinue

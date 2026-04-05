@@ -337,6 +337,17 @@ jobs:
 
           "path=$($godotExe.FullName)" >> $env:GITHUB_OUTPUT
 
+      - name: Set Godot NuGet source
+        shell: pwsh
+        run: |
+          $godotRoot = Split-Path -Parent "${{ steps.godot.outputs.path }}"
+          $nugetSource = Join-Path $godotRoot "GodotSharp\Tools\nupkgs"
+          if (-not (Test-Path -LiteralPath $nugetSource)) {
+            throw "Godot NuGet source not found: $nugetSource"
+          }
+
+          "GODOT_NUGET_SOURCE=$nugetSource" >> $env:GITHUB_ENV
+
       - name: Preflight Windows .NET build
         if: matrix.target == 'windows'
         shell: pwsh
