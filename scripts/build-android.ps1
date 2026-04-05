@@ -409,7 +409,8 @@ function Validate-AndroidApkArtifact {
     Assert-TextContains -Text $badgingOutput -Expected "package: name='$PackageName'" -Label "APK badging"
     Assert-TextContains -Text $badgingOutput -Expected "versionCode='$VersionCode'" -Label "APK badging"
     Assert-TextContains -Text $badgingOutput -Expected "versionName='$VersionName'" -Label "APK badging"
-    Assert-TextContains -Text $badgingOutput -Expected "native-code: 'arm64-v8a'" -Label "APK badging"
+    Assert-TextContains -Text $badgingOutput -Expected "arm64-v8a" -Label "APK badging"
+    Assert-TextContains -Text $badgingOutput -Expected "x86_64" -Label "APK badging"
 
     if ($ManifestOrientation -eq "portrait") {
         Assert-TextContains -Text $badgingOutput -Expected "uses-feature: name='android.hardware.screen.portrait'" -Label "APK badging"
@@ -421,6 +422,7 @@ function Validate-AndroidApkArtifact {
 
     $entryNames = Get-ZipEntryNames -ArchivePath $ApkPath
     Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "lib/arm64-v8a/libgodot_android.so" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "lib/x86_64/libgodot_android.so" -Label "Android APK"
     Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/project.binary" -Label "Android APK"
     Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/_cl_" -Label "Android APK"
     Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/.godot/mono/publish/arm64/TileMatcher.dll" -Label "Android APK"

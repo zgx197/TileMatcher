@@ -60,6 +60,7 @@ env:
   ANDROID_PLATFORM: android-35
   ANDROID_BUILD_TOOLS: 35.0.1
   GRADLE_VERSION: 8.11.1
+  DOTNET_MULTILEVEL_LOOKUP: 0
 
 jobs:
   metadata:
@@ -418,7 +419,8 @@ jobs:
             "package: name='${{ needs.metadata.outputs.package_name }}'",
             "versionCode='${{ needs.metadata.outputs.version_code }}'",
             "versionName='${{ needs.metadata.outputs.version_name }}'",
-            "native-code: 'arm64-v8a'"
+            "arm64-v8a",
+            "x86_64"
           )) {
             if ($badgingOutput.IndexOf($expectedSnippet, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
               throw "Android badging output is missing expected text: $expectedSnippet"
@@ -431,6 +433,7 @@ jobs:
             $entryNames = @($archive.Entries | Select-Object -ExpandProperty FullName)
             foreach ($requiredEntry in @(
               "lib/arm64-v8a/libgodot_android.so",
+              "lib/x86_64/libgodot_android.so",
               "assets/project.binary",
               "assets/_cl_",
               "assets/.godot/mono/publish/arm64/TileMatcher.dll",
@@ -625,14 +628,14 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          @"
+          @'
           ## ${{ matrix.summary_name }} smoke summary
 
           - Runner: `${{ matrix.smoke_runner }}`
           - Target: `${{ matrix.target }}`
           - Artifact: `${{ matrix.artifact_name }}`
           - Smoke logs artifact: `smoke-${{ matrix.target }}-${{ needs.metadata.outputs.version_name }}`
-          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          '@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
   release:
     needs:
