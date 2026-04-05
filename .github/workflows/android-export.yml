@@ -179,6 +179,7 @@ jobs:
               artifact_name = "TileMatcher-$versionName-windows-x64.zip"
               artifact_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip"
               hash_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip.sha256.txt"
+              expected_zip_entry_prefix = "data_TileMatcher_windows_x86_64"
               summary_name = "Windows Desktop"
             }
           }
@@ -365,9 +366,40 @@ jobs:
         if: matrix.target == 'windows'
         shell: pwsh
         run: |
-          .\scripts\build-windows.ps1 `
+          .\scripts\build-release.ps1 `
             -GodotExe "${{ steps.godot.outputs.path }}" `
+            -ProjectDir "godot" `
+            -Targets windows `
             -VersionName "${{ needs.metadata.outputs.version_name }}"
+
+      - name: Validate Windows package contents
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          $artifactPath = "${{ matrix.artifact_relative_path }}"
+          $expectedPrefix = "${{ matrix.expected_zip_entry_prefix }}"
+
+          if (-not (Test-Path -LiteralPath $artifactPath)) {
+            throw "Windows artifact not found for validation: $artifactPath"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $artifactPath).Path)
+          try {
+            $hasRuntimeDir = $archive.Entries |
+              Where-Object {
+                $normalizedEntryPath = $_.FullName.Replace('\', '/')
+                $normalizedEntryPath.StartsWith("$expectedPrefix/", [System.StringComparison]::OrdinalIgnoreCase)
+              } |
+              Select-Object -First 1
+
+            if ($null -eq $hasRuntimeDir) {
+              throw "Windows package is missing runtime payload entries under '$expectedPrefix/'."
+            }
+          }
+          finally {
+            $archive.Dispose()
+          }
 
       - name: Collect artifact metadata
         id: artifact

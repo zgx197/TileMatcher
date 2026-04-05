@@ -16,7 +16,6 @@ config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [tilematcher_build]
-
 package_name="com.zgx197.tilematcher"
 version_name="0.1.5"
 version_code=6

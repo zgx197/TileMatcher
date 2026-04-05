@@ -1,19 +1,18 @@
-# 公共构建辅助函数。
-# 统一提供路径解析、Godot 导出、产物打包和元数据同步等基础能力，
-# 让各平台脚本只关注各自差异。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $script:DefaultGodotExe = "D:\GodotCSharp\Godot_v4.6.1-stable_mono_win64\Godot_v4.6.1-stable_mono_win64.exe"
 
 function Write-Step {
-    param([string]$Message)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message
+    )
 
     Write-Host ""
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
-# 解析当前脚本所在目录，兼容被 dot-source 或直接执行两种调用方式。
 function Get-ScriptRoot {
     if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
         return $PSScriptRoot
@@ -26,43 +25,16 @@ function Get-ScriptRoot {
     throw "Unable to resolve script root."
 }
 
-# 解析仓库根目录。
 function Get-RepoRoot {
-    $scriptRoot = Get-ScriptRoot
-    return Split-Path -Parent $scriptRoot
+    return Split-Path -Parent (Get-ScriptRoot)
 }
 
-# 解析 Godot 工程目录，未显式传参时默认落到仓库内 `godot/`。
-function Resolve-ProjectDir {
-    param([string]$ProjectDir)
-
-    if (-not [string]::IsNullOrWhiteSpace($ProjectDir)) {
-        return $ProjectDir
-    }
-
-    return (Join-Path (Get-RepoRoot) "godot")
-}
-
-# 解析 Godot 可执行文件路径，优先级为显式参数、环境变量、默认本地路径。
-function Resolve-GodotExe {
-    param([string]$GodotExe)
-
-    if ([string]::IsNullOrWhiteSpace($GodotExe)) {
-        if (-not [string]::IsNullOrWhiteSpace($env:GODOT_EXE)) {
-            $GodotExe = $env:GODOT_EXE
-        } else {
-            $GodotExe = $script:DefaultGodotExe
-        }
-    }
-
-    Assert-PathExists -Path $GodotExe -Label "Godot executable"
-    return $GodotExe
-}
-
-# 断言目标路径存在，不存在时给出带语义标签的错误。
 function Assert-PathExists {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$Path,
+
+        [Parameter(Mandatory = $true)]
         [string]$Label
     )
 
@@ -71,7 +43,34 @@ function Assert-PathExists {
     }
 }
 
-# 如果路径存在则删除，供导出前清理旧产物使用。
+function Resolve-ProjectDir {
+    param([string]$ProjectDir)
+
+    $resolved = if ([string]::IsNullOrWhiteSpace($ProjectDir)) {
+        Join-Path (Get-RepoRoot) "godot"
+    } else {
+        $ProjectDir
+    }
+
+    Assert-PathExists -Path $resolved -Label "Godot project directory"
+    return (Resolve-Path -LiteralPath $resolved).Path
+}
+
+function Resolve-GodotExe {
+    param([string]$GodotExe)
+
+    $resolved = if (-not [string]::IsNullOrWhiteSpace($GodotExe)) {
+        $GodotExe
+    } elseif (-not [string]::IsNullOrWhiteSpace($env:GODOT_EXE)) {
+        $env:GODOT_EXE
+    } else {
+        $script:DefaultGodotExe
+    }
+
+    Assert-PathExists -Path $resolved -Label "Godot executable"
+    return (Resolve-Path -LiteralPath $resolved).Path
+}
+
 function Remove-PathIfExists {
     param([string]$Path)
 
@@ -80,19 +79,25 @@ function Remove-PathIfExists {
     }
 }
 
-# 重建目录，确保目录内容是全新的。
 function Reset-Directory {
-    param([string]$Path)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
 
     Remove-PathIfExists -Path $Path
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
 }
 
-# 用正则精确替换配置文件中的单个键值，避免手写整文件模板。
 function Set-RegexValue {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$Path,
+
+        [Parameter(Mandatory = $true)]
         [string]$Pattern,
+
+        [Parameter(Mandatory = $true)]
         [string]$Replacement
     )
 
@@ -102,19 +107,16 @@ function Set-RegexValue {
         throw "Failed to find pattern in file: $Path`nPattern: $Pattern"
     }
 
-    $updated = [System.Text.RegularExpressions.Regex]::Replace(
-        $content,
-        $Pattern,
-        $Replacement,
-        $options)
-
+    $updated = [System.Text.RegularExpressions.Regex]::Replace($content, $Pattern, $Replacement, $options)
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $updated, $utf8NoBom)
 }
 
-# 从 `project.godot` 提取当前构建需要的项目元数据。
 function Get-ProjectMetadata {
-    param([string]$ProjectDir)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectDir
+    )
 
     $projectSettingsPath = Join-Path $ProjectDir "project.godot"
     Assert-PathExists -Path $projectSettingsPath -Label "project.godot"
@@ -123,8 +125,12 @@ function Get-ProjectMetadata {
 
     function Get-MatchValue {
         param(
+            [Parameter(Mandatory = $true)]
             [string]$Pattern,
+
+            [Parameter(Mandatory = $true)]
             [string]$Label,
+
             [string]$DefaultValue = ""
         )
 
@@ -144,7 +150,9 @@ function Get-ProjectMetadata {
         throw "Failed to resolve $Label from project.godot"
     }
 
-    $usesDotNet = $projectSettings -match '^\[dotnet\]\r?$' -or $projectSettings -match 'config/features=PackedStringArray\([^\)]*"C#"'
+    $usesDotNet =
+        ($projectSettings -match '^\[dotnet\]\r?$') -or
+        ($projectSettings -match 'config/features=PackedStringArray\([^\)]*"C#"')
 
     return [pscustomobject]@{
         ProjectName = Get-MatchValue -Pattern '^\s*config/name="([^"]+)"\r?$' -Label "config/name"
@@ -156,13 +164,17 @@ function Get-ProjectMetadata {
     }
 }
 
-# 统一回写版本号、包名和方向设置，保证脚本与导出元数据一致。
 function Update-ProjectBuildMetadata {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$ProjectDir,
+
         [string]$VersionName,
+
         [Nullable[int]]$VersionCode = $null,
+
         [string]$PackageName,
+
         [string]$ManifestOrientation
     )
 
@@ -186,11 +198,13 @@ function Update-ProjectBuildMetadata {
     }
 }
 
-# 等待导出文件稳定，避免刚生成就被后续打包步骤读取半成品。
 function Wait-ForStableFile {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$Path,
-        [int]$TimeoutSeconds = 30,
+
+        [int]$TimeoutSeconds = 60,
+
         [int]$StableSeconds = 2
     )
 
@@ -219,7 +233,6 @@ function Wait-ForStableFile {
     Assert-PathExists -Path $Path -Label "Export artifact"
 }
 
-# 清理 Godot 导出过程遗留的临时文件，减少误打包风险。
 function Remove-TransientExportFiles {
     param([string]$RootPath)
 
@@ -234,32 +247,38 @@ function Remove-TransientExportFiles {
         }
 }
 
-# 清理 Godot Mono 曾生成的旧问题日志，避免误判本次构建结果。
 function Clear-GodotMonoBuildIssueFiles {
     $godotMonoBuildLogsRoot = Join-Path $env:APPDATA "Godot\mono\build_logs"
     if (-not (Test-Path -LiteralPath $godotMonoBuildLogsRoot)) {
         return
     }
 
-    Get-ChildItem -LiteralPath $godotMonoBuildLogsRoot -Recurse -Filter "msbuild_issues.csv" -ErrorAction SilentlyContinue |
-        ForEach-Object {
-            try {
-                [System.IO.File]::SetAttributes($_.FullName, [System.IO.FileAttributes]::Normal)
-                Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop
-            }
-            catch {
-                Write-Warning "Failed to clear stale Godot Mono build issue file: $($_.FullName)"
-            }
+    $issueFiles = @(Get-ChildItem -LiteralPath $godotMonoBuildLogsRoot -Recurse -Filter "msbuild_issues.csv" -File -ErrorAction SilentlyContinue)
+    foreach ($issueFile in $issueFiles) {
+        try {
+            [System.IO.File]::SetAttributes($issueFile.FullName, [System.IO.FileAttributes]::Normal)
+            Remove-Item -LiteralPath $issueFile.FullName -Force -ErrorAction Stop
         }
+        catch {
+            Write-Warning "Failed to clear stale Godot Mono build issue file: $($issueFile.FullName)"
+        }
+    }
 }
 
-# 执行一次标准 Godot headless 导出，并验证目标产物已稳定落盘。
 function Invoke-GodotExport {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$GodotExe,
+
+        [Parameter(Mandatory = $true)]
         [string]$ProjectDir,
+
+        [Parameter(Mandatory = $true)]
         [string]$ExportPreset,
+
+        [Parameter(Mandatory = $true)]
         [string]$ExportPath,
+
         [ValidateSet("debug", "release")]
         [string]$BuildKind = "release"
     )
@@ -271,12 +290,57 @@ function Invoke-GodotExport {
 
     $exportFlag = if ($BuildKind -eq "debug") { "--export-debug" } else { "--export-release" }
 
+    $capturedOutput = New-Object System.Collections.Generic.List[string]
+    $stdoutPath = Join-Path $env:TEMP ("godot-export-" + [guid]::NewGuid().ToString("N") + ".stdout.log")
+    $stderrPath = Join-Path $env:TEMP ("godot-export-" + [guid]::NewGuid().ToString("N") + ".stderr.log")
+    $argumentList = @(
+        "--headless"
+        "--path"
+        $ProjectDir
+        $exportFlag
+        $ExportPreset
+        $ExportPath
+    )
+    $quotedArgumentString = ($argumentList | ForEach-Object {
+            if ($_ -match '[\s"]') {
+                '"' + ($_ -replace '"', '\"') + '"'
+            } else {
+                $_
+            }
+        }) -join ' '
+
     Write-Step "Run Godot export ($ExportPreset / $BuildKind)"
-    & $GodotExe --headless --path $ProjectDir $exportFlag $ExportPreset $ExportPath
-    $exitCode = if ($null -ne (Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue)) {
-        [int]$global:LASTEXITCODE
-    } else {
-        0
+    try {
+        $process = Start-Process `
+            -FilePath $GodotExe `
+            -ArgumentList $quotedArgumentString `
+            -WorkingDirectory $ProjectDir `
+            -NoNewWindow `
+            -Wait `
+            -PassThru `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        foreach ($outputPath in @($stdoutPath, $stderrPath)) {
+            if (-not (Test-Path -LiteralPath $outputPath)) {
+                continue
+            }
+
+            Get-Content -LiteralPath $outputPath -Encoding UTF8 | ForEach-Object {
+                $line = [string]$_
+                $capturedOutput.Add($line)
+                Write-Host $line
+            }
+        }
+
+        $exitCode = $process.ExitCode
+    }
+    finally {
+        foreach ($tempPath in @($stdoutPath, $stderrPath)) {
+            if (Test-Path -LiteralPath $tempPath) {
+                Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     if ($exitCode -ne 0) {
@@ -284,12 +348,19 @@ function Invoke-GodotExport {
     }
 
     Wait-ForStableFile -Path $ExportPath
+
+    return [pscustomobject]@{
+        ExportPath = $ExportPath
+        OutputLines = [string[]]$capturedOutput.ToArray()
+    }
 }
 
-# 把导出暂存目录压缩成 zip 产物。
 function Compress-DirectoryToZip {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$SourceDir,
+
+        [Parameter(Mandatory = $true)]
         [string]$ZipPath
     )
 
@@ -312,9 +383,11 @@ function Compress-DirectoryToZip {
         $false)
 }
 
-# 为产物生成 SHA256 摘要文件，便于 CI 上传和人工校验。
 function Write-Sha256File {
-    param([string]$ArtifactPath)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ArtifactPath
+    )
 
     Assert-PathExists -Path $ArtifactPath -Label "Artifact"
 
@@ -329,7 +402,6 @@ function Write-Sha256File {
     }
 }
 
-# 归一化命令行传入的构建目标列表，并校验是否属于支持的平台集合。
 function Convert-ToTargetList {
     param([string[]]$Targets)
 
@@ -360,7 +432,6 @@ function Convert-ToTargetList {
     return [string[]]$resolvedTargets.ToArray()
 }
 
-# 列出某个目录下所有文件的相对路径，用于产物摘要输出。
 function Get-RelativeChildPaths {
     param([string]$RootPath)
 
