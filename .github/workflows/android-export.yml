@@ -442,13 +442,15 @@ jobs:
             throw "No release assets were downloaded."
           }
 
+          $fileSummary = ($files | ForEach-Object { "- ``$($_.Name)``" }) -join [Environment]::NewLine
+
           @"
           ## Aggregated release assets
 
           - Selected targets: `${{ needs.metadata.outputs.selected_targets }}`
           - Asset count: `$($files.Count)`
           - Files:
-          $($files | ForEach-Object { "- `$($_.Name)`" } | Out-String)
+          $fileSummary
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: Create or update GitHub Release
