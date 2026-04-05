@@ -7,12 +7,17 @@ namespace TileMatcher.App;
 
 /// <summary>
 /// 玩家外围进度存储入口。
-/// 当前使用 user:// 下的 JSON 文件，优先保证可读、可调试、可快速迭代。
+/// 当前使用 `user://` 下的 JSON 文件，优先保证可读、可调试、可快速迭代。
 /// </summary>
 public static class PlayerProgressStore
 {
+    /// <summary>玩家进度 JSON 的固定存档路径。</summary>
     private const string SavePath = "user://player_progress.json";
 
+    /// <summary>
+    /// 读取玩家进度。
+    /// 若文件不存在或解析失败，则自动创建一份默认进度。
+    /// </summary>
     public static PlayerProgressData LoadOrCreate()
     {
         try
@@ -49,6 +54,7 @@ public static class PlayerProgressStore
         }
     }
 
+    /// <summary>将当前玩家进度写回存档。</summary>
     public static void Save(PlayerProgressData data)
     {
         try
@@ -72,6 +78,7 @@ public static class PlayerProgressStore
         }
     }
 
+    /// <summary>兼容旧字段 `LeafCount` 到当前 `CoinCount` 的迁移读取。</summary>
     private static int ResolveCoinCount(string json, int currentCoinCount)
     {
         try

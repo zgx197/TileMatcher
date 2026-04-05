@@ -7,7 +7,12 @@ namespace TileMatcher.Config;
 /// </summary>
 public enum LevelLayoutSourceMode
 {
+    /// <summary>使用内置原型牌桌，主要服务于调试与快速验证。</summary>
     Prototype = 0,
+
+    /// <summary>根据规则档案动态生成一份随机布局。</summary>
     RandomGenerated = 1,
+
+    /// <summary>从离线导出的 JSON 关卡数据中读取正式布局。</summary>
     OfflineJson = 2,
 }

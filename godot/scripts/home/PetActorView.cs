@@ -10,6 +10,7 @@ namespace TileMatcher.Home;
 /// </summary>
 public partial class PetActorView : Control
 {
+    /// <summary>宠物在乐园中的简化生活状态。</summary>
     private enum PetLifeState
     {
         Resting,
@@ -85,6 +86,7 @@ public partial class PetActorView : Control
     /// <summary>气泡动画。</summary>
     private Tween? _bubbleTween;
 
+    /// <summary>初始化节点引用、定时器和默认表现。</summary>
     public override void _Ready()
     {
         CustomMinimumSize = new Vector2(ActorWidth, ActorHeight);
@@ -115,6 +117,7 @@ public partial class PetActorView : Control
         }
     }
 
+    /// <summary>驱动宠物的巡游、漂浮和呼吸动画。</summary>
     public override void _Process(double delta)
     {
         if (_definition is null || _ownedPet is null)
@@ -161,6 +164,7 @@ public partial class PetActorView : Control
         }
     }
 
+    /// <summary>根据当前宠物定义和存档刷新基础视觉。</summary>
     private void RefreshView()
     {
         if (_definition is null || _ownedPet is null)
@@ -176,6 +180,7 @@ public partial class PetActorView : Control
         UpdateBubbleText();
     }
 
+    /// <summary>把当前生活状态同步到文本、目标位置和定时器上。</summary>
     private void ApplyLifeStatePresentation(bool immediate)
     {
         if (_definition is null || _ownedPet is null)
@@ -198,6 +203,7 @@ public partial class PetActorView : Control
         StartNextWanderTimer(immediate);
     }
 
+    /// <summary>状态切换计时结束后切到新的生活状态。</summary>
     private void OnStateTimerTimeout()
     {
         if (_definition is null || _ownedPet is null)
@@ -209,17 +215,20 @@ public partial class PetActorView : Control
         ApplyLifeStatePresentation(immediate: false);
     }
 
+    /// <summary>巡游计时结束后重新挑选移动目标。</summary>
     private void OnWanderTimerTimeout()
     {
         ChooseNextTarget();
         StartNextWanderTimer(initialRefresh: false);
     }
 
+    /// <summary>气泡显示时长结束后隐藏气泡。</summary>
     private void OnBubbleTimerTimeout()
     {
         HideBubble();
     }
 
+    /// <summary>根据父容器尺寸和宠物顺序重新计算摆放位置。</summary>
     private void UpdatePlacementIfNeeded(bool forceReset = false)
     {
         if (GetParent() is not Control parent)
@@ -251,6 +260,7 @@ public partial class PetActorView : Control
         _placementInitialized = true;
     }
 
+    /// <summary>在当前生活状态允许的活动范围内选一个巡游目标点。</summary>
     private void ChooseNextTarget()
     {
         var radius = ResolveRoamingRadius(_currentLifeState);
@@ -261,6 +271,7 @@ public partial class PetActorView : Control
         _targetPosition = ClampToParent(_homePosition + offset);
     }
 
+    /// <summary>把目标位置裁剪到父容器可视范围内。</summary>
     private Vector2 ClampToParent(Vector2 desiredPosition)
     {
         if (GetParent() is not Control parent)
@@ -275,6 +286,7 @@ public partial class PetActorView : Control
             Mathf.Clamp(desiredPosition.Y, 0.0f, maxY));
     }
 
+    /// <summary>根据当前状态刷新气泡文案。</summary>
     private void UpdateBubbleText()
     {
         if (_definition is null)
@@ -285,6 +297,7 @@ public partial class PetActorView : Control
         _bubbleLabel.Text = BuildBubbleText(ResolvePetName(), _currentLifeState);
     }
 
+    /// <summary>播放气泡出现动画。</summary>
     private void ShowBubble()
     {
         _bubbleTween?.Kill();
@@ -302,6 +315,7 @@ public partial class PetActorView : Control
             .SetEase(Tween.EaseType.Out);
     }
 
+    /// <summary>播放气泡消失动画。</summary>
     private void HideBubble()
     {
         _bubbleTween?.Kill();
@@ -316,6 +330,7 @@ public partial class PetActorView : Control
         _bubbleTween.Finished += () => _bubblePanel.Visible = false;
     }
 
+    /// <summary>为下一次状态切换启动计时器。</summary>
     private void StartNextStateTimer(bool initialRefresh)
     {
         var waitTime = initialRefresh
@@ -324,6 +339,7 @@ public partial class PetActorView : Control
         _stateTimer.Start(waitTime);
     }
 
+    /// <summary>为下一次巡游目标切换启动计时器。</summary>
     private void StartNextWanderTimer(bool initialRefresh)
     {
         var waitTime = initialRefresh
@@ -332,11 +348,13 @@ public partial class PetActorView : Control
         _wanderTimer.Start(waitTime);
     }
 
+    /// <summary>为下一次自动收起气泡启动计时器。</summary>
     private void StartNextBubbleTimer()
     {
         _bubbleTimer.Start(_random.RandfRange(2.0f, 3.4f));
     }
 
+    /// <summary>解析当前应展示的宠物名字。</summary>
     private string ResolvePetName()
     {
         if (_ownedPet is null)
@@ -349,6 +367,7 @@ public partial class PetActorView : Control
             : _ownedPet.PetName;
     }
 
+    /// <summary>解析宠物主体颜色，尽量做到同一宠物稳定且彼此有差异。</summary>
     private Color ResolvePetColor()
     {
         if (_ownedPet is null)
@@ -364,6 +383,7 @@ public partial class PetActorView : Control
         return Color.FromHsv(hue, saturation, value, 1.0f);
     }
 
+    /// <summary>根据存档文案和顺序索引推断初始生活状态。</summary>
     private static PetLifeState ResolveInitialState(OwnedPetData ownedPet, int parkIndex)
     {
         var stateText = ownedPet.CurrentParkState ?? string.Empty;
@@ -385,6 +405,7 @@ public partial class PetActorView : Control
         return parkIndex % 2 == 0 ? PetLifeState.Wandering : PetLifeState.Playing;
     }
 
+    /// <summary>随机挑选一个与当前不同的下一状态。</summary>
     private PetLifeState PickNextLifeState(PetLifeState currentState)
     {
         var nextState = currentState;
@@ -396,6 +417,7 @@ public partial class PetActorView : Control
         return nextState;
     }
 
+    /// <summary>根据状态决定宠物允许活动的半径。</summary>
     private Vector2 ResolveRoamingRadius(PetLifeState state)
     {
         return state switch
@@ -407,6 +429,7 @@ public partial class PetActorView : Control
         };
     }
 
+    /// <summary>根据状态决定移动速度。</summary>
     private float ResolveMoveSpeed(PetLifeState state)
     {
         return state switch
@@ -418,12 +441,14 @@ public partial class PetActorView : Control
         };
     }
 
+    /// <summary>拼装状态气泡完整文案。</summary>
     private string BuildBubbleText(string petName, PetLifeState state)
     {
         var action = PickStateText(state);
         return $"{petName}{action}";
     }
 
+    /// <summary>生成写回存档的简短状态文本。</summary>
     private string BuildPersistentStateText(PetLifeState state)
     {
         return state switch
@@ -436,6 +461,7 @@ public partial class PetActorView : Control
         };
     }
 
+    /// <summary>从状态对应的随机文案池中挑一句话。</summary>
     private string PickStateText(PetLifeState state)
     {
         var candidates = state switch
@@ -449,6 +475,7 @@ public partial class PetActorView : Control
         return candidates[_random.RandiRange(0, candidates.Length - 1)];
     }
 
+    /// <summary>创建状态气泡的统一样式。</summary>
     private static StyleBoxFlat CreateBubbleStyle()
     {
         return new StyleBoxFlat
@@ -468,6 +495,7 @@ public partial class PetActorView : Control
         };
     }
 
+    /// <summary>根据主题色创建宠物主体样式。</summary>
     private static StyleBoxFlat CreateBodyStyle(Color baseColor)
     {
         return new StyleBoxFlat

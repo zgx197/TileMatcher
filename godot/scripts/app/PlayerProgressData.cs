@@ -6,11 +6,11 @@ namespace TileMatcher.App;
 /// <summary>
 /// 玩家外围进度数据。
 /// 这里只保存首页、奖励页、救助中心和关卡流转真正需要的最小状态，
-/// 不把单局棋盘内部状态直接混入长期存档。
+/// 不把单局牌桌内部状态直接混入长期存档。
 /// </summary>
 public sealed class PlayerProgressData
 {
-    /// <summary>首页顶部默认显示名，当前用于展示游戏名称。</summary>
+    /// <summary>首页顶部默认显示名，当前用于展示游戏标题。</summary>
     public string PlayerName { get; set; } = "毛球碰碰乐";
 
     /// <summary>外围可消耗资源“金币”的当前数量。</summary>
@@ -31,7 +31,7 @@ public sealed class PlayerProgressData
     /// <summary>累计完成过的关卡局数。</summary>
     public int TotalCompletedLevelCount { get; set; }
 
-    /// <summary>上一回领取每日奖励时对应的日期字符串。</summary>
+    /// <summary>上一次领取每日奖励时对应的日期字符串。</summary>
     public string LastDailyRewardDate { get; set; } = string.Empty;
 
     /// <summary>玩家已经领养的宠物列表。</summary>

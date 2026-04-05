@@ -9,16 +9,34 @@ namespace TileMatcher.Result;
 /// </summary>
 public partial class LevelCompletePage : Control
 {
+    /// <summary>通关页标题。</summary>
     private Label _headlineLabel = null!;
+
+    /// <summary>耗时文本。</summary>
     private Label _timeValueLabel = null!;
+
+    /// <summary>得分文本。</summary>
     private Label _scoreValueLabel = null!;
+
+    /// <summary>配对次数文本。</summary>
     private Label _matchValueLabel = null!;
+
+    /// <summary>每日奖励提示文本。</summary>
     private Label _rewardHintLabel = null!;
+
+    /// <summary>下一关标题文本。</summary>
     private Label _nextLevelLabel = null!;
+
+    /// <summary>下一关摘要文本。</summary>
     private Label _nextLevelSummaryLabel = null!;
+
+    /// <summary>继续按钮。</summary>
     private Button _continueButton = null!;
+
+    /// <summary>返回主页按钮。</summary>
     private Button _homeButton = null!;
 
+    /// <summary>节点 Ready 前暂存的通关结果。</summary>
     private LevelCompleteResult _result = new();
 
     [Signal]
@@ -27,6 +45,7 @@ public partial class LevelCompletePage : Control
     [Signal]
     public delegate void ReturnHomeRequestedEventHandler();
 
+    /// <summary>绑定节点引用并刷新通关页文本。</summary>
     public override void _Ready()
     {
         _headlineLabel = GetNode<Label>("Root/Center/Card/Margin/Stack/Headline");
@@ -44,6 +63,7 @@ public partial class LevelCompletePage : Control
         RefreshTexts();
     }
 
+    /// <summary>写入通关页需要展示的结果数据。</summary>
     public void Configure(LevelCompleteResult result)
     {
         _result = result;
@@ -53,6 +73,7 @@ public partial class LevelCompletePage : Control
         }
     }
 
+    /// <summary>把当前结果刷新到页面控件。</summary>
     private void RefreshTexts()
     {
         _headlineLabel.Text = $"关卡 {_result.LevelNumber} 完成";
@@ -79,11 +100,13 @@ public partial class LevelCompletePage : Control
         _homeButton.Text = "返回主页";
     }
 
+    /// <summary>通知外围流程继续后续流程。</summary>
     private void OnContinuePressed()
     {
         EmitSignal(SignalName.ContinueRequested, _result.NextLevelNumber);
     }
 
+    /// <summary>通知外围流程返回首页。</summary>
     private void OnHomePressed()
     {
         EmitSignal(SignalName.ReturnHomeRequested);

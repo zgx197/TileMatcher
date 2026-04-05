@@ -17,52 +17,87 @@ namespace TileMatcher.App;
 /// </summary>
 public partial class AppRoot : Node
 {
+    /// <summary>默认关卡目录资源路径。</summary>
     private const string DefaultLevelCatalogPath = "res://configs/levels/default_levels.tres";
+    /// <summary>默认规则档案目录路径。</summary>
     private const string DefaultProfileCatalogPath = "res://configs/layout_profiles/default_catalog.tres";
+    /// <summary>默认宠物定义表路径。</summary>
     private const string DefaultPetCatalogPath = "res://configs/pets/pet_definitions.json";
+    /// <summary>首次进入时默认赠送的初始宠物 id。</summary>
     private const string DefaultStarterPetId = "cream_cat";
+    /// <summary>新进度的默认起始金币。</summary>
     private const int DefaultStarterCoinCount = 10;
+    /// <summary>每日首次通关发放的金币数量。</summary>
     private const int DailyRewardCoinCount = 3;
+    /// <summary>救助中心自动刷新的分钟间隔。</summary>
     private const int RescueRefreshMinutes = 10;
+
+    /// <summary>随机昵称可选前缀池。</summary>
     private static readonly string[] PetNamePrefixes = ["小", "奶糖", "糯米", "团子", "布丁", "豆包", "泡芙", "栗栗"];
+    /// <summary>猫类昵称后缀池。</summary>
     private static readonly string[] CatNameSuffixes = ["喵", "球", "酱", "宝", "咪"];
+    /// <summary>狗类昵称后缀池。</summary>
     private static readonly string[] DogNameSuffixes = ["汪", "豆", "宝", "卷", "仔"];
+    /// <summary>兔类昵称后缀池。</summary>
     private static readonly string[] BunnyNameSuffixes = ["兔", "团", "饼", "耳", "啾"];
+    /// <summary>仓鼠类昵称后缀池。</summary>
     private static readonly string[] HamsterNameSuffixes = ["仓", "球", "团", "豆", "粒"];
+    /// <summary>狐狸类昵称后缀池。</summary>
     private static readonly string[] FoxNameSuffixes = ["狐", "尾", "团", "灵", "宝"];
+    /// <summary>未命中特定物种时的默认后缀池。</summary>
     private static readonly string[] DefaultNameSuffixes = ["宝", "团", "球", "仔", "咪"];
 
+    /// <summary>启动页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene BootLoadingPageScene { get; set; } = null!;
 
+    /// <summary>首页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene HomePageScene { get; set; } = null!;
 
+    /// <summary>游戏页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene GamePageScene { get; set; } = null!;
 
+    /// <summary>通关页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene LevelCompletePageScene { get; set; } = null!;
 
+    /// <summary>失败页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene LevelFailedPageScene { get; set; } = null!;
 
+    /// <summary>每日奖励页场景，可在 Inspector 中覆盖。</summary>
     [Export]
     public PackedScene DailyRewardPageScene { get; set; } = null!;
 
+    /// <summary>关卡目录资源。</summary>
     [Export]
     public LevelCatalog LevelCatalog { get; set; } = null!;
 
+    /// <summary>规则档案目录资源。</summary>
     [Export]
     public LayoutProfileCatalog ProfileCatalog { get; set; } = null!;
 
+    /// <summary>当前正在显示的页面节点。</summary>
     private Node? _currentPage;
+
+    /// <summary>当前流程持有的关卡号。</summary>
     private int _currentLevelNumber = 1;
+
+    /// <summary>当前玩家外围进度。</summary>
     private PlayerProgressData _progress = new();
+
+    /// <summary>当前已加载的宠物定义目录。</summary>
     private PetCatalog _petCatalog = PetCatalog.Empty;
+
+    /// <summary>通关后待展示的每日奖励信息。</summary>
     private DailyRewardSummary? _pendingDailyRewardSummary;
+
+    /// <summary>外围流程使用的随机数生成器。</summary>
     private readonly RandomNumberGenerator _random = new();
 
+    /// <summary>初始化外围流程资源、进度和第一页内容。</summary>
     public override void _Ready()
     {
         _random.Randomize();
@@ -83,6 +118,7 @@ public partial class AppRoot : Node
         CallDeferred(MethodName.ApplyMobilePortraitOrientation);
     }
 
+    /// <summary>在安卓设备上尝试锁定为竖屏运行。</summary>
     private void ApplyMobilePortraitOrientation()
     {
         var osName = OS.GetName();
@@ -104,6 +140,7 @@ public partial class AppRoot : Node
         GD.Print($"[AppRoot] 已执行运行时竖屏锁定。before={before}, after={after}");
     }
 
+    /// <summary>显示启动加载页，并等待其完成最短展示时长。</summary>
     private void ShowBootLoadingPage()
     {
         var bootPage = BootLoadingPageScene.Instantiate<BootLoadingPage>();
@@ -116,6 +153,7 @@ public partial class AppRoot : Node
         SwitchToPage(bootPage);
     }
 
+    /// <summary>显示首页，并接通首页发出的流程事件。</summary>
     private void ShowHomePage()
     {
         var homePage = HomePageScene.Instantiate<HomePage>();
@@ -132,6 +170,7 @@ public partial class AppRoot : Node
         SwitchToPage(homePage);
     }
 
+    /// <summary>按照当前进度和宠物状态刷新首页展示内容。</summary>
     private void ConfigureHomePage(HomePage homePage, string rescueFeedback = "")
     {
         var level = GetLevelOrFallback(_currentLevelNumber);
@@ -147,6 +186,7 @@ public partial class AppRoot : Node
             rescueFeedback);
     }
 
+    /// <summary>显示游戏页并启动指定关卡。</summary>
     private void ShowGamePage(int levelNumber)
     {
         var gamePage = GamePageScene.Instantiate<GameScene>();
@@ -164,6 +204,7 @@ public partial class AppRoot : Node
         gamePage.StartLevel(levelNumber);
     }
 
+    /// <summary>显示通关结算页。</summary>
     private void ShowLevelCompletePage(LevelCompleteResult result)
     {
         var completePage = LevelCompletePageScene.Instantiate<LevelCompletePage>();
@@ -174,6 +215,7 @@ public partial class AppRoot : Node
         SwitchToPage(completePage);
     }
 
+    /// <summary>显示失败结算页。</summary>
     private void ShowLevelFailedPage(LevelFailedResult result)
     {
         var failedPage = LevelFailedPageScene.Instantiate<LevelFailedPage>();
@@ -184,6 +226,7 @@ public partial class AppRoot : Node
         SwitchToPage(failedPage);
     }
 
+    /// <summary>显示每日奖励页。</summary>
     private void ShowDailyRewardPage(DailyRewardSummary summary)
     {
         var rewardPage = DailyRewardPageScene.Instantiate<DailyRewardPage>();
@@ -194,6 +237,7 @@ public partial class AppRoot : Node
         SwitchToPage(rewardPage);
     }
 
+    /// <summary>切换当前显示的页面，并释放旧页面。</summary>
     private void SwitchToPage(Node nextPage)
     {
         if (_currentPage is not null)
@@ -206,11 +250,13 @@ public partial class AppRoot : Node
         AddChild(_currentPage);
     }
 
+    /// <summary>启动页播放完成后进入首页。</summary>
     private void OnBootLoadCompleted()
     {
         ShowHomePage();
     }
 
+    /// <summary>响应首页“开始游戏”事件。</summary>
     private void OnStartGameRequested(int levelNumber)
     {
         _currentLevelNumber = Math.Max(1, levelNumber);
@@ -219,6 +265,7 @@ public partial class AppRoot : Node
         ShowGamePage(_currentLevelNumber);
     }
 
+    /// <summary>响应首页打开救助中心面板的请求。</summary>
     private void OnRescuePanelRequested()
     {
         if (_currentPage is not HomePage homePage)
@@ -235,6 +282,7 @@ public partial class AppRoot : Node
         homePage.OpenRescueOverlay();
     }
 
+    /// <summary>强制刷新救助中心内容，并把结果反馈到当前页面。</summary>
     private void OnRefreshRescueCenterRequested()
     {
         EnsureRescueCenterReady(forceRefresh: true);
@@ -255,6 +303,7 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>处理调试面板的加金币请求。</summary>
     private void OnAddCoinRequested(int coinAmount)
     {
         var safeCoinAmount = Math.Max(1, coinAmount);
@@ -274,6 +323,7 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>处理玩家领养救助宠物的请求。</summary>
     private void OnAdoptPetRequested(string petId)
     {
         if (_currentPage is not HomePage homePage)
@@ -319,6 +369,7 @@ public partial class AppRoot : Node
         homePage.OpenRescueOverlay();
     }
 
+    /// <summary>处理单局通关后的外围进度更新和后续流程跳转准备。</summary>
     private void OnLevelCompleted(LevelCompleteResult result)
     {
         var nextLevelNumber = result.LevelNumber + 1;
@@ -362,6 +413,7 @@ public partial class AppRoot : Node
         ShowLevelCompletePage(completeResult);
     }
 
+    /// <summary>处理单局失败后的回退流程。</summary>
     private void OnLevelFailed(LevelFailedResult result)
     {
         _pendingDailyRewardSummary = null;
@@ -371,6 +423,7 @@ public partial class AppRoot : Node
         ShowLevelFailedPage(result);
     }
 
+    /// <summary>响应通关页继续按钮，必要时先转到奖励页。</summary>
     private void OnContinueRequested(int nextLevelNumber)
     {
         if (_pendingDailyRewardSummary is not null)
@@ -387,6 +440,7 @@ public partial class AppRoot : Node
         ShowGamePage(nextLevelNumber);
     }
 
+    /// <summary>响应奖励页继续按钮，直接进入下一关。</summary>
     private void OnDailyRewardContinueRequested(int nextLevelNumber)
     {
         _currentLevelNumber = nextLevelNumber;
@@ -395,6 +449,7 @@ public partial class AppRoot : Node
         ShowGamePage(nextLevelNumber);
     }
 
+    /// <summary>响应失败页重试按钮。</summary>
     private void OnRetryRequested(int levelNumber)
     {
         _pendingDailyRewardSummary = null;
@@ -404,11 +459,13 @@ public partial class AppRoot : Node
         ShowGamePage(_currentLevelNumber);
     }
 
+    /// <summary>统一返回首页。</summary>
     private void OnBackToHomeRequested()
     {
         ShowHomePage();
     }
 
+    /// <summary>响应调试跳关请求，直接进入目标关卡。</summary>
     private void OnDebugLevelJumpRequested(int levelNumber)
     {
         _currentLevelNumber = Math.Max(1, levelNumber);
@@ -417,6 +474,7 @@ public partial class AppRoot : Node
         ShowGamePage(_currentLevelNumber);
     }
 
+    /// <summary>清空指定关卡的辅助资源使用记录。</summary>
     private void OnResetCurrentLevelAssistRequested(int levelNumber)
     {
         var usage = _progress.GetOrCreateLevelAssistUsage(levelNumber);
@@ -425,6 +483,7 @@ public partial class AppRoot : Node
         SaveProgress();
     }
 
+    /// <summary>重置整个外围进度并重新初始化新手状态。</summary>
     private void OnResetProgressRequested()
     {
         GD.Print("[AppRoot] 收到重置账号数据请求，正在清空进度并返回首页。");
@@ -438,6 +497,7 @@ public partial class AppRoot : Node
         ShowHomePage();
     }
 
+    /// <summary>加载关卡目录、规则目录和宠物定义表。</summary>
     private void EnsureCatalogsLoaded()
     {
         LevelCatalog ??= GD.Load<LevelCatalog>(DefaultLevelCatalogPath);
@@ -460,17 +520,20 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>从存档载入外围进度。</summary>
     private void LoadProgress()
     {
         _progress = PlayerProgressStore.LoadOrCreate();
         _currentLevelNumber = Math.Max(1, _progress.CurrentLevelNumber);
     }
 
+    /// <summary>把当前外围进度写回存档。</summary>
     private void SaveProgress()
     {
         PlayerProgressStore.Save(_progress);
     }
 
+    /// <summary>补齐首进游戏所需的默认金币、默认宠物和救助中心状态。</summary>
     private void EnsureStarterProgress()
     {
         if (_progress.CoinCount < DefaultStarterCoinCount
@@ -498,6 +561,7 @@ public partial class AppRoot : Node
         SaveProgress();
     }
 
+    /// <summary>确保所有已领养宠物都有可展示的昵称。</summary>
     private void EnsureOwnedPetNames()
     {
         foreach (var ownedPet in _progress.OwnedPets)
@@ -517,6 +581,7 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>按宠物物种规则生成一个尽量不重复的随机昵称。</summary>
     private string GenerateRandomPetName(PetDefinition definition)
     {
         var suffixes = ResolvePetNameSuffixes(definition);
@@ -532,6 +597,7 @@ public partial class AppRoot : Node
         return $"{GenerateFallbackPetName()}{_progress.OwnedPets.Count + 1}";
     }
 
+    /// <summary>检查当前存档中是否已经存在相同昵称。</summary>
     private bool HasOwnedPetName(string petName)
     {
         foreach (var ownedPet in _progress.OwnedPets)
@@ -550,11 +616,13 @@ public partial class AppRoot : Node
         return false;
     }
 
+    /// <summary>在常规生成失败时给出兜底昵称。</summary>
     private string GenerateFallbackPetName()
     {
         return $"{PetNamePrefixes[_random.RandiRange(0, PetNamePrefixes.Length - 1)]}{DefaultNameSuffixes[_random.RandiRange(0, DefaultNameSuffixes.Length - 1)]}";
     }
 
+    /// <summary>根据宠物定义推断应使用哪组昵称后缀。</summary>
     private static string[] ResolvePetNameSuffixes(PetDefinition definition)
     {
         var petId = definition.PetId?.ToLowerInvariant() ?? string.Empty;
@@ -569,6 +637,7 @@ public partial class AppRoot : Node
         };
     }
 
+    /// <summary>确保救助中心列表处于可展示状态，必要时立即刷新。</summary>
     private bool EnsureRescueCenterReady(bool forceRefresh)
     {
         var beijingNow = GetBeijingNow();
@@ -582,6 +651,7 @@ public partial class AppRoot : Node
         return true;
     }
 
+    /// <summary>判断当前是否已到救助中心刷新窗口。</summary>
     private bool ShouldRefreshRescueCenter(DateTimeOffset beijingNow)
     {
         if (_progress.RescueCenterPetIds.Count == 0)
@@ -597,6 +667,7 @@ public partial class AppRoot : Node
         return beijingNow - lastRefresh >= TimeSpan.FromMinutes(RescueRefreshMinutes);
     }
 
+    /// <summary>重新抽取一批尚未被领养的宠物进入救助中心。</summary>
     private void RefreshRescueCenter(DateTimeOffset beijingNow)
     {
         var candidates = new List<PetDefinition>();
@@ -631,6 +702,7 @@ public partial class AppRoot : Node
         _progress.LastRescueRefreshBeijingTime = beijingNow.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
+    /// <summary>生成救助中心刷新成功后的反馈文案。</summary>
     private string BuildRescueRefreshFeedback()
     {
         var count = _progress.RescueCenterPetIds.Count;
@@ -642,6 +714,7 @@ public partial class AppRoot : Node
         return $"救助中心已按北京时间刷新，本次来了 {count} 只等待救助的小动物。上次刷新时间：{_progress.LastRescueRefreshBeijingTime}。";
     }
 
+    /// <summary>生成尚未到刷新窗口时的说明文案。</summary>
     private string BuildRescueStatusFeedback()
     {
         if (string.IsNullOrWhiteSpace(_progress.LastRescueRefreshBeijingTime))
@@ -652,6 +725,7 @@ public partial class AppRoot : Node
         return $"救助中心尚未到下一个刷新窗口。上次刷新时间：{_progress.LastRescueRefreshBeijingTime}（北京时间）。";
     }
 
+    /// <summary>获取当前北京时间，并兼容不同平台的时区标识。</summary>
     private static DateTimeOffset GetBeijingNow()
     {
         var utcNow = DateTimeOffset.UtcNow;
@@ -675,6 +749,7 @@ public partial class AppRoot : Node
         }
     }
 
+    /// <summary>解析存档中保存的北京时间文本。</summary>
     private static bool TryParseBeijingRefreshTime(string text, out DateTimeOffset timestamp)
     {
         if (DateTimeOffset.TryParse(text, out timestamp))
@@ -692,6 +767,7 @@ public partial class AppRoot : Node
         return false;
     }
 
+    /// <summary>尝试发放当日首次通关奖励。</summary>
     private bool TryGrantDailyReward(out int grantedCoinCount)
     {
         var todayKey = DateTime.Now.ToString("yyyy-MM-dd");
@@ -707,11 +783,13 @@ public partial class AppRoot : Node
         return true;
     }
 
+    /// <summary>按关卡号解析关卡配置，失败时回退到默认关卡。</summary>
     private LevelConfig? GetLevelOrFallback(int levelNumber)
     {
         return LevelCatalog?.ResolveLevelOrFallback(levelNumber);
     }
 
+    /// <summary>生成关卡标题文本。</summary>
     private static string BuildLevelTitle(LevelConfig? level, int fallbackLevelNumber)
     {
         if (level is null)
@@ -724,6 +802,7 @@ public partial class AppRoot : Node
             : level.DisplayName;
     }
 
+    /// <summary>生成首页和结算页会展示的关卡摘要。</summary>
     private string BuildLevelSummary(LevelConfig? level)
     {
         if (level is null)
@@ -745,6 +824,7 @@ public partial class AppRoot : Node
         return $"玩法规则：{profileName} | 当前关卡：{sourceText}";
     }
 
+    /// <summary>把规则档案 id 转成玩家可读名称。</summary>
     private string ResolveProfileDisplayName(string profileId)
     {
         if (ProfileCatalog is null || string.IsNullOrWhiteSpace(profileId))

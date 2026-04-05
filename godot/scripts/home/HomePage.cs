@@ -252,6 +252,7 @@ public partial class HomePage : Control
         UpdateResponsiveLayout();
     }
 
+    /// <summary>监听窗口尺寸变化并重算首页响应式布局。</summary>
     public override void _Notification(int what)
     {
         if (what == NotificationResized && IsNodeReady())
@@ -288,12 +289,14 @@ public partial class HomePage : Control
         }
     }
 
+    /// <summary>打开救助中心弹窗，并确保调试面板处于关闭状态。</summary>
     public void OpenRescueOverlay()
     {
         _debugPanel.ClosePanel();
         _rescueOverlay.Visible = true;
     }
 
+    /// <summary>把共享调试面板裁剪成首页所需的功能集合。</summary>
     private void ConfigureDebugPanel()
     {
         _debugPanel.TitleLabel.Text = "首页调试面板";
@@ -307,6 +310,7 @@ public partial class HomePage : Control
         _debugPanel.ClosePanel();
     }
 
+    /// <summary>把暂存的首页数据刷新到所有控件上。</summary>
     private void RefreshTexts()
     {
         _desktopBrandTitleLabel.Text = _pendingBrandName;
@@ -325,6 +329,7 @@ public partial class HomePage : Control
         UpdateResponsiveLayout();
     }
 
+    /// <summary>根据当前宽度切换桌面/移动布局并同步字号与弹窗宽度。</summary>
     private void UpdateResponsiveLayout()
     {
         var useMobileLayout = Size.X < NarrowWidthBreakpoint;
@@ -355,6 +360,7 @@ public partial class HomePage : Control
         _rescuePanel.OffsetRight = halfWidth;
     }
 
+    /// <summary>重建宠物乐园区域的宠物组件列表。</summary>
     private void RefreshPetPark()
     {
         ClearChildren(_petParkList);
@@ -386,6 +392,7 @@ public partial class HomePage : Control
         }
     }
 
+    /// <summary>刷新救助中心弹窗中的摘要和卡片列表。</summary>
     private void RefreshRescuePanel()
     {
         var adoptedCount = _pendingOwnedPets.Count;
@@ -415,6 +422,7 @@ public partial class HomePage : Control
         }
     }
 
+    /// <summary>为一只待救助宠物构造一张可交互卡片。</summary>
     private Control CreateRescueCard(PetDefinition definition)
     {
         var panel = new PanelContainer();
@@ -502,6 +510,7 @@ public partial class HomePage : Control
         return panel;
     }
 
+    /// <summary>判断首页暂存数据中是否已领养某只宠物。</summary>
     private bool HasAdoptedPet(string petId)
     {
         foreach (var ownedPet in _pendingOwnedPets)
@@ -515,6 +524,7 @@ public partial class HomePage : Control
         return false;
     }
 
+    /// <summary>按 id 解析宠物定义，缺失时返回可展示的兜底定义。</summary>
     private PetDefinition ResolvePetDefinition(string petId)
     {
         foreach (var definition in _pendingPetDefinitions)
@@ -536,6 +546,7 @@ public partial class HomePage : Control
         };
     }
 
+    /// <summary>根据宠物主题色创建救助卡片的样式。</summary>
     private static StyleBoxFlat CreateCardStyle(string colorHex)
     {
         var baseColor = Color.FromString(colorHex, new Color(0.92f, 0.85f, 0.72f, 1.0f));
@@ -556,6 +567,7 @@ public partial class HomePage : Control
         };
     }
 
+    /// <summary>清空某个容器下的全部子节点。</summary>
     private static void ClearChildren(Node parent)
     {
         foreach (Node child in parent.GetChildren())
@@ -565,28 +577,33 @@ public partial class HomePage : Control
         }
     }
 
+    /// <summary>统一关闭首页当前可见的弹窗。</summary>
     private void CloseAllModals()
     {
         _rescueOverlay.Visible = false;
         _debugPanel.ClosePanel();
     }
 
+    /// <summary>转发打开救助面板请求给外围流程。</summary>
     private void OnRescuePressed()
     {
         EmitSignal(SignalName.RescuePanelRequested);
     }
 
+    /// <summary>关闭救助中心弹窗。</summary>
     private void OnRescueClosePressed()
     {
         _rescueOverlay.Visible = false;
     }
 
+    /// <summary>关闭首页弹窗并进入当前选中的关卡。</summary>
     private void OnStartPressed()
     {
         CloseAllModals();
         EmitSignal(SignalName.StartGameRequested, _levelNumber);
     }
 
+    /// <summary>打开首页调试面板。</summary>
     private void OnDebugPressed()
     {
         _rescueOverlay.Visible = false;
@@ -594,6 +611,7 @@ public partial class HomePage : Control
         _debugPanel.SetJumpLevel(_levelNumber);
     }
 
+    /// <summary>读取调试输入框并发出跳关请求。</summary>
     private void OnJumpLevelPressed()
     {
         var targetLevel = Mathf.Max(1, Mathf.RoundToInt((float)_jumpLevelInput.Value));
@@ -601,11 +619,13 @@ public partial class HomePage : Control
         EmitSignal(SignalName.DebugLevelJumpRequested, targetLevel);
     }
 
+    /// <summary>发出立即刷新救助中心请求。</summary>
     private void OnRefreshRescueCenterPressed()
     {
         EmitSignal(SignalName.RefreshRescueCenterRequested);
     }
 
+    /// <summary>读取金币输入框并发出加金币请求。</summary>
     private void OnAddCoinPressed()
     {
         var coinAmount = Mathf.Max(1, Mathf.RoundToInt((float)_addCoinInput.Value));
@@ -613,6 +633,7 @@ public partial class HomePage : Control
         EmitSignal(SignalName.AddCoinRequested, coinAmount);
     }
 
+    /// <summary>重置当前调试关卡的辅助次数。</summary>
     private void OnResetCurrentLevelAssistPressed()
     {
         var targetLevel = Mathf.Max(1, Mathf.RoundToInt((float)_jumpLevelInput.Value));
@@ -620,11 +641,13 @@ public partial class HomePage : Control
         EmitSignal(SignalName.ResetCurrentLevelAssistRequested, targetLevel);
     }
 
+    /// <summary>转发重置整个账号进度的请求。</summary>
     private void OnResetProgressPressed()
     {
         EmitSignal(SignalName.ResetProgressRequested);
     }
 
+    /// <summary>关闭首页调试面板。</summary>
     private void OnDebugClosePressed()
     {
         _debugPanel.ClosePanel();

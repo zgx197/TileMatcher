@@ -66,6 +66,7 @@ public sealed class TileData
     /// <summary>运行时是否可移动，供交互层和调试摘要直接读取。</summary>
     public bool Movable { get; set; }
 
+    /// <summary>是否以背面朝下状态进入本局，用于背面牌玩法链路。</summary>
     public bool FaceHiddenInitial { get; init; }
 
     /// <summary>背面牌当前所处的运行时状态。</summary>
