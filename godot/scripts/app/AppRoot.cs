@@ -5,6 +5,7 @@ using TileMatcher.Boot;
 using TileMatcher.Config;
 using TileMatcher.Game;
 using TileMatcher.Home;
+using TileMatcher.Logging;
 using TileMatcher.Pets;
 using TileMatcher.Result;
 
@@ -124,20 +125,20 @@ public partial class AppRoot : Node
         var osName = OS.GetName();
         if (osName != "Android")
         {
-            GD.Print($"[AppRoot] 非安卓平台，跳过运行时竖屏锁定。system={osName}");
+            RuntimeLog.Info("AppRoot", $"非安卓平台，跳过运行时竖屏锁定。system={osName}");
             return;
         }
 
         if (!DisplayServer.HasFeature(DisplayServer.Feature.Orientation))
         {
-            GD.Print("[AppRoot] 当前平台不支持运行时方向控制，无法调用 ScreenSetOrientation。");
+            RuntimeLog.Info("AppRoot", "当前平台不支持运行时方向控制，无法调用 ScreenSetOrientation。");
             return;
         }
 
         var before = DisplayServer.ScreenGetOrientation();
         DisplayServer.ScreenSetOrientation(DisplayServer.ScreenOrientation.Portrait);
         var after = DisplayServer.ScreenGetOrientation();
-        GD.Print($"[AppRoot] 已执行运行时竖屏锁定。before={before}, after={after}");
+        RuntimeLog.Info("AppRoot", $"已执行运行时竖屏锁定。before={before}, after={after}");
     }
 
     /// <summary>显示启动加载页，并等待其完成最短展示时长。</summary>
@@ -486,7 +487,7 @@ public partial class AppRoot : Node
     /// <summary>重置整个外围进度并重新初始化新手状态。</summary>
     private void OnResetProgressRequested()
     {
-        GD.Print("[AppRoot] 收到重置账号数据请求，正在清空进度并返回首页。");
+        RuntimeLog.Warn("AppRoot", "收到重置账号数据请求，正在清空进度并返回首页。");
         _progress = new PlayerProgressData();
         EnsureStarterProgress();
         _pendingDailyRewardSummary = null;
@@ -506,17 +507,17 @@ public partial class AppRoot : Node
 
         if (LevelCatalog is null)
         {
-            GD.PushError($"[AppRoot] 无法加载关卡目录: {DefaultLevelCatalogPath}");
+            RuntimeLog.Error("AppRoot", $"无法加载关卡目录: {DefaultLevelCatalogPath}");
         }
 
         if (ProfileCatalog is null)
         {
-            GD.PushError($"[AppRoot] 无法加载规则目录: {DefaultProfileCatalogPath}");
+            RuntimeLog.Error("AppRoot", $"无法加载规则目录: {DefaultProfileCatalogPath}");
         }
 
         if (_petCatalog.Definitions.Count == 0)
         {
-            GD.PushWarning($"[AppRoot] 宠物定义表为空: {DefaultPetCatalogPath}");
+            RuntimeLog.Warn("AppRoot", $"宠物定义表为空: {DefaultPetCatalogPath}");
         }
     }
 

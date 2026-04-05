@@ -2,22 +2,18 @@ using System;
 using System.IO;
 using System.Text.Json;
 using Godot;
+using TileMatcher.Logging;
 
 namespace TileMatcher.App;
 
 /// <summary>
-/// 玩家外围进度存储入口。
-/// 当前使用 `user://` 下的 JSON 文件，优先保证可读、可调试、可快速迭代。
+/// 玩家外部进度存储入口。
+/// 当前使用 `user://player_progress.json` 作为本地 JSON 存档。
 /// </summary>
 public static class PlayerProgressStore
 {
-    /// <summary>玩家进度 JSON 的固定存档路径。</summary>
     private const string SavePath = "user://player_progress.json";
 
-    /// <summary>
-    /// 读取玩家进度。
-    /// 若文件不存在或解析失败，则自动创建一份默认进度。
-    /// </summary>
     public static PlayerProgressData LoadOrCreate()
     {
         try
@@ -27,6 +23,7 @@ public static class PlayerProgressStore
             {
                 var fresh = new PlayerProgressData();
                 Save(fresh);
+                RuntimeLog.Info("PlayerProgressStore", $"未找到存档，已创建默认进度: {absolutePath}");
                 return fresh;
             }
 
@@ -36,6 +33,7 @@ public static class PlayerProgressStore
             {
                 var fallback = new PlayerProgressData();
                 Save(fallback);
+                RuntimeLog.Warn("PlayerProgressStore", $"存档反序列化结果为空，已回退默认进度: {absolutePath}");
                 return fallback;
             }
 
@@ -45,16 +43,16 @@ public static class PlayerProgressStore
             data.OwnedPets ??= [];
             data.RescueCenterPetIds ??= [];
             data.LevelAssistUsageByLevel ??= [];
+            RuntimeLog.Info("PlayerProgressStore", $"已加载玩家进度: {absolutePath}");
             return data;
         }
         catch (Exception exception)
         {
-            GD.PushWarning($"[PlayerProgressStore] 读取进度失败，已回退默认数据: {exception.Message}");
+            RuntimeLog.Warn("PlayerProgressStore", $"读取进度失败，已回退默认数据: {exception.Message}");
             return new PlayerProgressData();
         }
     }
 
-    /// <summary>将当前玩家进度写回存档。</summary>
     public static void Save(PlayerProgressData data)
     {
         try
@@ -71,14 +69,14 @@ public static class PlayerProgressStore
                 WriteIndented = true,
             });
             File.WriteAllText(absolutePath, json);
+            RuntimeLog.Info("PlayerProgressStore", $"已保存玩家进度: {absolutePath}");
         }
         catch (Exception exception)
         {
-            GD.PushWarning($"[PlayerProgressStore] 保存进度失败: {exception.Message}");
+            RuntimeLog.Warn("PlayerProgressStore", $"保存进度失败: {exception.Message}");
         }
     }
 
-    /// <summary>兼容旧字段 `LeafCount` 到当前 `CoinCount` 的迁移读取。</summary>
     private static int ResolveCoinCount(string json, int currentCoinCount)
     {
         try

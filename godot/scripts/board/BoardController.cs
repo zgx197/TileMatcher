@@ -6,6 +6,7 @@ using TileMatcher.Config;
 using TileMatcher.Data;
 using TileMatcher.Grid;
 using TileMatcher.Layout;
+using TileMatcher.Logging;
 using TileMatcher.Tile;
 using AppTileData = TileMatcher.Data.TileData;
 
@@ -365,7 +366,7 @@ public partial class BoardController : Node2D
         var profile = FindProfile(profileId);
         if (profile is null)
         {
-            GD.PushWarning($"[BoardController] 未找到规则档案: {profileId}");
+            RuntimeLog.Warn("BoardController", $"未找到规则档案: {profileId}");
             return;
         }
 
@@ -443,7 +444,7 @@ public partial class BoardController : Node2D
         var validation = LayoutValidator.Validate(layout, _layoutRules);
         if (!validation.IsValid)
         {
-            GD.PushError($"[BoardController] 布局违反业务规则: {string.Join(" | ", validation.Errors)}");
+            RuntimeLog.Error("BoardController", $"布局违反业务规则: {string.Join(" | ", validation.Errors)}");
         }
 
         var existingChildren = new List<Node>();
@@ -1384,7 +1385,7 @@ public partial class BoardController : Node2D
         ProfileCatalog = GD.Load<LayoutProfileCatalog>(DefaultCatalogPath);
         if (ProfileCatalog is null)
         {
-            GD.PushError($"[BoardController] 无法加载默认档案目录: {DefaultCatalogPath}");
+            RuntimeLog.Error("BoardController", $"无法加载默认档案目录: {DefaultCatalogPath}");
         }
     }
 
@@ -1404,7 +1405,7 @@ public partial class BoardController : Node2D
         MatchFeedbackConfig = GD.Load<MatchFeedbackConfig>(DefaultMatchFeedbackPath);
         if (MatchFeedbackConfig is null)
         {
-            GD.PushWarning($"[BoardController] 无法加载默认消除反馈配置，使用运行时默认值: {DefaultMatchFeedbackPath}");
+            RuntimeLog.Warn("BoardController", $"无法加载默认消除反馈配置，使用运行时默认值: {DefaultMatchFeedbackPath}");
             MatchFeedbackConfig = new MatchFeedbackConfig();
         }
 
@@ -1448,7 +1449,7 @@ public partial class BoardController : Node2D
     /// <summary>统一输出棋盘相关日志。</summary>
     private static void LogBoard(string message)
     {
-        GD.Print($"[BoardController] {message}");
+        RuntimeLog.Info("BoardController", message);
     }
 
     /// <summary>构造适合日志输出的牌摘要。</summary>

@@ -41,7 +41,7 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_overlaymask")
 
 [node name="Panel" type="PanelContainer" parent="."]
-custom_minimum_size = Vector2(0, 560)
+custom_minimum_size = Vector2(0, 760)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -49,9 +49,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -300.0
-offset_top = -250.0
+offset_top = -340.0
 offset_right = 300.0
-offset_bottom = 170.0
+offset_bottom = 340.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
@@ -113,6 +113,70 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Debug Info"
 autowrap_mode = 2
+
+[node name="LogSection" type="VBoxContainer" parent="Panel/Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LogTitle" type="Label" parent="Panel/Margin/Stack/LogSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Runtime Logs"
+
+[node name="LogPathLabel" type="Label" parent="Panel/Margin/Stack/LogSection"]
+layout_mode = 2
+text = "Log Directory"
+autowrap_mode = 2
+
+[node name="LogSummaryLabel" type="Label" parent="Panel/Margin/Stack/LogSection"]
+layout_mode = 2
+text = "Preview latest runtime logs."
+autowrap_mode = 2
+
+[node name="LogButtonsRow" type="HBoxContainer" parent="Panel/Margin/Stack/LogSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RefreshLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Refresh"
+
+[node name="ShowLatestLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Latest"
+
+[node name="ShowErrorLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Errors"
+
+[node name="CopyLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Copy"
+
+[node name="ClearLogsButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Clear"
+
+[node name="OpenLogDirectoryButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open Dir"
+
+[node name="LogPreview" type="TextEdit" parent="Panel/Margin/Stack/LogSection"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="LayerInspector" type="VBoxContainer" parent="Panel/Margin/Stack"]
 layout_mode = 2
