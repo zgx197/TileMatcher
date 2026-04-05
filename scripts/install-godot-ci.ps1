@@ -104,14 +104,15 @@ if ($null -eq $versionFile) {
     throw "Godot export templates version file not found under: $templatesExtractRoot"
 }
 $versionFilePath = $versionFile.FullName
+$templatesContentRoot = Split-Path -LiteralPath $versionFilePath -Parent
 
 $versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
 $exportTemplatesRoot = Join-Path $exportTemplatesParentRoot $versionFileContent
-Install-TemplatesDirectory -SourceRoot $templatesExtractRoot -DestinationRoot $exportTemplatesRoot
+Install-TemplatesDirectory -SourceRoot $templatesContentRoot -DestinationRoot $exportTemplatesRoot
 
 $monoAliasTemplatesRoot = Join-Path $exportTemplatesParentRoot $godotVersionLabel
 if ($versionFileContent -ne $godotVersionLabel) {
-    Install-TemplatesDirectory -SourceRoot $templatesExtractRoot -DestinationRoot $monoAliasTemplatesRoot
+    Install-TemplatesDirectory -SourceRoot $templatesContentRoot -DestinationRoot $monoAliasTemplatesRoot
 }
 
 Write-Host ""
