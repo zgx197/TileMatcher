@@ -45,6 +45,22 @@ function Expand-ZipArchive {
     Expand-Archive -LiteralPath $ArchivePath -DestinationPath $DestinationPath -Force
 }
 
+function Install-TemplatesDirectory {
+    param(
+        [string]$SourceRoot,
+        [string]$DestinationRoot
+    )
+
+    if (Test-Path -LiteralPath $DestinationRoot) {
+        Remove-Item -LiteralPath $DestinationRoot -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Path $DestinationRoot -Force | Out-Null
+    Get-ChildItem -LiteralPath $SourceRoot -Force | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $DestinationRoot -Recurse -Force
+    }
+}
+
 $releaseTag = "$Version-$ReleaseStatus"
 $godotVersionLabel = "$Version.$ReleaseStatus.mono"
 $editorArchiveName = "Godot_v$Version-$ReleaseStatus" + "_mono_win64.zip"
@@ -91,20 +107,16 @@ $versionFilePath = $versionFile.FullName
 
 $versionFileContent = (Get-Content -LiteralPath $versionFilePath -Raw -Encoding UTF8).Trim()
 $exportTemplatesRoot = Join-Path $exportTemplatesParentRoot $versionFileContent
-if (Test-Path -LiteralPath $exportTemplatesRoot) {
-    Remove-Item -LiteralPath $exportTemplatesRoot -Recurse -Force
-}
-
-New-Item -ItemType Directory -Path $exportTemplatesRoot -Force | Out-Null
-Get-ChildItem -LiteralPath $templatesExtractRoot -Force | ForEach-Object {
-    Copy-Item -LiteralPath $_.FullName -Destination $exportTemplatesRoot -Recurse -Force
-}
+Install-TemplatesDirectory -SourceRoot $templatesExtractRoot -DestinationRoot $exportTemplatesRoot
 
 $monoAliasTemplatesRoot = Join-Path $exportTemplatesParentRoot $godotVersionLabel
-if (($versionFileContent -ne $godotVersionLabel) -and (-not (Test-Path -LiteralPath $monoAliasTemplatesRoot))) {
-    cmd /c mklink /J "$monoAliasTemplatesRoot" "$exportTemplatesRoot" | Out-Null
+if ($versionFileContent -ne $godotVersionLabel) {
+    Install-TemplatesDirectory -SourceRoot $templatesExtractRoot -DestinationRoot $monoAliasTemplatesRoot
 }
 
 Write-Host ""
 Write-Host "Godot executable: $godotExePath" -ForegroundColor Green
 Write-Host "Godot templates: $exportTemplatesRoot" -ForegroundColor Green
+if ($versionFileContent -ne $godotVersionLabel) {
+    Write-Host "Godot mono templates: $monoAliasTemplatesRoot" -ForegroundColor Green
+}
