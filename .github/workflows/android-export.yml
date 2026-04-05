@@ -239,6 +239,11 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
       - name: Set up Android SDK
         if: matrix.target == 'android'
         uses: android-actions/setup-android@v3
@@ -332,6 +337,13 @@ jobs:
 
           "path=$($godotExe.FullName)" >> $env:GITHUB_OUTPUT
 
+      - name: Preflight Windows .NET build
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          dotnet --info
+          dotnet build "godot/TileMatcher.sln"
+
       - name: Export Android APK
         if: matrix.target == 'android'
         shell: pwsh
@@ -400,6 +412,33 @@ jobs:
           finally {
             $archive.Dispose()
           }
+
+      - name: Collect Godot Mono build logs
+        if: failure() && matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          $buildLogRoot = Join-Path $env:APPDATA "Godot\mono\build_logs"
+          if (-not (Test-Path -LiteralPath $buildLogRoot)) {
+            Write-Host "Godot Mono build log directory not found: $buildLogRoot"
+            exit 0
+          }
+
+          $outputRoot = "godot-mono-build-logs"
+          New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
+
+          Get-ChildItem -LiteralPath $buildLogRoot -Recurse -File -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              $destinationPath = Join-Path $outputRoot $_.Name
+              Copy-Item -LiteralPath $_.FullName -Destination $destinationPath -Force
+            }
+
+      - name: Upload Godot Mono build logs
+        if: failure() && matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-mono-build-logs-windows-${{ needs.metadata.outputs.version_name }}
+          path: godot-mono-build-logs
+          if-no-files-found: warn
 
       - name: Collect artifact metadata
         id: artifact
