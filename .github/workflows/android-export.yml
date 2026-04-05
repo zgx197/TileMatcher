@@ -245,6 +245,7 @@ jobs:
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
+          dotnet-version: 9.0.202
           global-json-file: global.json
 
       - name: Set up Android SDK
