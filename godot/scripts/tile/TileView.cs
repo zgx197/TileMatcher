@@ -144,6 +144,7 @@ public partial class TileView : Node2D
         QueueRedraw();
     }
 
+    /// <summary>切换当前牌是否以正面朝上显示。</summary>
     public void SetFaceUpState(bool isFaceUp)
     {
         EnsureInitialized();
@@ -385,6 +386,7 @@ public partial class TileView : Node2D
         _initialized = true;
     }
 
+    /// <summary>按当前交互状态和背面状态绘制整张牌。</summary>
     public override void _Draw()
     {
         // 数据尚未绑定时退回标准牌尺寸，避免编辑器或初始化阶段绘制崩溃。
@@ -463,6 +465,7 @@ public partial class TileView : Node2D
         }
     }
 
+    /// <summary>计算一条对角线在矩形内部可见的裁剪线段。</summary>
     private static bool TryGetClippedDiagonalSegment(Rect2 rect, float diagonalSum, out Vector2 start, out Vector2 end)
     {
         var points = new List<Vector2>(4);
@@ -483,6 +486,7 @@ public partial class TileView : Node2D
         return true;
     }
 
+    /// <summary>尝试把矩形边界内且不重复的交点加入集合。</summary>
     private static void TryAddPoint(List<Vector2> points, Rect2 rect, Vector2 candidate)
     {
         const float epsilon = 0.01f;
@@ -507,6 +511,7 @@ public partial class TileView : Node2D
         points.Add(candidate);
     }
 
+    /// <summary>根据选中、提示、可移动和背面状态刷新样式参数。</summary>
     private void RefreshVisualState()
     {
         var layer = Data?.GZ ?? 0;

@@ -7,6 +7,9 @@ param(
     [string]$OutputName
 )
 
+# Web 导出脚本。
+# 当前项目是 Godot C# 工程，因此这里只保留显式阻断和说明，
+# 避免 CI 或本地误以为可以正常产出 Web 版本。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -42,6 +45,7 @@ Requested artifact name:
 $GodotExe = Resolve-GodotExe -GodotExe $GodotExe
 Update-ProjectBuildMetadata -ProjectDir $ProjectDir -VersionName $VersionName
 
+# 如果未来项目不再依赖 C#，这里会沿用和 Windows 类似的暂存目录打包方式。
 $outputDir = Join-Path $ProjectDir "build/web"
 $stagingDir = Join-Path $outputDir "_staging"
 $artifactPath = Join-Path $outputDir $OutputName

@@ -10,9 +10,12 @@ param(
     [string]$SettingsPath = (Join-Path $env:APPDATA "Godot\editor_settings-4.6.tres")
 )
 
+# 生成 Godot 编辑器导出所需的 Android 编辑器设置文件。
+# 主要用于 CI 或新环境快速落一份最小可用配置。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# 把 Windows 路径转换成 Godot 配置文件可安全写入的字符串字面量。
 function Convert-ToGodotStringLiteral {
     param([string]$Value)
 

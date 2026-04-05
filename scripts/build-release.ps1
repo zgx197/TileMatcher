@@ -16,6 +16,8 @@ param(
     [switch]$SkipSigning
 )
 
+# 三平台统一构建入口。
+# 负责解析版本与目标参数，调用各平台脚本，并输出统一的产物摘要。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -137,6 +139,7 @@ foreach ($target in $resolvedTargets) {
     }
 }
 
+# 汇总本次构建成功产物，便于本地和 CI 统一读取。
 Write-Step "Build summary"
 Write-Host "Version: $VersionName" -ForegroundColor DarkGray
 Write-Host "Targets: $($resolvedTargets -join ', ')" -ForegroundColor DarkGray

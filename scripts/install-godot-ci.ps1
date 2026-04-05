@@ -7,15 +7,19 @@ param(
     [string]$AppDataRoot = $env:APPDATA
 )
 
+# CI 环境中的 Godot 安装脚本。
+# 负责下载指定版本编辑器和导出模板，并把模板安装到 Godot 约定目录。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# 输出标准化步骤标题，方便 Actions 日志检索。
 function Write-Step {
     param([string]$Message)
     Write-Host ""
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
+# 下载文件到缓存目录，已存在时直接复用。
 function Get-DownloadFile {
     param(
         [string]$Url,
@@ -31,6 +35,7 @@ function Get-DownloadFile {
     Invoke-WebRequest -Uri $Url -OutFile $Path
 }
 
+# 解压 zip/tpz 到指定目录，导出模板安装也复用这条逻辑。
 function Expand-ZipArchive {
     param(
         [string]$ArchivePath,
@@ -45,6 +50,7 @@ function Expand-ZipArchive {
     Expand-Archive -LiteralPath $ArchivePath -DestinationPath $DestinationPath -Force
 }
 
+# 把模板目录完整复制到 Godot 的 export_templates 目标目录。
 function Install-TemplatesDirectory {
     param(
         [string]$SourceRoot,

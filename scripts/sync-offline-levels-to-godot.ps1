@@ -3,6 +3,8 @@ param(
     [string]$TargetDir = "godot\generated\runtime-levels"
 )
 
+# 把离线导出的关卡 JSON 同步到 Godot 工程可读取目录。
+# 该脚本会清理目标 levels 目录中的旧 JSON，保证 Godot 侧只看到本次同步结果。
 $ErrorActionPreference = "Stop"
 
 $repoRoot = [System.IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))

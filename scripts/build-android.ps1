@@ -18,6 +18,8 @@ param(
     [switch]$SkipSigning
 )
 
+# Android 导出与签名脚本。
+# 负责同步版本元数据、准备 Godot Android 模板资源、执行导出并完成签名校验。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 # We handle native process exit codes explicitly because:
@@ -31,6 +33,7 @@ function Write-Step {
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
+# 解析脚本目录，兼容直接执行和被其他脚本调用两种模式。
 function Get-ScriptRoot {
     if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
         return $PSScriptRoot
@@ -43,6 +46,7 @@ function Get-ScriptRoot {
     throw "Unable to resolve script root."
 }
 
+# 断言关键路径存在，否则尽早失败。
 function Assert-PathExists {
     param(
         [string]$Path,
@@ -54,6 +58,7 @@ function Assert-PathExists {
     }
 }
 
+# 用正则同步替换配置文件中的单个键值。
 function Set-RegexValue {
     param(
         [string]$Path,
@@ -81,6 +86,7 @@ function Set-RegexValue {
     [System.IO.File]::WriteAllText($Path, $updated, $utf8NoBom)
 }
 
+# 以 UTF-8 无 BOM 写文件，避免 Godot/Gradle 解析到 BOM。
 function Write-Utf8NoBomFile {
     param(
         [string]$Path,
@@ -96,6 +102,7 @@ function Write-Utf8NoBomFile {
     [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
 }
 
+# 从 project.godot 中读取应用显示名称。
 function Get-ProjectDisplayName {
     param([string]$ProjectDir)
 
@@ -115,6 +122,7 @@ function Get-ProjectDisplayName {
     return $match.Groups[1].Value
 }
 
+# 在导出模板目录下定位最新的 `android_source.zip`。
 function Resolve-GodotAndroidSourceArchive {
     $exportTemplatesRoot = Join-Path $env:APPDATA "Godot\export_templates"
     Assert-PathExists -Path $exportTemplatesRoot -Label "Godot export templates directory"
@@ -130,6 +138,7 @@ function Resolve-GodotAndroidSourceArchive {
     return $archive.FullName
 }
 
+# 从 zip 模板中解压单个条目到目标位置。
 function Expand-ZipEntryToFile {
     param(
         [System.IO.Compression.ZipArchive]$Archive,
@@ -162,6 +171,7 @@ function Expand-ZipEntryToFile {
     }
 }
 
+# 确保 Android 导出模板里的 AAR 已经落到项目所需位置。
 function Ensure-GodotAndroidTemplateAars {
     param([string]$ProjectDir)
 
@@ -199,6 +209,7 @@ function Ensure-GodotAndroidTemplateAars {
     }
 }
 
+# 生成 Android 模板在干净环境中缺失的最小资源文件。
 function Ensure-AndroidExportResources {
     param(
         [string]$ProjectDir,
@@ -255,6 +266,7 @@ function Ensure-AndroidExportResources {
     Write-Utf8NoBomFile -Path $iconBackgroundPath -Content $iconBackgroundXml
 }
 
+# 解析 Android SDK 中可用的最新 build-tools 目录。
 function Resolve-BuildTool {
     param([string]$AndroidSdkRoot)
 
@@ -272,6 +284,7 @@ function Resolve-BuildTool {
     return $latest.FullName
 }
 
+# 统一读取原生命令退出码，避免不同调用路径下行为不一致。
 function Get-NativeExitCode {
     $lastExitCodeVariable = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
     if ($null -eq $lastExitCodeVariable) {
@@ -281,6 +294,7 @@ function Get-NativeExitCode {
     return [int]$lastExitCodeVariable.Value
 }
 
+# 输出日志文件尾部摘要，便于 CI 快速定位失败点。
 function Write-LogExcerpt {
     param(
         [string]$Path,

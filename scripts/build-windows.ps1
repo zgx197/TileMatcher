@@ -7,6 +7,8 @@ param(
     [string]$OutputName
 )
 
+# Windows 桌面版导出脚本。
+# 负责导出免安装目录、压缩为 zip，并输出 SHA256 文件。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -26,6 +28,7 @@ if ([string]::IsNullOrWhiteSpace($OutputName)) {
 
 Update-ProjectBuildMetadata -ProjectDir $ProjectDir -VersionName $VersionName
 
+# 先把导出落到暂存目录，再统一打包，避免把无关文件混进最终产物。
 $outputDir = Join-Path $ProjectDir "build/windows"
 $stagingDir = Join-Path $outputDir "_staging"
 $artifactPath = Join-Path $outputDir $OutputName

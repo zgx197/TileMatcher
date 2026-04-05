@@ -7,13 +7,17 @@ param(
     [switch]$UseMsBuild
 )
 
+# Godot / .NET 诊断日志抓取脚本。
+# 统一收集 headless 运行日志、dotnet 构建日志，以及可选的编辑器和运行时日志。
 $ErrorActionPreference = 'Stop'
 
+# 构造摘要分节标题，便于最终 summary.txt 阅读。
 function Write-Section {
     param([string]$Title)
     "`n===== $Title =====`n"
 }
 
+# 探测命令是否在 PATH 中可用，主要用于可选的 MSBuild 分支。
 function Resolve-OptionalCommand {
     param([string]$Name)
 
@@ -26,6 +30,7 @@ function Resolve-OptionalCommand {
     }
 }
 
+# 从日志目录复制最近若干文件到诊断输出目录。
 function Copy-RecentFiles {
     param(
         [Parameter(Mandatory = $true)]

@@ -1,3 +1,6 @@
+# 公共构建辅助函数。
+# 统一提供路径解析、Godot 导出、产物打包和元数据同步等基础能力，
+# 让各平台脚本只关注各自差异。
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -10,6 +13,7 @@ function Write-Step {
     Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
+# 解析当前脚本所在目录，兼容被 dot-source 或直接执行两种调用方式。
 function Get-ScriptRoot {
     if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
         return $PSScriptRoot
@@ -22,11 +26,13 @@ function Get-ScriptRoot {
     throw "Unable to resolve script root."
 }
 
+# 解析仓库根目录。
 function Get-RepoRoot {
     $scriptRoot = Get-ScriptRoot
     return Split-Path -Parent $scriptRoot
 }
 
+# 解析 Godot 工程目录，未显式传参时默认落到仓库内 `godot/`。
 function Resolve-ProjectDir {
     param([string]$ProjectDir)
 
@@ -37,6 +43,7 @@ function Resolve-ProjectDir {
     return (Join-Path (Get-RepoRoot) "godot")
 }
 
+# 解析 Godot 可执行文件路径，优先级为显式参数、环境变量、默认本地路径。
 function Resolve-GodotExe {
     param([string]$GodotExe)
 
@@ -52,6 +59,7 @@ function Resolve-GodotExe {
     return $GodotExe
 }
 
+# 断言目标路径存在，不存在时给出带语义标签的错误。
 function Assert-PathExists {
     param(
         [string]$Path,
@@ -63,6 +71,7 @@ function Assert-PathExists {
     }
 }
 
+# 如果路径存在则删除，供导出前清理旧产物使用。
 function Remove-PathIfExists {
     param([string]$Path)
 
@@ -71,6 +80,7 @@ function Remove-PathIfExists {
     }
 }
 
+# 重建目录，确保目录内容是全新的。
 function Reset-Directory {
     param([string]$Path)
 
@@ -78,6 +88,7 @@ function Reset-Directory {
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
 }
 
+# 用正则精确替换配置文件中的单个键值，避免手写整文件模板。
 function Set-RegexValue {
     param(
         [string]$Path,
@@ -101,6 +112,7 @@ function Set-RegexValue {
     [System.IO.File]::WriteAllText($Path, $updated, $utf8NoBom)
 }
 
+# 从 `project.godot` 提取当前构建需要的项目元数据。
 function Get-ProjectMetadata {
     param([string]$ProjectDir)
 
@@ -144,6 +156,7 @@ function Get-ProjectMetadata {
     }
 }
 
+# 统一回写版本号、包名和方向设置，保证脚本与导出元数据一致。
 function Update-ProjectBuildMetadata {
     param(
         [string]$ProjectDir,
@@ -173,6 +186,7 @@ function Update-ProjectBuildMetadata {
     }
 }
 
+# 等待导出文件稳定，避免刚生成就被后续打包步骤读取半成品。
 function Wait-ForStableFile {
     param(
         [string]$Path,
@@ -205,6 +219,7 @@ function Wait-ForStableFile {
     Assert-PathExists -Path $Path -Label "Export artifact"
 }
 
+# 清理 Godot 导出过程遗留的临时文件，减少误打包风险。
 function Remove-TransientExportFiles {
     param([string]$RootPath)
 
@@ -219,6 +234,7 @@ function Remove-TransientExportFiles {
         }
 }
 
+# 清理 Godot Mono 曾生成的旧问题日志，避免误判本次构建结果。
 function Clear-GodotMonoBuildIssueFiles {
     $godotMonoBuildLogsRoot = Join-Path $env:APPDATA "Godot\mono\build_logs"
     if (-not (Test-Path -LiteralPath $godotMonoBuildLogsRoot)) {
@@ -237,6 +253,7 @@ function Clear-GodotMonoBuildIssueFiles {
         }
 }
 
+# 执行一次标准 Godot headless 导出，并验证目标产物已稳定落盘。
 function Invoke-GodotExport {
     param(
         [string]$GodotExe,
@@ -269,6 +286,7 @@ function Invoke-GodotExport {
     Wait-ForStableFile -Path $ExportPath
 }
 
+# 把导出暂存目录压缩成 zip 产物。
 function Compress-DirectoryToZip {
     param(
         [string]$SourceDir,
@@ -294,6 +312,7 @@ function Compress-DirectoryToZip {
         $false)
 }
 
+# 为产物生成 SHA256 摘要文件，便于 CI 上传和人工校验。
 function Write-Sha256File {
     param([string]$ArtifactPath)
 
@@ -310,6 +329,7 @@ function Write-Sha256File {
     }
 }
 
+# 归一化命令行传入的构建目标列表，并校验是否属于支持的平台集合。
 function Convert-ToTargetList {
     param([string[]]$Targets)
 
@@ -340,6 +360,7 @@ function Convert-ToTargetList {
     return [string[]]$resolvedTargets.ToArray()
 }
 
+# 列出某个目录下所有文件的相对路径，用于产物摘要输出。
 function Get-RelativeChildPaths {
     param([string]$RootPath)
 

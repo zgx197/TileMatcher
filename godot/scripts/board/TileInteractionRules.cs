@@ -132,9 +132,16 @@ public static class TileInteractionRules
 /// </summary>
 public enum TileBlockReason
 {
+    /// <summary>当前没有主要阻塞原因。</summary>
     None = 0,
+
+    /// <summary>被上层牌压住。</summary>
     Above = 1,
+
+    /// <summary>左右同时存在邻牌阻塞。</summary>
     LeftRight = 2,
+
+    /// <summary>上下同时存在邻牌阻塞。</summary>
     TopBottom = 3,
 }
 
@@ -143,11 +150,22 @@ public enum TileBlockReason
 /// </summary>
 public enum MatchFailureKind
 {
+    /// <summary>没有失败，表示配对有效。</summary>
     None = 0,
+
+    /// <summary>至少有一张牌已经被移除。</summary>
     Removed = 1,
+
+    /// <summary>两次输入命中了同一张牌。</summary>
     SameTile = 2,
+
+    /// <summary>两张牌的类型编码不同。</summary>
     TypeMismatch = 3,
+
+    /// <summary>主动发起配对的牌被锁住。</summary>
     SourceBlocked = 4,
+
+    /// <summary>作为目标的牌被锁住。</summary>
     TargetBlocked = 5,
 }
 
@@ -163,6 +181,7 @@ public readonly record struct MatchValidationResult(
     TileBlockReason TargetBlockReason,
     TileInteractionState TargetState)
 {
+    /// <summary>构造一份成功的配对校验结果。</summary>
     public static MatchValidationResult Success()
     {
         return new MatchValidationResult(
@@ -175,6 +194,7 @@ public readonly record struct MatchValidationResult(
             default);
     }
 
+    /// <summary>构造一份失败的配对校验结果。</summary>
     public static MatchValidationResult Fail(
         MatchFailureKind failureKind,
         string playerMessage,
@@ -211,14 +231,19 @@ public readonly struct TileInteractionState(
     bool hasTopNeighbor,
     bool hasBottomNeighbor)
 {
+    /// <summary>当前牌上方是否存在投影重叠牌。</summary>
     public bool HasAboveOverlap { get; } = hasAboveOverlap;
 
+    /// <summary>当前牌左侧是否存在阻塞邻牌。</summary>
     public bool HasLeftNeighbor { get; } = hasLeftNeighbor;
 
+    /// <summary>当前牌右侧是否存在阻塞邻牌。</summary>
     public bool HasRightNeighbor { get; } = hasRightNeighbor;
 
+    /// <summary>当前牌上边缘是否存在邻牌阻塞。</summary>
     public bool HasTopNeighbor { get; } = hasTopNeighbor;
 
+    /// <summary>当前牌下边缘是否存在邻牌阻塞。</summary>
     public bool HasBottomNeighbor { get; } = hasBottomNeighbor;
 
     /// <summary>左右同时被夹住时，视为横向阻塞成立。</summary>

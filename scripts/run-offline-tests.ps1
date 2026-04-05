@@ -2,6 +2,8 @@ param(
     [string]$Configuration = "Debug"
 )
 
+# 离线规则与导出格式测试入口。
+# 运行独立测试工程，并读取 summary.json 输出更适合人工查看的摘要。
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
