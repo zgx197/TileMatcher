@@ -15,6 +15,11 @@ run/main_scene="res://scenes/app/AppRoot.tscn"
 config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[debug]
+
+file_logging/enable_file_logging=false
+file_logging/enable_file_logging.pc=false
+
 [tilematcher_build]
 package_name="com.zgx197.tilematcher"
 version_name="0.1.5"

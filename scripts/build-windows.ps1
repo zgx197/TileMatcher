@@ -159,6 +159,12 @@ if ($metadata.UsesDotNet) {
     Assert-PathExists -Path $expectedDataDirPath -Label "Windows .NET runtime data directory"
 }
 
+Write-Step "Smoke test Windows export"
+$smokeTestResult = Invoke-WindowsExportSmokeTest `
+    -ExecutablePath $exportPath `
+    -WorkingDirectory $stagingDir
+$smokeTestLatestLogPath = $smokeTestResult.LatestLogPath
+
 $stagedFiles = Get-RelativeChildPaths -RootPath $stagingDir
 if ($stagedFiles.Count -eq 0) {
     throw "Windows export staging directory is empty: $stagingDir"
@@ -185,3 +191,4 @@ foreach ($entry in $topLevelEntries) {
     Write-Host " - $entry" -ForegroundColor DarkGray
 }
 Write-Host "Total packaged files: $($stagedFiles.Count)" -ForegroundColor DarkGray
+Write-Host "Smoke test latest log: $smokeTestLatestLogPath" -ForegroundColor DarkGray

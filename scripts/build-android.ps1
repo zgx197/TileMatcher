@@ -333,6 +333,102 @@ function Write-LogExcerpt {
     Get-Content -LiteralPath $Path -Tail $TailCount
 }
 
+function Assert-TextContains {
+    param(
+        [string]$Text,
+        [string]$Expected,
+        [string]$Label
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Text) -or ($Text.IndexOf($Expected, [System.StringComparison]::OrdinalIgnoreCase) -lt 0)) {
+        throw "$Label did not contain expected text: $Expected"
+    }
+}
+
+function Get-ZipEntryNames {
+    param([string]$ArchivePath)
+
+    Assert-PathExists -Path $ArchivePath -Label "Archive"
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $ArchivePath).Path)
+    try {
+        return [string[]]@($archive.Entries | Select-Object -ExpandProperty FullName)
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
+function Assert-ZipContainsEntry {
+    param(
+        [string[]]$EntryNames,
+        [string]$ExpectedEntry,
+        [string]$Label
+    )
+
+    if (-not ($EntryNames -contains $ExpectedEntry)) {
+        throw "$Label is missing required archive entry: $ExpectedEntry"
+    }
+}
+
+function Assert-ZipContainsPrefix {
+    param(
+        [string[]]$EntryNames,
+        [string]$ExpectedPrefix,
+        [string]$Label
+    )
+
+    $match = $EntryNames | Where-Object { $_.StartsWith($ExpectedPrefix, [System.StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+    if ($null -eq $match) {
+        throw "$Label is missing required archive content under: $ExpectedPrefix"
+    }
+}
+
+function Validate-AndroidApkArtifact {
+    param(
+        [string]$ApkPath,
+        [string]$AaptPath,
+        [string]$PackageName,
+        [string]$VersionName,
+        [int]$VersionCode,
+        [string]$ManifestOrientation
+    )
+
+    Write-Step "Validate Android APK contents"
+
+    Assert-PathExists -Path $ApkPath -Label "Android APK"
+    Assert-PathExists -Path $AaptPath -Label "aapt"
+
+    $badgingOutput = & $AaptPath dump badging $ApkPath | Out-String
+    $badgingExitCode = Get-NativeExitCode
+    if ($badgingExitCode -ne 0) {
+        throw "aapt dump badging failed with exit code $badgingExitCode"
+    }
+
+    Assert-TextContains -Text $badgingOutput -Expected "package: name='$PackageName'" -Label "APK badging"
+    Assert-TextContains -Text $badgingOutput -Expected "versionCode='$VersionCode'" -Label "APK badging"
+    Assert-TextContains -Text $badgingOutput -Expected "versionName='$VersionName'" -Label "APK badging"
+    Assert-TextContains -Text $badgingOutput -Expected "native-code: 'arm64-v8a'" -Label "APK badging"
+
+    if ($ManifestOrientation -eq "portrait") {
+        Assert-TextContains -Text $badgingOutput -Expected "uses-feature: name='android.hardware.screen.portrait'" -Label "APK badging"
+    }
+
+    if ($ManifestOrientation -eq "landscape") {
+        Assert-TextContains -Text $badgingOutput -Expected "uses-feature: name='android.hardware.screen.landscape'" -Label "APK badging"
+    }
+
+    $entryNames = Get-ZipEntryNames -ArchivePath $ApkPath
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "lib/arm64-v8a/libgodot_android.so" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/project.binary" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/_cl_" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/.godot/mono/publish/arm64/TileMatcher.dll" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/scripts/app/AppRoot.cs" -Label "Android APK"
+    Assert-ZipContainsEntry -EntryNames $entryNames -ExpectedEntry "assets/scenes/app/AppRoot.tscn.remap" -Label "Android APK"
+    Assert-ZipContainsPrefix -EntryNames $entryNames -ExpectedPrefix "META-INF/" -Label "Android APK"
+}
+
 function Invoke-GodotExport {
     param(
         [string]$GodotExe,
@@ -776,6 +872,14 @@ $badgingExitCode = Get-NativeExitCode
 if ($badgingExitCode -ne 0) {
     throw "aapt dump badging failed with exit code $badgingExitCode"
 }
+
+Validate-AndroidApkArtifact `
+    -ApkPath $signedApkPath `
+    -AaptPath $aaptPath `
+    -PackageName $PackageName `
+    -VersionName $VersionName `
+    -VersionCode $VersionCode `
+    -ManifestOrientation $ManifestOrientation
 
 $signedHash = (Get-FileHash -LiteralPath $signedApkPath -Algorithm SHA256).Hash.ToUpperInvariant()
 $signedHashPath = "$signedApkPath.sha256.txt"

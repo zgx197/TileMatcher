@@ -407,6 +407,107 @@ function Compress-DirectoryToZip {
         $false)
 }
 
+function Get-TextExcerpt {
+    param(
+        [string]$Text,
+        [int]$MaxChars = 4000
+    )
+
+    if ([string]::IsNullOrEmpty($Text)) {
+        return ""
+    }
+
+    if ($Text.Length -le $MaxChars) {
+        return $Text.Trim()
+    }
+
+    return $Text.Substring($Text.Length - $MaxChars).Trim()
+}
+
+function Invoke-WindowsExportSmokeTest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ExecutablePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$WorkingDirectory,
+
+        [int]$StartupTimeoutSeconds = 8
+    )
+
+    Assert-PathExists -Path $ExecutablePath -Label "Windows executable for smoke test"
+    Assert-PathExists -Path $WorkingDirectory -Label "Windows smoke test working directory"
+
+    $stdoutPath = Join-Path $env:TEMP ("tilematcher-windows-smoke-" + [guid]::NewGuid().ToString("N") + ".stdout.log")
+    $stderrPath = Join-Path $env:TEMP ("tilematcher-windows-smoke-" + [guid]::NewGuid().ToString("N") + ".stderr.log")
+    $logsDirectory = Join-Path $WorkingDirectory "logs"
+    $latestLogPath = Join-Path $logsDirectory "latest.log"
+
+    Remove-PathIfExists -Path $logsDirectory
+
+    try {
+        $process = Start-Process `
+            -FilePath $ExecutablePath `
+            -WorkingDirectory $WorkingDirectory `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath `
+            -PassThru
+
+        Start-Sleep -Seconds $StartupTimeoutSeconds
+
+        $hasExited = $process.HasExited
+        $exitCode = if ($hasExited) { $process.ExitCode } else { $null }
+        if (-not $hasExited) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $process.WaitForExit()
+        }
+
+        $stdoutText = if (Test-Path -LiteralPath $stdoutPath) {
+            Get-Content -LiteralPath $stdoutPath -Raw -Encoding UTF8
+        } else {
+            ""
+        }
+
+        $stderrText = if (Test-Path -LiteralPath $stderrPath) {
+            Get-Content -LiteralPath $stderrPath -Raw -Encoding UTF8
+        } else {
+            ""
+        }
+
+        $combinedOutput = (($stdoutText, $stderrText) -join [Environment]::NewLine).Trim()
+
+        if ($combinedOutput -match 'No loader found for resource:' -or
+            $combinedOutput -match 'Failed loading scene:' -or
+            $combinedOutput -match "Can't load dependency:") {
+            $excerpt = Get-TextExcerpt -Text $combinedOutput
+            throw "Windows smoke test detected startup resource loading errors.`n$excerpt"
+        }
+
+        if ($hasExited -and $exitCode -ne 0) {
+            $excerpt = Get-TextExcerpt -Text $combinedOutput
+            throw "Windows smoke test exited early with code $exitCode.`n$excerpt"
+        }
+
+        Assert-PathExists -Path $logsDirectory -Label "Windows smoke test log directory"
+        Assert-PathExists -Path $latestLogPath -Label "Windows smoke test latest log"
+
+        return [pscustomobject]@{
+            LatestLogPath = $latestLogPath
+            StdoutText = $stdoutText
+            StderrText = $stderrText
+            ExitedEarly = $hasExited
+            ExitCode = $exitCode
+        }
+    }
+    finally {
+        foreach ($path in @($stdoutPath, $stderrPath)) {
+            if (Test-Path -LiteralPath $path) {
+                Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+
 function Write-Sha256File {
     param(
         [Parameter(Mandatory = $true)]
