@@ -1,10 +1,10 @@
-name: Android Release
+name: Multi-Platform Release
 
 on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: Android version name. Leave empty to use project.godot.
+        description: Release version name. Leave empty to use project.godot.
         required: false
         default: ""
       version_code:
@@ -16,15 +16,25 @@ on:
         required: false
         default: ""
       orientation:
-        description: Manifest orientation. Leave empty to use project.godot.
+        description: Android manifest orientation. Leave empty to use project.godot.
         required: false
         default: ""
       tag_name:
         description: Release tag name. Leave empty to use v<version_name>.
         required: false
         default: ""
+      build_android:
+        description: Build Android APK.
+        required: true
+        type: boolean
+        default: true
+      build_windows:
+        description: Build Windows zip.
+        required: true
+        type: boolean
+        default: true
       publish_release:
-        description: Create or update a GitHub Release and upload the APK.
+        description: Create or update a GitHub Release and upload all selected artifacts.
         required: true
         type: boolean
         default: true
@@ -41,7 +51,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-release-${{ github.ref }}
+  group: multi-platform-release-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -52,8 +62,19 @@ env:
   GRADLE_VERSION: 8.11.1
 
 jobs:
-  export-android:
+  metadata:
     runs-on: windows-2022
+    outputs:
+      version_name: ${{ steps.meta.outputs.version_name }}
+      version_code: ${{ steps.meta.outputs.version_code }}
+      package_name: ${{ steps.meta.outputs.package_name }}
+      orientation: ${{ steps.meta.outputs.orientation }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      publish_release: ${{ steps.meta.outputs.publish_release }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+      selected_targets: ${{ steps.meta.outputs.selected_targets }}
+      matrix: ${{ steps.meta.outputs.matrix }}
 
     steps:
       - name: Checkout
@@ -61,41 +82,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        shell: pwsh
-        run: |
-          1..20 | ForEach-Object { "y" } | sdkmanager --licenses | Out-Null
-          sdkmanager `
-            "platform-tools" `
-            "platforms;${{ env.ANDROID_PLATFORM }}" `
-            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}"
-
-      - name: Install .NET Android workload
-        shell: pwsh
-        run: |
-          dotnet workload install android
-
-      - name: Download pinned Gradle distribution
-        shell: pwsh
-        run: |
-          $gradleDirectory = "build-support/gradle"
-          $gradleArchivePath = Join-Path $gradleDirectory "gradle-${{ env.GRADLE_VERSION }}-bin.zip"
-
-          New-Item -ItemType Directory -Path $gradleDirectory -Force | Out-Null
-          Invoke-WebRequest `
-            -Uri "https://services.gradle.org/distributions/gradle-${{ env.GRADLE_VERSION }}-bin.zip" `
-            -OutFile $gradleArchivePath
-
-      - name: Resolve build metadata
+      - name: Resolve build metadata and targets
         id: meta
         shell: pwsh
         env:
@@ -106,6 +93,8 @@ jobs:
           INPUT_PACKAGE_NAME: ${{ github.event.inputs.package_name || '' }}
           INPUT_ORIENTATION: ${{ github.event.inputs.orientation || '' }}
           INPUT_TAG_NAME: ${{ github.event.inputs.tag_name || '' }}
+          INPUT_BUILD_ANDROID: ${{ github.event.inputs.build_android || 'true' }}
+          INPUT_BUILD_WINDOWS: ${{ github.event.inputs.build_windows || 'true' }}
           INPUT_PUBLISH_RELEASE: ${{ github.event.inputs.publish_release || 'true' }}
           INPUT_PRERELEASE: ${{ github.event.inputs.prerelease || 'true' }}
         run: |
@@ -148,10 +137,14 @@ jobs:
               $tagName = "v$tagName"
             }
 
+            $buildAndroid = $true
+            $buildWindows = $true
             $publishRelease = "true"
             $prerelease = "false"
           } else {
             $tagName = if ([string]::IsNullOrWhiteSpace($env:INPUT_TAG_NAME)) { "v$versionName" } else { $env:INPUT_TAG_NAME.Trim() }
+            $buildAndroid = $env:INPUT_BUILD_ANDROID.ToLowerInvariant() -eq "true"
+            $buildWindows = $env:INPUT_BUILD_WINDOWS.ToLowerInvariant() -eq "true"
             $publishRelease = $env:INPUT_PUBLISH_RELEASE.ToLowerInvariant()
             $prerelease = $env:INPUT_PRERELEASE.ToLowerInvariant()
           }
@@ -164,6 +157,39 @@ jobs:
             throw "orientation must be portrait or landscape, got: $orientation"
           }
 
+          $targets = New-Object System.Collections.Generic.List[object]
+
+          if ($buildAndroid) {
+            $targets.Add([ordered]@{
+              target = "android"
+              runner = "windows-2022"
+              upload_name = "release-android-$versionName"
+              artifact_name = "TileMatcher-$versionName-android-debug.apk"
+              artifact_relative_path = "godot/build/android/TileMatcher-$versionName-android-debug.apk"
+              hash_relative_path = "godot/build/android/TileMatcher-$versionName-android-debug.apk.sha256.txt"
+              summary_name = "Android"
+            })
+          }
+
+          if ($buildWindows) {
+            $targets.Add([ordered]@{
+              target = "windows"
+              runner = "windows-2022"
+              upload_name = "release-windows-$versionName"
+              artifact_name = "TileMatcher-$versionName-windows-x64.zip"
+              artifact_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip"
+              hash_relative_path = "godot/build/windows/TileMatcher-$versionName-windows-x64.zip.sha256.txt"
+              summary_name = "Windows Desktop"
+            })
+          }
+
+          if ($targets.Count -eq 0) {
+            throw "At least one build target must be selected."
+          }
+
+          $selectedTargets = ($targets | ForEach-Object { $_.target }) -join ","
+          $matrixJson = @{ include = @($targets) } | ConvertTo-Json -Compress -Depth 5
+
           "version_name=$versionName" >> $env:GITHUB_OUTPUT
           "version_code=$versionCode" >> $env:GITHUB_OUTPUT
           "package_name=$packageName" >> $env:GITHUB_OUTPUT
@@ -171,8 +197,78 @@ jobs:
           "tag_name=$tagName" >> $env:GITHUB_OUTPUT
           "publish_release=$publishRelease" >> $env:GITHUB_OUTPUT
           "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
-          "release_name=Android $tagName" >> $env:GITHUB_OUTPUT
-          "apk_name=TileMatcher-$versionName-android-debug.apk" >> $env:GITHUB_OUTPUT
+          "release_name=TileMatcher $tagName" >> $env:GITHUB_OUTPUT
+          "selected_targets=$selectedTargets" >> $env:GITHUB_OUTPUT
+          "matrix=$matrixJson" >> $env:GITHUB_OUTPUT
+
+      - name: Publish metadata summary
+        shell: pwsh
+        run: |
+          @"
+          ## Release metadata
+
+          - Trigger: `${{ github.event_name }}`
+          - Version: `${{ steps.meta.outputs.version_name }}`
+          - Version code: `${{ steps.meta.outputs.version_code }}`
+          - Android package: `${{ steps.meta.outputs.package_name }}`
+          - Android orientation: `${{ steps.meta.outputs.orientation }}`
+          - Selected targets: `${{ steps.meta.outputs.selected_targets }}`
+          - Release tag: `${{ steps.meta.outputs.tag_name }}`
+          - Publish release: `${{ steps.meta.outputs.publish_release }}`
+          - Prerelease: `${{ steps.meta.outputs.prerelease }}`
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+  export-targets:
+    needs: metadata
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        if: matrix.target == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        if: matrix.target == 'android'
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        if: matrix.target == 'android'
+        shell: pwsh
+        run: |
+          1..20 | ForEach-Object { "y" } | sdkmanager --licenses | Out-Null
+          sdkmanager `
+            "platform-tools" `
+            "platforms;${{ env.ANDROID_PLATFORM }}" `
+            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}"
+
+      - name: Install .NET Android workload
+        if: matrix.target == 'android'
+        shell: pwsh
+        run: |
+          dotnet workload install android
+
+      - name: Download pinned Gradle distribution
+        if: matrix.target == 'android'
+        shell: pwsh
+        run: |
+          $gradleDirectory = "build-support/gradle"
+          $gradleArchivePath = Join-Path $gradleDirectory "gradle-${{ env.GRADLE_VERSION }}-bin.zip"
+
+          New-Item -ItemType Directory -Path $gradleDirectory -Force | Out-Null
+          Invoke-WebRequest `
+            -Uri "https://services.gradle.org/distributions/gradle-${{ env.GRADLE_VERSION }}-bin.zip" `
+            -OutFile $gradleArchivePath
 
       - name: Install Godot editor and export templates
         shell: pwsh
@@ -182,6 +278,7 @@ jobs:
           -ReleaseStatus "${{ env.GODOT_RELEASE_STATUS }}"
 
       - name: Restore debug keystore
+        if: matrix.target == 'android'
         id: keystore
         shell: pwsh
         env:
@@ -203,6 +300,7 @@ jobs:
           "path=$keystorePath" >> $env:GITHUB_OUTPUT
 
       - name: Write Godot editor settings
+        if: matrix.target == 'android'
         shell: pwsh
         env:
           ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
@@ -231,10 +329,10 @@ jobs:
             throw "Godot executable not found under: $godotRoot"
           }
 
-          $godotExePath = $godotExe.FullName
-          "path=$godotExePath" >> $env:GITHUB_OUTPUT
+          "path=$($godotExe.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Export Android APK
+        if: matrix.target == 'android'
         shell: pwsh
         env:
           ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
@@ -257,71 +355,109 @@ jobs:
             -KeystorePassword "$env:ANDROID_DEBUG_KEYSTORE_PASSWORD" `
             -KeyAlias "$env:ANDROID_DEBUG_KEY_ALIAS" `
             -KeyPassword "$env:ANDROID_DEBUG_KEY_PASSWORD" `
-            -PackageName "${{ steps.meta.outputs.package_name }}" `
-            -VersionName "${{ steps.meta.outputs.version_name }}" `
-            -VersionCode ${{ steps.meta.outputs.version_code }} `
-            -ManifestOrientation "${{ steps.meta.outputs.orientation }}" `
-            -OutputName "${{ steps.meta.outputs.apk_name }}"
+            -PackageName "${{ needs.metadata.outputs.package_name }}" `
+            -VersionName "${{ needs.metadata.outputs.version_name }}" `
+            -VersionCode ${{ needs.metadata.outputs.version_code }} `
+            -ManifestOrientation "${{ needs.metadata.outputs.orientation }}" `
+            -OutputName "${{ matrix.artifact_name }}"
 
-      - name: Collect APK metadata
-        id: apk
+      - name: Export Windows zip
+        if: matrix.target == 'windows'
         shell: pwsh
         run: |
-          $apkRelativePath = "godot/build/android/${{ steps.meta.outputs.apk_name }}"
-          if (-not (Test-Path -LiteralPath $apkRelativePath)) {
-            throw "APK not found: $apkRelativePath"
+          .\scripts\build-windows.ps1 `
+            -GodotExe "${{ steps.godot.outputs.path }}" `
+            -VersionName "${{ needs.metadata.outputs.version_name }}"
+
+      - name: Collect artifact metadata
+        id: artifact
+        shell: pwsh
+        run: |
+          $artifactRelativePath = "${{ matrix.artifact_relative_path }}"
+          $hashRelativePath = "${{ matrix.hash_relative_path }}"
+
+          if (-not (Test-Path -LiteralPath $artifactRelativePath)) {
+            throw "Artifact not found: $artifactRelativePath"
           }
 
-          $hash = (Get-FileHash -LiteralPath $apkRelativePath -Algorithm SHA256).Hash.ToUpperInvariant()
-          $hashFileRelativePath = "$apkRelativePath.sha256.txt"
-          "$hash  ${{ steps.meta.outputs.apk_name }}" | Set-Content -LiteralPath $hashFileRelativePath -Encoding ASCII
+          if (-not (Test-Path -LiteralPath $hashRelativePath)) {
+            throw "Artifact hash file not found: $hashRelativePath"
+          }
 
-          "artifact_path=$apkRelativePath" >> $env:GITHUB_OUTPUT
-          "artifact_name=${{ steps.meta.outputs.apk_name }}" >> $env:GITHUB_OUTPUT
-          "hash_path=$hashFileRelativePath" >> $env:GITHUB_OUTPUT
-          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          $hashLine = (Get-Content -LiteralPath $hashRelativePath -TotalCount 1).Trim()
+          $sha256 = ($hashLine -split '\s+')[0].ToUpperInvariant()
 
-      - name: Upload APK artifact
+          "artifact_path=$artifactRelativePath" >> $env:GITHUB_OUTPUT
+          "artifact_name=${{ matrix.artifact_name }}" >> $env:GITHUB_OUTPUT
+          "hash_path=$hashRelativePath" >> $env:GITHUB_OUTPUT
+          "sha256=$sha256" >> $env:GITHUB_OUTPUT
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk-${{ steps.meta.outputs.version_name }}
+          name: ${{ matrix.upload_name }}
           path: |
-            ${{ steps.apk.outputs.artifact_path }}
-            ${{ steps.apk.outputs.hash_path }}
+            ${{ steps.artifact.outputs.artifact_path }}
+            ${{ steps.artifact.outputs.hash_path }}
           if-no-files-found: error
 
-      - name: Create or update GitHub Release
-        if: steps.meta.outputs.publish_release == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.meta.outputs.tag_name }}
-          name: ${{ steps.meta.outputs.release_name }}
-          target_commitish: ${{ github.sha }}
-          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
-          generate_release_notes: true
-          files: |
-            ${{ steps.apk.outputs.artifact_path }}
-            ${{ steps.apk.outputs.hash_path }}
-
-      - name: Publish workflow summary
+      - name: Publish target summary
         if: always()
         shell: pwsh
         run: |
           @"
-          ## Android release summary
+          ## ${{ matrix.summary_name }} export summary
 
-          - Runner: `windows-2022`
+          - Runner: `${{ matrix.runner }}`
           - Trigger: `${{ github.event_name }}`
-          - Version: `${{ steps.meta.outputs.version_name }}`
-          - Version code: `${{ steps.meta.outputs.version_code }}`
-          - Package: `${{ steps.meta.outputs.package_name }}`
-          - Orientation: `${{ steps.meta.outputs.orientation }}`
-          - APK: `${{ steps.apk.outputs.artifact_name }}`
-          - SHA256: `${{ steps.apk.outputs.sha256 }}`
-          - Release tag: `${{ steps.meta.outputs.tag_name }}`
-          - Publish release: `${{ steps.meta.outputs.publish_release }}`
-          - Prerelease: `${{ steps.meta.outputs.prerelease }}`
-          - Godot: `${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE_STATUS }} mono`
-          - Android platform: `${{ env.ANDROID_PLATFORM }}`
-          - Android build-tools: `${{ env.ANDROID_BUILD_TOOLS }}`
+          - Version: `${{ needs.metadata.outputs.version_name }}`
+          - Target: `${{ matrix.target }}`
+          - Artifact: `${{ steps.artifact.outputs.artifact_name }}`
+          - SHA256: `${{ steps.artifact.outputs.sha256 }}`
+          - Upload artifact: `${{ matrix.upload_name }}`
+          - Release tag: `${{ needs.metadata.outputs.tag_name }}`
+          - Publish release: `${{ needs.metadata.outputs.publish_release }}`
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+  release:
+    needs:
+      - metadata
+      - export-targets
+    if: needs.metadata.outputs.publish_release == 'true'
+    runs-on: windows-2022
+
+    steps:
+      - name: Download selected build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Inspect release asset bundle
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -LiteralPath "release-assets" -File -Recurse | Sort-Object Name
+          if ($files.Count -eq 0) {
+            throw "No release assets were downloaded."
+          }
+
+          @"
+          ## Aggregated release assets
+
+          - Selected targets: `${{ needs.metadata.outputs.selected_targets }}`
+          - Asset count: `$($files.Count)`
+          - Files:
+          $($files | ForEach-Object { "- `$($_.Name)`" } | Out-String)
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.metadata.outputs.tag_name }}
+          name: ${{ needs.metadata.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ needs.metadata.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            release-assets/*

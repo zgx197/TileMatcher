@@ -695,9 +695,14 @@ if ($godotExportResult.CompletedByFreshFallbackArtifact) {
 if ($SkipSigning) {
     Write-Step "Skip signing and show badging"
     & $aaptPath dump badging $unsignedApkPath
+    $unsignedHash = (Get-FileHash -LiteralPath $unsignedApkPath -Algorithm SHA256).Hash.ToUpperInvariant()
+    $unsignedHashPath = "$unsignedApkPath.sha256.txt"
+    "$unsignedHash  $(Split-Path -Leaf $unsignedApkPath)" | Set-Content -LiteralPath $unsignedHashPath -Encoding ASCII
     Write-Host ""
     Write-Host "Unsigned export completed: $unsignedApkPath" -ForegroundColor Green
-    exit 0
+    Write-Host "SHA256: $unsignedHash" -ForegroundColor DarkGray
+    Write-Host "SHA256 file: $unsignedHashPath" -ForegroundColor DarkGray
+    return
 }
 
 Assert-PathExists -Path $KeystorePath -Label "keystore"
@@ -734,6 +739,12 @@ if ($badgingExitCode -ne 0) {
     throw "aapt dump badging failed with exit code $badgingExitCode"
 }
 
+$signedHash = (Get-FileHash -LiteralPath $signedApkPath -Algorithm SHA256).Hash.ToUpperInvariant()
+$signedHashPath = "$signedApkPath.sha256.txt"
+"$signedHash  $(Split-Path -Leaf $signedApkPath)" | Set-Content -LiteralPath $signedHashPath -Encoding ASCII
+
 Write-Host ""
 Write-Host "Android build completed: $signedApkPath" -ForegroundColor Green
-exit 0
+Write-Host "SHA256: $signedHash" -ForegroundColor DarkGray
+Write-Host "SHA256 file: $signedHashPath" -ForegroundColor DarkGray
+return
