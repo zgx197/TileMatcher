@@ -76,7 +76,7 @@ mouse_default_cursor_shape = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 26
-text = "Debug Panel"
+text = "调试面板"
 
 [node name="CloseButton" type="Button" parent="Panel/Margin/Stack/Header"]
 custom_minimum_size = Vector2(44, 44)
@@ -85,7 +85,7 @@ text = "X"
 
 [node name="Hint" type="Label" parent="Panel/Margin/Stack"]
 layout_mode = 2
-text = "Debug actions only run after you click a button."
+text = "这里的调试功能只有点按钮后才会执行。"
 autowrap_mode = 2
 
 [node name="ProfileRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
@@ -95,7 +95,7 @@ theme_override_constants/separation = 12
 [node name="ProfileLabel" type="Label" parent="Panel/Margin/Stack/ProfileRow"]
 custom_minimum_size = Vector2(92, 0)
 layout_mode = 2
-text = "Rule Profile"
+text = "规则方案"
 vertical_alignment = 1
 
 [node name="ProfileSelector" type="OptionButton" parent="Panel/Margin/Stack/ProfileRow"]
@@ -105,13 +105,13 @@ size_flags_horizontal = 3
 
 [node name="RulesSummary" type="Label" parent="Panel/Margin/Stack"]
 layout_mode = 2
-text = "Rule Summary"
+text = "规则摘要"
 autowrap_mode = 2
 
 [node name="DebugLabel" type="Label" parent="Panel/Margin/Stack"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Debug Info"
+text = "调试信息"
 autowrap_mode = 2
 
 [node name="LogSection" type="VBoxContainer" parent="Panel/Margin/Stack"]
@@ -121,16 +121,16 @@ theme_override_constants/separation = 8
 [node name="LogTitle" type="Label" parent="Panel/Margin/Stack/LogSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Runtime Logs"
+text = "运行日志"
 
 [node name="LogPathLabel" type="Label" parent="Panel/Margin/Stack/LogSection"]
 layout_mode = 2
-text = "Log Directory"
+text = "日志目录"
 autowrap_mode = 2
 
 [node name="LogSummaryLabel" type="Label" parent="Panel/Margin/Stack/LogSection"]
 layout_mode = 2
-text = "Preview latest runtime logs."
+text = "这里会预览最新日志。"
 autowrap_mode = 2
 
 [node name="LogButtonsRow" type="HBoxContainer" parent="Panel/Margin/Stack/LogSection"]
@@ -141,37 +141,37 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Refresh"
+text = "刷新"
 
 [node name="ShowLatestLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Latest"
+text = "最新"
 
 [node name="ShowErrorLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Errors"
+text = "错误"
 
 [node name="CopyLogButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Copy"
+text = "复制"
 
 [node name="ClearLogsButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Clear"
+text = "清空"
 
 [node name="OpenLogDirectoryButton" type="Button" parent="Panel/Margin/Stack/LogSection/LogButtonsRow"]
 custom_minimum_size = Vector2(96, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Open Dir"
+text = "打开目录"
 
 [node name="LogPreview" type="TextEdit" parent="Panel/Margin/Stack/LogSection"]
 custom_minimum_size = Vector2(0, 180)
@@ -184,7 +184,7 @@ theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="Panel/Margin/Stack/LayerInspector"]
 layout_mode = 2
-text = "Visible Layer Filter"
+text = "可见层筛选"
 
 [node name="Controls" type="HBoxContainer" parent="Panel/Margin/Stack/LayerInspector"]
 layout_mode = 2
@@ -201,7 +201,7 @@ value = 0.0
 [node name="Value" type="Label" parent="Panel/Margin/Stack/LayerInspector/Controls"]
 custom_minimum_size = Vector2(72, 0)
 layout_mode = 2
-text = "<= L0"
+text = "显示到第 0 层"
 horizontal_alignment = 1
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Stack"]
@@ -213,14 +213,14 @@ custom_minimum_size = Vector2(180, 62)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
-text = "Random Board"
+text = "随机关卡"
 
 [node name="PrototypeButton" type="Button" parent="Panel/Margin/Stack/Buttons"]
 custom_minimum_size = Vector2(180, 62)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
-text = "Prototype Level"
+text = "原型关卡"
 
 [node name="JumpRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
 layout_mode = 2
@@ -229,7 +229,7 @@ theme_override_constants/separation = 12
 [node name="JumpLabel" type="Label" parent="Panel/Margin/Stack/JumpRow"]
 custom_minimum_size = Vector2(92, 0)
 layout_mode = 2
-text = "Jump To Level"
+text = "跳到关卡"
 vertical_alignment = 1
 
 [node name="JumpLevelInput" type="SpinBox" parent="Panel/Margin/Stack/JumpRow"]
@@ -244,7 +244,7 @@ value = 1.0
 custom_minimum_size = Vector2(132, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Jump"
+text = "跳转"
 
 [node name="RescueDebugRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
 layout_mode = 2
@@ -255,7 +255,7 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
-text = "Refresh Rescue Center"
+text = "立即刷新救助中心"
 
 [node name="CoinDebugRow" type="HBoxContainer" parent="Panel/Margin/Stack"]
 layout_mode = 2
@@ -264,7 +264,7 @@ theme_override_constants/separation = 12
 [node name="CoinLabel" type="Label" parent="Panel/Margin/Stack/CoinDebugRow"]
 custom_minimum_size = Vector2(92, 0)
 layout_mode = 2
-text = "Add Coins"
+text = "添加金币"
 vertical_alignment = 1
 
 [node name="AddCoinInput" type="SpinBox" parent="Panel/Margin/Stack/CoinDebugRow"]
@@ -280,22 +280,22 @@ value = 10.0
 custom_minimum_size = Vector2(132, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Apply Coins"
+text = "确认添加"
 
 [node name="ResetCurrentLevelAssistButton" type="Button" parent="Panel/Margin/Stack"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Reset Current Level Assist"
+text = "重置本关辅助次数"
 
 [node name="AutoMatchButton" type="Button" parent="Panel/Margin/Stack"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Auto Clear One Pair"
+text = "自动消一对"
 
 [node name="ResetProgressButton" type="Button" parent="Panel/Margin/Stack"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Reset Save Data"
+text = "重置存档"

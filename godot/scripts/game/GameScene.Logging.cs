@@ -48,7 +48,7 @@ public partial class GameScene
         LevelFailed += result => RuntimeLog.Warn("GameScene", $"关卡失败: level={result.LevelNumber}, score={result.Score}, matches={result.MatchCount}, elapsed={result.ElapsedText}");
 
         RuntimeLog.Info("GameScene", $"日志面板已初始化: level={_currentLevelNumber}, summary={_boardController.GetCurrentSummary()}");
-        RefreshRuntimeLogPanel(false, "日志面板已初始化。");
+        RefreshRuntimeLogPanel(false, "日志面板已就绪。");
     }
 
     private void OnRuntimeLogBoardGenerated(string summary)
@@ -71,13 +71,13 @@ public partial class GameScene
     private void OnShowLatestLogPressed()
     {
         _showErrorLogPreview = false;
-        RefreshRuntimeLogPanel(false, "当前显示 latest.log。");
+        RefreshRuntimeLogPanel(false, "当前显示最新日志（latest.log）。");
     }
 
     private void OnShowErrorLogPressed()
     {
         _showErrorLogPreview = true;
-        RefreshRuntimeLogPanel(true, "当前显示 latest-error.log。");
+        RefreshRuntimeLogPanel(true, "当前显示错误日志（latest-error.log）。");
     }
 
     private void OnCopyLogPressed()
@@ -134,12 +134,12 @@ public partial class GameScene
         var previewText = showErrorLog ? snapshot.LatestErrorLogText : snapshot.LatestLogText;
         var previewName = showErrorLog ? "latest-error.log" : "latest.log";
         var platformHint = snapshot.CanOpenDirectory
-            ? "可直接打开日志目录。"
-            : "当前平台不支持直接打开目录，请通过 user://logs 或 logcat 查看。";
+            ? "可直接打开这个日志目录。"
+            : "当前平台不能直接打开目录，请通过 user://logs 或 logcat 查看。";
 
         _debugOverlay.LogPathLabel.Text = $"日志目录: {snapshot.LogDirectoryPath}";
         _debugOverlay.LogSummaryLabel.Text =
-            $"预览文件: {previewName}\n文件路径: {previewPath}\n{platformHint}\n状态: {(_runtimeLogStatusMessage.Length > 0 ? _runtimeLogStatusMessage : "就绪")}";
+            $"当前文件：{previewName}\n文件路径：{previewPath}\n{platformHint}\n当前状态：{(_runtimeLogStatusMessage.Length > 0 ? _runtimeLogStatusMessage : "就绪")}";
         _debugOverlay.LogPreview.Text = previewText;
         _debugOverlay.OpenLogDirectoryButton.Disabled = !snapshot.CanOpenDirectory;
     }

@@ -268,7 +268,7 @@ public partial class GameScene : Node2D
         _jumpLevelInput.MinValue = 1;
         _jumpLevelInput.Step = 1;
         _jumpLevelInput.Value = _currentLevelNumber;
-        _layerFilterValue.Text = "<= L0";
+        _layerFilterValue.Text = "显示到第 0 层";
         _debugOverlay.TitleLabel.Text = "调试面板";
         _debugOverlay.HintLabel.Text = "这里是开发调试面板，只有点击具体按钮后才会执行对应操作。";
         _debugOverlay.ClosePanel();
@@ -756,7 +756,7 @@ public partial class GameScene : Node2D
     private void RefreshLayerFilterText()
     {
         var visibleLayer = Mathf.RoundToInt((float)_layerFilterSlider.Value);
-        _layerFilterValue.Text = $"<= L{visibleLayer}";
+        _layerFilterValue.Text = $"显示到第 {visibleLayer} 层";
     }
 
     /// <summary>显示正式的离开确认弹窗，避免误触后直接中断当前关卡。</summary>
@@ -800,7 +800,7 @@ public partial class GameScene : Node2D
         var manifestOrientation = ReadProjectSetting(BuildOrientationSettingPath, "unspecified");
 
         var buildSummary = $"构建信息 | 包名 {packageName} | 版本 {versionName} ({versionCode}) | 清单方向 {manifestOrientation}";
-        var boardSummary = $"当前棋盘 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 可见层 <= L{_boardController.VisibleMaxLayer}";
+        var boardSummary = $"当前棋盘 | 关卡 {_currentLevelNumber} | 剩余 {_boardController.CurrentRemainingTileCount} | 可动 {_boardController.CurrentMovableCount} | 已配对 {_boardController.CurrentMatchCount} | 分数 {_boardController.CurrentScore} | 显示到第 {_boardController.VisibleMaxLayer} 层";
         var rulesSummary = _boardController.GetCurrentRulesSummary();
         var sourceSummary = $"来源信息 | 类型 {_boardController.CurrentSourceKindLabel} | 来源 {_boardController.CurrentSourceName}";
         return $"{buildSummary}\n{boardSummary}\n{sourceSummary}\n{rulesSummary}";

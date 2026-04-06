@@ -300,7 +300,7 @@ public partial class HomePage : Control
     private void ConfigureDebugPanel()
     {
         _debugPanel.TitleLabel.Text = "首页调试面板";
-        _debugPanel.HintLabel.Text = "首页 DEBUG 只负责打开调试面板，不会自动进入关卡。";
+        _debugPanel.HintLabel.Text = "首页调试只负责打开面板，不会自动进入关卡。";
         _debugPanel.ProfileRow.Visible = false;
         _debugPanel.RulesSummaryLabel.Visible = false;
         _debugPanel.DebugLabel.Visible = false;
