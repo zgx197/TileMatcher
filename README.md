@@ -71,6 +71,31 @@
 
 当前最值得关注的方向是：
 
+
+### 工作台启动方式
+
+牌局分析台第一版已经作为本地网页服务接入仓库。
+
+常用入口：
+- 双击启动：[start-analysis-workbench.cmd](d:/UGit/TileMatcher/scripts/start-analysis-workbench.cmd)
+- PowerShell 启动：[start-analysis-workbench.ps1](d:/UGit/TileMatcher/scripts/start-analysis-workbench.ps1)
+- Node 脚本入口：[package.json](d:/UGit/TileMatcher/package.json)
+
+常用命令：
+
+```powershell
+scripts/start-analysis-workbench.cmd
+npm.cmd run analysis:check
+npm.cmd run analysis:dev -- --no-open
+```
+
+默认地址：
+- `http://127.0.0.1:3100`
+
+说明：
+- `start-analysis-workbench.cmd` 会自动探测已运行服务，必要时启动服务并打开浏览器
+- `--no-open` 可用于只启动服务不打开浏览器
+- `--port 3200` 可用于切换到其他端口
 - 继续稳住关卡体验与关卡数据质量。
 - 继续推进首页养宠玩法和主循环衔接。
 - 持续降低本地打包、CI 打包和资源同步的维护成本。
@@ -160,5 +185,6 @@ Godot 工程目录：
 - [产品方向与外围循环设计](d:/UGit/TileMatcher/docs/产品方向与外围循环设计.md)
 - [堆叠框架与网格规则设计](d:/UGit/TileMatcher/docs/堆叠框架与网格规则设计.md)
 - [配对牌局构造与评估系统设计](d:/UGit/TileMatcher/docs/配对牌局构造与评估系统设计.md)
+- [牌局分析台与服务化工作台设计](d:/UGit/TileMatcher/docs/牌局分析台与服务化工作台设计.md)
 - [构建与发布说明](d:/UGit/TileMatcher/docs/构建与发布说明.md)
 - [运行时日志系统设计](d:/UGit/TileMatcher/docs/运行时日志系统设计.md)
