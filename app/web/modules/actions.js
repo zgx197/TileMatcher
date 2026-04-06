@@ -58,7 +58,31 @@ function readFiltersFromDom(dom, state) {
   };
 }
 
-async function loadCandidateDetail(dom, state, candidateId) {
+function cacheCandidateDetail(state, detail) {
+  state.candidateDetailsById[detail.candidateId] = detail;
+  return detail;
+}
+
+function setRuntimeSelection(state, payload) {
+  state.runtimeSelection = {
+    batchId: payload?.batchId || state.currentBatchId,
+    candidateIds: payload?.candidateIds || [],
+    items: payload?.items || [],
+    updatedAt: payload?.updatedAt || "",
+    latestExportDraft: state.runtimeSelection?.latestExportDraft || null
+  };
+}
+
+async function fetchCandidateDetail(state, candidateId, force = false) {
+  if (!force && state.candidateDetailsById[candidateId]) {
+    return state.candidateDetailsById[candidateId];
+  }
+
+  const detailResponse = await api.getCandidateDetail(state.currentBatchId, candidateId);
+  return cacheCandidateDetail(state, detailResponse.item);
+}
+
+async function loadCandidateDetail(dom, state, candidateId, force = false) {
   if (!candidateId) {
     state.selectedCandidateId = "";
     state.selectedCandidateDetail = null;
@@ -72,8 +96,7 @@ async function loadCandidateDetail(dom, state, candidateId) {
   renderApp(dom, state);
 
   try {
-    const detailResponse = await api.getCandidateDetail(state.currentBatchId, candidateId);
-    state.selectedCandidateDetail = detailResponse.item;
+    state.selectedCandidateDetail = await fetchCandidateDetail(state, candidateId, force);
     state.isLoadingDetail = false;
     clearNotice(state);
     renderApp(dom, state);
@@ -81,6 +104,134 @@ async function loadCandidateDetail(dom, state, candidateId) {
     state.isLoadingDetail = false;
     state.selectedCandidateDetail = null;
     flashNotice(dom, state, error.message || "读取候选详情失败。", "error");
+  }
+}
+
+async function loadRuntimeSelection(dom, state) {
+  state.isLoadingRuntimeSelection = true;
+  renderApp(dom, state);
+
+  try {
+    const response = await api.getRuntimeSelection(state.currentBatchId);
+    setRuntimeSelection(state, response.item);
+    state.isLoadingRuntimeSelection = false;
+    clearNotice(state);
+    renderApp(dom, state);
+  } catch (error) {
+    state.isLoadingRuntimeSelection = false;
+    flashNotice(dom, state, error.message || "读取正式关卡编排池失败。", "error");
+  }
+}
+
+async function saveRuntimeSelection(dom, state, candidateIds) {
+  state.isLoadingRuntimeSelection = true;
+  renderApp(dom, state);
+
+  try {
+    const response = await api.saveRuntimeSelection(state.currentBatchId, candidateIds);
+    setRuntimeSelection(state, response.item);
+    state.isLoadingRuntimeSelection = false;
+    clearNotice(state);
+    renderApp(dom, state);
+    return response.item;
+  } catch (error) {
+    state.isLoadingRuntimeSelection = false;
+    flashNotice(dom, state, error.message || "保存正式关卡编排池失败。", "error");
+    return null;
+  }
+}
+
+async function toggleRuntimeSelection(dom, state, candidateId) {
+  if (!candidateId) {
+    return;
+  }
+
+  const currentIds = state.runtimeSelection.candidateIds || [];
+  if (currentIds.includes(candidateId)) {
+    const nextIds = currentIds.filter((item) => item !== candidateId);
+    const saved = await saveRuntimeSelection(dom, state, nextIds);
+    if (saved) {
+      flashNotice(dom, state, "已从正式关卡编排池移出。", "success");
+    }
+    return;
+  }
+
+  try {
+    await fetchCandidateDetail(state, candidateId);
+    const saved = await saveRuntimeSelection(dom, state, [...currentIds, candidateId]);
+    if (saved) {
+      flashNotice(dom, state, "已加入正式关卡编排池。", "success");
+    }
+  } catch (error) {
+    flashNotice(dom, state, error.message || "加入正式关卡编排池失败。", "error");
+  }
+}
+
+async function moveRuntimeSelection(dom, state, candidateId, direction) {
+  const currentIds = [...(state.runtimeSelection.candidateIds || [])];
+  const currentIndex = currentIds.indexOf(candidateId);
+  if (currentIndex < 0) {
+    return;
+  }
+
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= currentIds.length) {
+    return;
+  }
+
+  [currentIds[currentIndex], currentIds[targetIndex]] = [currentIds[targetIndex], currentIds[currentIndex]];
+  const saved = await saveRuntimeSelection(dom, state, currentIds);
+  if (saved) {
+    flashNotice(dom, state, "正式关卡顺序已更新。", "success");
+  }
+}
+
+async function createRuntimeDraft(dom, state) {
+  if (!state.runtimeSelection.candidateIds.length) {
+    flashNotice(dom, state, "正式关卡编排池还是空的，先加入候选再生成草案。", "error");
+    return;
+  }
+
+  state.isExportingRuntimeSelection = true;
+  renderApp(dom, state);
+
+  try {
+    const response = await api.createRuntimeSelectionDraft(state.currentBatchId);
+    state.runtimeSelection = {
+      ...state.runtimeSelection,
+      latestExportDraft: response.item
+    };
+    state.isExportingRuntimeSelection = false;
+    flashNotice(dom, state, "导出草案已生成。", "success");
+  } catch (error) {
+    state.isExportingRuntimeSelection = false;
+    flashNotice(dom, state, error.message || "生成导出草案失败。", "error");
+  }
+}
+
+async function toggleCompareCandidate(dom, state, candidateId) {
+  if (!candidateId) {
+    return;
+  }
+
+  if (state.compareCandidateIds.includes(candidateId)) {
+    state.compareCandidateIds = state.compareCandidateIds.filter((item) => item !== candidateId);
+    clearNotice(state);
+    renderApp(dom, state);
+    return;
+  }
+
+  if (state.compareCandidateIds.length >= 4) {
+    flashNotice(dom, state, "候选对比页最多同时放 4 局牌。", "error");
+    return;
+  }
+
+  try {
+    await fetchCandidateDetail(state, candidateId);
+    state.compareCandidateIds = [...state.compareCandidateIds, candidateId];
+    flashNotice(dom, state, "已加入候选对比页。", "success");
+  } catch (error) {
+    flashNotice(dom, state, error.message || "加入候选对比页失败。", "error");
   }
 }
 
@@ -133,11 +284,21 @@ async function refreshCandidateList(dom, state, preserveSelection = true) {
 async function loadBatch(dom, state, batchId) {
   state.currentBatchId = batchId;
   state.overview = null;
+  state.candidateDetailsById = {};
+  state.compareCandidateIds = [];
+  state.runtimeSelection = {
+    batchId,
+    candidateIds: [],
+    items: [],
+    updatedAt: "",
+    latestExportDraft: null
+  };
   state.selectedCandidateId = "";
   state.selectedCandidateDetail = null;
   state.isLoadingOverview = true;
   state.isLoadingList = true;
   state.isLoadingDetail = false;
+  state.isLoadingRuntimeSelection = true;
   renderApp(dom, state);
 
   try {
@@ -146,6 +307,7 @@ async function loadBatch(dom, state, batchId) {
     state.isLoadingOverview = false;
     applyOverviewFilterGuards(state);
     renderApp(dom, state);
+    await loadRuntimeSelection(dom, state);
     await refreshCandidateList(dom, state, false);
   } catch (error) {
     state.isLoadingOverview = false;
@@ -170,7 +332,9 @@ async function handleSaveReview(dom, state) {
 
   try {
     await api.upsertReview(state.currentBatchId, candidateId, payload);
+    delete state.candidateDetailsById[candidateId];
     await refreshCandidateList(dom, state, true);
+    await loadRuntimeSelection(dom, state);
     flashNotice(dom, state, "人工标记已保存。", "success");
   } catch (error) {
     flashNotice(dom, state, error.message || "保存人工标记失败。", "error");
@@ -185,7 +349,9 @@ async function handleDeleteReview(dom, state) {
 
   try {
     await api.deleteReview(state.currentBatchId, candidateId);
+    delete state.candidateDetailsById[candidateId];
     await refreshCandidateList(dom, state, true);
+    await loadRuntimeSelection(dom, state);
     flashNotice(dom, state, "人工标记已清除。", "success");
   } catch (error) {
     flashNotice(dom, state, error.message || "清除人工标记失败。", "error");
@@ -220,17 +386,97 @@ export function bindActions(dom, state) {
   });
 
   dom.candidateList.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-candidate-id]");
-    if (!button) {
+    const actionButton = event.target.closest("[data-action][data-candidate-id]");
+    if (!actionButton) {
       return;
     }
 
-    const candidateId = button.getAttribute("data-candidate-id");
-    if (!candidateId || candidateId === state.selectedCandidateId) {
+    const candidateId = actionButton.getAttribute("data-candidate-id");
+    const action = actionButton.getAttribute("data-action");
+    if (!candidateId) {
       return;
     }
 
-    await loadCandidateDetail(dom, state, candidateId);
+    if (action === "select-candidate") {
+      if (candidateId === state.selectedCandidateId) {
+        return;
+      }
+
+      await loadCandidateDetail(dom, state, candidateId);
+      return;
+    }
+
+    if (action === "toggle-compare") {
+      await toggleCompareCandidate(dom, state, candidateId);
+      return;
+    }
+
+    if (action === "toggle-runtime-selection") {
+      await toggleRuntimeSelection(dom, state, candidateId);
+    }
+  });
+
+  dom.comparePanel.addEventListener("click", async (event) => {
+    const actionButton = event.target.closest("[data-action][data-candidate-id]");
+    if (!actionButton) {
+      return;
+    }
+
+    const candidateId = actionButton.getAttribute("data-candidate-id");
+    const action = actionButton.getAttribute("data-action");
+    if (!candidateId) {
+      return;
+    }
+
+    if (action === "select-compare") {
+      await loadCandidateDetail(dom, state, candidateId);
+      return;
+    }
+
+    if (action === "toggle-runtime-selection") {
+      await toggleRuntimeSelection(dom, state, candidateId);
+      return;
+    }
+
+    if (action === "remove-compare") {
+      state.compareCandidateIds = state.compareCandidateIds.filter((item) => item !== candidateId);
+      clearNotice(state);
+      renderApp(dom, state);
+    }
+  });
+
+  dom.runtimeSelectionPanel.addEventListener("click", async (event) => {
+    const actionButton = event.target.closest("[data-action]");
+    if (!actionButton) {
+      return;
+    }
+
+    const action = actionButton.getAttribute("data-action");
+    const candidateId = actionButton.getAttribute("data-candidate-id");
+
+    if (action === "create-runtime-draft") {
+      await createRuntimeDraft(dom, state);
+      return;
+    }
+
+    if (action === "select-runtime-item") {
+      await loadCandidateDetail(dom, state, candidateId);
+      return;
+    }
+
+    if (action === "move-runtime-up") {
+      await moveRuntimeSelection(dom, state, candidateId, "up");
+      return;
+    }
+
+    if (action === "move-runtime-down") {
+      await moveRuntimeSelection(dom, state, candidateId, "down");
+      return;
+    }
+
+    if (action === "remove-runtime-item") {
+      await toggleRuntimeSelection(dom, state, candidateId);
+    }
   });
 
   dom.detailPanel.addEventListener("click", async (event) => {
@@ -240,6 +486,17 @@ export function bindActions(dom, state) {
     }
 
     const action = actionButton.getAttribute("data-action");
+    const candidateId = actionButton.getAttribute("data-candidate-id");
+    if (action === "toggle-compare") {
+      await toggleCompareCandidate(dom, state, candidateId || state.selectedCandidateId);
+      return;
+    }
+
+    if (action === "toggle-runtime-selection") {
+      await toggleRuntimeSelection(dom, state, candidateId || state.selectedCandidateId);
+      return;
+    }
+
     if (action === "save-review") {
       await handleSaveReview(dom, state);
       return;
@@ -274,6 +531,7 @@ export async function initializeWorkbench(dom, state) {
       return;
     }
 
+    await loadRuntimeSelection(dom, state);
     await refreshCandidateList(dom, state, false);
   } catch (error) {
     state.isBootstrapping = false;

@@ -23,6 +23,15 @@ export function createAppState() {
       page: 1,
       pageSize: 200
     },
+    candidateDetailsById: {},
+    compareCandidateIds: [],
+    runtimeSelection: {
+      batchId: "",
+      candidateIds: [],
+      items: [],
+      updatedAt: "",
+      latestExportDraft: null
+    },
     filters: createDefaultFilters(),
     selectedCandidateId: "",
     selectedCandidateDetail: null,
@@ -30,6 +39,8 @@ export function createAppState() {
     isLoadingOverview: false,
     isLoadingList: false,
     isLoadingDetail: false,
+    isLoadingRuntimeSelection: false,
+    isExportingRuntimeSelection: false,
     notice: null
   };
 }

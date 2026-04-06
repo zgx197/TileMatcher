@@ -56,6 +56,23 @@ export function getCandidateDetail(batchId, candidateId) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/candidates/${encodeURIComponent(candidateId)}`);
 }
 
+export function getRuntimeSelection(batchId) {
+  return request(`/api/batches/${encodeURIComponent(batchId)}/runtime-selection`);
+}
+
+export function saveRuntimeSelection(batchId, candidateIds) {
+  return request(`/api/batches/${encodeURIComponent(batchId)}/runtime-selection`, {
+    method: "PUT",
+    body: JSON.stringify({ candidateIds })
+  });
+}
+
+export function createRuntimeSelectionDraft(batchId) {
+  return request(`/api/batches/${encodeURIComponent(batchId)}/exports/runtime-selection`, {
+    method: "POST"
+  });
+}
+
 export function upsertReview(batchId, candidateId, review) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/reviews/${encodeURIComponent(candidateId)}`, {
     method: "PUT",

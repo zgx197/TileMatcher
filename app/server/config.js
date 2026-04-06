@@ -32,5 +32,11 @@ export const config = {
   },
   get presetsFile() {
     return path.join(this.workbenchDir, "presets.json");
+  },
+  get runtimeSelectionsFile() {
+    return path.join(this.workbenchDir, "runtime-selections.json");
+  },
+  get exportsDir() {
+    return path.join(this.workbenchDir, "exports");
   }
 };

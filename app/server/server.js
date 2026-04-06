@@ -4,6 +4,7 @@ import { sendError, sendJson, sendStaticFile } from "./lib/http.js";
 import { handleBootstrapRoutes } from "./routes/bootstrap-routes.js";
 import { handleBatchRoutes } from "./routes/batch-routes.js";
 import { handleCandidateRoutes } from "./routes/candidate-routes.js";
+import { handleExportRoutes } from "./routes/export-routes.js";
 import { handleReviewRoutes } from "./routes/review-routes.js";
 
 async function handleApi(req, res, url) {
@@ -25,6 +26,10 @@ async function handleApi(req, res, url) {
   }
 
   if (await handleReviewRoutes(req, res, url)) {
+    return true;
+  }
+
+  if (await handleExportRoutes(req, res, url)) {
     return true;
   }
 
