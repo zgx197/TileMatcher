@@ -1,5 +1,5 @@
 import { readRequestJson, sendJson } from "../lib/http.js";
-import { createRuntimeSelectionDraft, getExportDraft } from "../services/export-draft-service.js";
+import { commitExportDraft, createRuntimeSelectionDraft, getExportDraft } from "../services/export-draft-service.js";
 import { buildCandidateSummary, loadBatchCandidates } from "../services/batch-loader.js";
 import { getBatchReviews } from "../services/review-store.js";
 import { getBatchRuntimeSelection, saveBatchRuntimeSelection } from "../services/runtime-selection-store.js";
@@ -57,6 +57,14 @@ export async function handleExportRoutes(req, res, url) {
   if (exportMatch && req.method === "GET") {
     sendJson(res, 200, {
       item: await getExportDraft(exportMatch[1])
+    });
+    return true;
+  }
+
+  const commitMatch = url.pathname.match(/^\/api\/exports\/([^/]+)\/commit$/);
+  if (commitMatch && req.method === "POST") {
+    sendJson(res, 200, {
+      item: await commitExportDraft(commitMatch[1])
     });
     return true;
   }

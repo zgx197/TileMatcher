@@ -73,6 +73,21 @@ function setRuntimeSelection(state, payload) {
   };
 }
 
+function setLatestRuntimeDraft(state, payload) {
+  if (!payload) {
+    state.runtimeSelection = {
+      ...state.runtimeSelection,
+      latestExportDraft: null
+    };
+    return;
+  }
+
+  state.runtimeSelection = {
+    ...state.runtimeSelection,
+    latestExportDraft: payload
+  };
+}
+
 async function fetchCandidateDetail(state, candidateId, force = false) {
   if (!force && state.candidateDetailsById[candidateId]) {
     return state.candidateDetailsById[candidateId];
@@ -120,6 +135,42 @@ async function loadRuntimeSelection(dom, state) {
   } catch (error) {
     state.isLoadingRuntimeSelection = false;
     flashNotice(dom, state, error.message || "读取正式关卡编排池失败。", "error");
+  }
+}
+
+async function refreshBatchOverview(state) {
+  state.overview = await api.getBatchOverview(state.currentBatchId);
+  applyOverviewFilterGuards(state);
+}
+
+async function loadRuntimeDraft(dom, state, exportId, options = {}) {
+  if (!exportId) {
+    return null;
+  }
+
+  const { silent = false } = options;
+  if (!silent) {
+    state.isLoadingRuntimeDraft = true;
+    renderApp(dom, state);
+  }
+
+  try {
+    const response = await api.getExportDraft(exportId);
+    setLatestRuntimeDraft(state, response.item);
+
+    if (!silent) {
+      state.isLoadingRuntimeDraft = false;
+      clearNotice(state);
+      renderApp(dom, state);
+    }
+
+    return response.item;
+  } catch (error) {
+    if (!silent) {
+      state.isLoadingRuntimeDraft = false;
+      flashNotice(dom, state, error.message || "读取导出草案失败。", "error");
+    }
+    return null;
   }
 }
 
@@ -197,15 +248,47 @@ async function createRuntimeDraft(dom, state) {
 
   try {
     const response = await api.createRuntimeSelectionDraft(state.currentBatchId);
-    state.runtimeSelection = {
-      ...state.runtimeSelection,
-      latestExportDraft: response.item
-    };
+    await loadRuntimeDraft(dom, state, response.item.exportId, { silent: true });
     state.isExportingRuntimeSelection = false;
+    state.isLoadingRuntimeDraft = false;
     flashNotice(dom, state, "导出草案已生成。", "success");
   } catch (error) {
     state.isExportingRuntimeSelection = false;
+    state.isLoadingRuntimeDraft = false;
     flashNotice(dom, state, error.message || "生成导出草案失败。", "error");
+  }
+}
+
+async function commitRuntimeDraft(dom, state, exportId) {
+  if (!exportId) {
+    flashNotice(dom, state, "还没有可提交的导出草案。", "error");
+    return;
+  }
+
+  state.isCommittingRuntimeDraft = true;
+  renderApp(dom, state);
+
+  try {
+    const response = await api.commitExportDraft(exportId);
+    const latestDraft = state.runtimeSelection.latestExportDraft || null;
+    if (latestDraft) {
+      setLatestRuntimeDraft(state, {
+        ...latestDraft,
+        commit: response.item
+      });
+    }
+
+    state.candidateDetailsById = {};
+    await refreshBatchOverview(state);
+    await loadRuntimeSelection(dom, state);
+    await refreshCandidateList(dom, state, true);
+    await loadRuntimeDraft(dom, state, exportId, { silent: true });
+    state.isCommittingRuntimeDraft = false;
+    state.isLoadingRuntimeDraft = false;
+    flashNotice(dom, state, "导出草案已提交到正式目录。", "success");
+  } catch (error) {
+    state.isCommittingRuntimeDraft = false;
+    flashNotice(dom, state, error.message || "提交导出草案失败。", "error");
   }
 }
 
@@ -299,6 +382,8 @@ async function loadBatch(dom, state, batchId) {
   state.isLoadingList = true;
   state.isLoadingDetail = false;
   state.isLoadingRuntimeSelection = true;
+  state.isLoadingRuntimeDraft = false;
+  state.isCommittingRuntimeDraft = false;
   renderApp(dom, state);
 
   try {
@@ -456,6 +541,16 @@ export function bindActions(dom, state) {
 
     if (action === "create-runtime-draft") {
       await createRuntimeDraft(dom, state);
+      return;
+    }
+
+    if (action === "preview-runtime-draft") {
+      await loadRuntimeDraft(dom, state, state.runtimeSelection.latestExportDraft?.exportId);
+      return;
+    }
+
+    if (action === "commit-runtime-draft") {
+      await commitRuntimeDraft(dom, state, state.runtimeSelection.latestExportDraft?.exportId);
       return;
     }
 

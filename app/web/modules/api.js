@@ -73,6 +73,16 @@ export function createRuntimeSelectionDraft(batchId) {
   });
 }
 
+export function getExportDraft(exportId) {
+  return request(`/api/exports/${encodeURIComponent(exportId)}`);
+}
+
+export function commitExportDraft(exportId) {
+  return request(`/api/exports/${encodeURIComponent(exportId)}/commit`, {
+    method: "POST"
+  });
+}
+
 export function upsertReview(batchId, candidateId, review) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/reviews/${encodeURIComponent(candidateId)}`, {
     method: "PUT",

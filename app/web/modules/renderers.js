@@ -251,6 +251,81 @@ function renderComparePanel(dom, state) {
   `;
 }
 
+function renderRuntimeDraftPreview(state, latestDraft) {
+  const draftItems = latestDraft?.items || [];
+  if (!draftItems.length) {
+    return `
+      <section class="detail-section">
+        <h4 class="section-title">草案预览</h4>
+        <div class="empty-state runtime-preview-empty">点击“查看草案预览”后，这里会展示本次草案的关卡顺序与候选摘要。</div>
+      </section>
+    `;
+  }
+
+  const previewLayoutItem = draftItems.find((item) => item.layout?.tiles?.length) || null;
+
+  return `
+    <section class="detail-section">
+      <div class="panel-header runtime-preview-header">
+        <div>
+          <h4 class="section-title">草案预览</h4>
+          <p class="detail-copy">按当前编排顺序预览即将写入正式目录的关卡草案。</p>
+        </div>
+      </div>
+
+      <div class="runtime-draft-list">
+        ${draftItems.map((item) => `
+          <article class="runtime-draft-item ${item.candidateId === state.selectedCandidateId ? "is-selected" : ""}">
+            <div class="runtime-item-main">
+              <div class="runtime-order">#${formatCount(item.levelNumber)}</div>
+              <div>
+                <h3 class="candidate-title">${escapeHtml(item.candidateId)}</h3>
+                <div class="candidate-subtitle">${presentDifficulty(item.difficultyBucket)} · 推荐分 ${formatPercent(item.recommendationScore, 1)}</div>
+              </div>
+            </div>
+
+            <div class="runtime-metrics">
+              <div class="detail-stat">
+                <span>随机存活率</span>
+                <strong>${formatPercent(item.randomPlaySurvivalRate, 1)}</strong>
+              </div>
+              <div class="detail-stat">
+                <span>死局率</span>
+                <strong>${formatPercent(item.deadEndRate, 1)}</strong>
+              </div>
+              <div class="detail-stat">
+                <span>牌数 / 层数</span>
+                <strong>${formatCount(item.tileCount)} / ${formatCount(item.layerCount)}</strong>
+              </div>
+            </div>
+
+            <div class="chip-wrap">
+              <span class="tone-pill" data-tone="${presentToneForMark(item.review?.mark || "")}">${presentMark(item.review?.mark || "")}</span>
+              ${item.hiddenFaceCount ? `<span class="chip is-warm">遮面 ${formatCount(item.hiddenFaceCount)}</span>` : ""}
+            </div>
+
+            <div class="card-actions">
+              <button type="button" class="ghost-button" data-action="select-runtime-item" data-candidate-id="${escapeHtml(item.candidateId)}">切到详情</button>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+
+      ${previewLayoutItem ? `
+        <div class="runtime-preview-layout">
+          <div class="panel-header runtime-preview-header">
+            <div>
+              <h4 class="section-title">首关结构预览</h4>
+              <p class="detail-copy">${escapeHtml(previewLayoutItem.candidateId)} 将作为第 ${formatCount(previewLayoutItem.levelNumber)} 关写入正式目录。</p>
+            </div>
+          </div>
+          ${renderLayoutPreview(previewLayoutItem.layout)}
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function renderRuntimeSelectionPanel(dom, state) {
   const runtimeSelection = state.runtimeSelection || { items: [] };
   const items = runtimeSelection.items || [];
@@ -277,8 +352,14 @@ function renderRuntimeSelectionPanel(dom, state) {
         这一步只生成本地导出草案，不会直接覆写正式运行时目录。
       </div>
       <div class="card-actions">
+        <button type="button" class="ghost-button" data-action="preview-runtime-draft" ${latestDraft?.exportId ? "" : "disabled"}>
+          ${state.isLoadingRuntimeDraft ? "正在读取草案" : "查看草案预览"}
+        </button>
         <button type="button" class="primary-button" data-action="create-runtime-draft" ${state.isExportingRuntimeSelection ? "disabled" : ""}>
           ${state.isExportingRuntimeSelection ? "正在生成草案" : "生成导出草案"}
+        </button>
+        <button type="button" class="secondary-button" data-action="commit-runtime-draft" ${latestDraft?.exportId && !state.isCommittingRuntimeDraft ? "" : "disabled"}>
+          ${state.isCommittingRuntimeDraft ? "正在提交正式目录" : "提交到正式目录"}
         </button>
       </div>
     </div>
@@ -346,7 +427,30 @@ function renderRuntimeSelectionPanel(dom, state) {
             <strong class="meta-value runtime-path">${escapeHtml(latestDraft.filePath)}</strong>
           </div>
         </div>
+
+        ${latestDraft.commit ? `
+          <div class="detail-meta-grid">
+            <div class="meta-row">
+              <span class="meta-key">最近提交</span>
+              <strong class="meta-value">${formatDateTime(latestDraft.commit.committedAt)}</strong>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">正式目录</span>
+              <strong class="meta-value runtime-path">${escapeHtml(latestDraft.commit.runtimeDir)}</strong>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">目录索引</span>
+              <strong class="meta-value runtime-path">${escapeHtml(latestDraft.commit.levelCatalogPath)}</strong>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">备份目录</span>
+              <strong class="meta-value runtime-path">${escapeHtml(latestDraft.commit.backupDir)}</strong>
+            </div>
+          </div>
+        ` : ""}
       </section>
+
+      ${renderRuntimeDraftPreview(state, latestDraft)}
     ` : ""}
   `;
 }

@@ -41,6 +41,8 @@ export function createAppState() {
     isLoadingDetail: false,
     isLoadingRuntimeSelection: false,
     isExportingRuntimeSelection: false,
+    isLoadingRuntimeDraft: false,
+    isCommittingRuntimeDraft: false,
     notice: null
   };
 }
