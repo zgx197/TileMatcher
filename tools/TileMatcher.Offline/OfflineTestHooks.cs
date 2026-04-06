@@ -19,4 +19,21 @@ internal static class OfflineTestHooks
     {
         OfflinePipeline.ExportRuntimeLevelsForTests(runtimeDir, accepted, hiddenFaceConfig);
     }
+
+    public static string ExportAnalysisDashboard(
+        OfflineBatchConfig config,
+        string analysisDir,
+        IReadOnlyList<OfflineCandidateRecord> candidates,
+        IReadOnlyList<OfflineCandidateRecord> accepted,
+        IReadOnlyList<OfflineCandidateRecord> review,
+        DateTime generatedAtUtc)
+    {
+        return OfflinePipeline.ExportAnalysisDashboardForTests(
+            config,
+            analysisDir,
+            candidates,
+            accepted,
+            review,
+            generatedAtUtc);
+    }
 }

@@ -170,6 +170,7 @@ public sealed class OfflineBatchSummary
     public int NeedsReviewCount { get; init; }
     public int RejectedCount { get; init; }
     public string AnalysisOutputDir { get; init; } = string.Empty;
+    public string AnalysisDashboardPath { get; init; } = string.Empty;
     public string RuntimeOutputDir { get; init; } = string.Empty;
 }
 

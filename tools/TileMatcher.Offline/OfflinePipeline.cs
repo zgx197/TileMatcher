@@ -70,7 +70,7 @@ internal static partial class OfflinePipeline
             .OrderByDescending(candidate => candidate.FilterResult.RecommendationScore)
             .ToList();
 
-        ExportAnalysisFiles(config, analysisDir, candidates, accepted, review);
+        var analysisDashboardPath = ExportAnalysisFiles(config, analysisDir, candidates, accepted, review);
         ExportRuntimeLevels(runtimeDir, accepted, config.HiddenFace);
 
         return new OfflineBatchSummary
@@ -81,17 +81,19 @@ internal static partial class OfflinePipeline
             NeedsReviewCount = review.Count,
             RejectedCount = candidates.Count(candidate => candidate.FilterResult.Decision == OfflineFilterDecision.AutoReject),
             AnalysisOutputDir = analysisDir,
+            AnalysisDashboardPath = analysisDashboardPath,
             RuntimeOutputDir = runtimeDir,
         };
     }
 
-    private static void ExportAnalysisFiles(
+    private static string ExportAnalysisFiles(
         OfflineBatchConfig config,
         string analysisDir,
         IReadOnlyList<OfflineCandidateRecord> candidates,
         IReadOnlyList<OfflineCandidateRecord> accepted,
         IReadOnlyList<OfflineCandidateRecord> review)
     {
+        var generatedAtUtc = DateTime.UtcNow;
         WriteJson(Path.Combine(analysisDir, "candidates.json"), candidates);
         WriteJson(Path.Combine(analysisDir, "accepted.json"), accepted);
         WriteJson(Path.Combine(analysisDir, "needs-review.json"), review);
@@ -104,8 +106,10 @@ internal static partial class OfflinePipeline
                 AcceptedCount = accepted.Count,
                 NeedsReviewCount = review.Count,
                 RejectedCount = candidates.Count(candidate => candidate.FilterResult.Decision == OfflineFilterDecision.AutoReject),
-                GeneratedAtUtc = DateTime.UtcNow,
+                GeneratedAtUtc = generatedAtUtc,
             });
+
+        return ExportAnalysisDashboard(config, analysisDir, candidates, accepted, review, generatedAtUtc);
     }
 
     private static void ExportRuntimeLevels(

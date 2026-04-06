@@ -22,6 +22,7 @@ internal static class Program
             Console.WriteLine($"[Offline] 待复核: {summary.NeedsReviewCount}");
             Console.WriteLine($"[Offline] 自动淘汰: {summary.RejectedCount}");
             Console.WriteLine($"[Offline] 分析输出: {summary.AnalysisOutputDir}");
+            Console.WriteLine($"[Offline] 分析台首页: {summary.AnalysisDashboardPath}");
             Console.WriteLine($"[Offline] 运行时关卡输出: {summary.RuntimeOutputDir}");
             return 0;
         }
