@@ -56,11 +56,15 @@ godot/TileMatcher.csproj.old
 *.tmp
 *.log
 *.orig
+node_modules/
 artifacts/
 sandbox/
 tmp-release-inspect/
 build-support/gradle/*
 !build-support/gradle/.gitkeep
+storage/workbench/*.json
+storage/workbench/exports/
+!storage/workbench/.gitkeep
 
 # OS
 Thumbs.db

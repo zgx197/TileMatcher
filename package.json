@@ -1,0 +1,11 @@
+{
+  "name": "tilematcher-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "analysis:start": "node app/server/server.js",
+    "analysis:dev": "node app/server/scripts/dev.js",
+    "analysis:check": "node app/server/scripts/check.js"
+  }
+}
