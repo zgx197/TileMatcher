@@ -57,6 +57,8 @@ godot/TileMatcher.csproj.old
 *.log
 *.orig
 artifacts/
+sandbox/
+tmp-release-inspect/
 build-support/gradle/*
 !build-support/gradle/.gitkeep
 
