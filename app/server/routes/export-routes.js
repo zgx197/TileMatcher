@@ -1,5 +1,5 @@
 import { readRequestJson, sendJson } from "../lib/http.js";
-import { commitExportDraft, createRuntimeSelectionDraft, getExportDraft } from "../services/export-draft-service.js";
+import { commitExportDraft, createRuntimeSelectionDraft, getExportDraft, listBatchExports } from "../services/export-draft-service.js";
 import { buildCandidateSummary, loadBatchCandidates } from "../services/batch-loader.js";
 import { getBatchReviews } from "../services/review-store.js";
 import { getBatchRuntimeSelection, saveBatchRuntimeSelection } from "../services/runtime-selection-store.js";
@@ -49,6 +49,14 @@ export async function handleExportRoutes(req, res, url) {
   if (draftMatch && req.method === "POST") {
     sendJson(res, 200, {
       item: await createRuntimeSelectionDraft(draftMatch[1])
+    });
+    return true;
+  }
+
+  const batchExportsMatch = url.pathname.match(/^\/api\/batches\/([^/]+)\/exports$/);
+  if (batchExportsMatch && req.method === "GET") {
+    sendJson(res, 200, {
+      item: await listBatchExports(batchExportsMatch[1])
     });
     return true;
   }

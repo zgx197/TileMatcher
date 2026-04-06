@@ -12,7 +12,7 @@
         <div>
           <p class="eyebrow">TileMatcher Workbench</p>
           <h1>牌局内容生产工作台</h1>
-          <p class="hero-copy">围绕离线批次、候选筛选、人工标记和正式关卡编排演进的本地工作台第一版骨架。</p>
+          <p class="hero-copy">围绕离线批次、候选筛选、人工标记、正式关卡编排与诊断排查演进的一套本地工作台。</p>
         </div>
         <div class="hero-card">
           <span class="hero-label">当前批次</span>
@@ -49,7 +49,7 @@
                 </select>
               </label>
               <label class="field">
-                <span>难度桶</span>
+                <span>难度档</span>
                 <select id="difficulty-select">
                   <option value="">全部</option>
                 </select>
@@ -124,6 +124,17 @@
               <p class="mini-title">高频标签</p>
               <div id="top-tags" class="chip-wrap empty-state">加载中...</div>
             </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Diagnostics</p>
+                <h2>健康与诊断</h2>
+              </div>
+              <span id="diagnostics-status-badge" class="badge">-</span>
+            </div>
+            <div id="diagnostics-panel" class="detail-panel empty-state">正在加载诊断信息...</div>
           </section>
         </aside>
 

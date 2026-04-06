@@ -1,6 +1,16 @@
 import * as api from "./api.js";
 import { renderApp } from "./renderers.js";
-import { createDefaultFilters } from "./state.js";
+import { createDefaultFilters, createEmptyDiagnosticsState } from "./state.js";
+import {
+  commitRuntimeDraft,
+  createRuntimeDraft,
+  loadBatchExportHistory,
+  loadRuntimeDraft,
+  loadRuntimeSelection,
+  moveRuntimeSelection,
+  resetRuntimeSelectionState,
+  toggleRuntimeSelection
+} from "./runtime-selection-actions.js";
 
 let noticeTimer = null;
 
@@ -63,28 +73,12 @@ function cacheCandidateDetail(state, detail) {
   return detail;
 }
 
-function setRuntimeSelection(state, payload) {
-  state.runtimeSelection = {
-    batchId: payload?.batchId || state.currentBatchId,
-    candidateIds: payload?.candidateIds || [],
-    items: payload?.items || [],
-    updatedAt: payload?.updatedAt || "",
-    latestExportDraft: state.runtimeSelection?.latestExportDraft || null
-  };
-}
-
-function setLatestRuntimeDraft(state, payload) {
-  if (!payload) {
-    state.runtimeSelection = {
-      ...state.runtimeSelection,
-      latestExportDraft: null
-    };
-    return;
-  }
-
-  state.runtimeSelection = {
-    ...state.runtimeSelection,
-    latestExportDraft: payload
+function setDiagnosticsState(state, payload) {
+  state.diagnostics = {
+    health: payload?.health || null,
+    workbench: payload?.workbench || null,
+    batchIntegrity: payload?.batchIntegrity || null,
+    recentOperations: payload?.recentOperations || []
   };
 }
 
@@ -122,173 +116,43 @@ async function loadCandidateDetail(dom, state, candidateId, force = false) {
   }
 }
 
-async function loadRuntimeSelection(dom, state) {
-  state.isLoadingRuntimeSelection = true;
-  renderApp(dom, state);
-
-  try {
-    const response = await api.getRuntimeSelection(state.currentBatchId);
-    setRuntimeSelection(state, response.item);
-    state.isLoadingRuntimeSelection = false;
-    clearNotice(state);
-    renderApp(dom, state);
-  } catch (error) {
-    state.isLoadingRuntimeSelection = false;
-    flashNotice(dom, state, error.message || "读取正式关卡编排池失败。", "error");
-  }
-}
-
 async function refreshBatchOverview(state) {
   state.overview = await api.getBatchOverview(state.currentBatchId);
   applyOverviewFilterGuards(state);
 }
 
-async function loadRuntimeDraft(dom, state, exportId, options = {}) {
-  if (!exportId) {
-    return null;
-  }
-
+async function loadDiagnostics(dom, state, options = {}) {
   const { silent = false } = options;
+
   if (!silent) {
-    state.isLoadingRuntimeDraft = true;
+    state.isLoadingDiagnostics = true;
     renderApp(dom, state);
   }
 
   try {
-    const response = await api.getExportDraft(exportId);
-    setLatestRuntimeDraft(state, response.item);
+    const [health, diagnostics, batchIntegrity] = await Promise.all([
+      api.getHealth(),
+      api.getDiagnostics(),
+      state.currentBatchId ? api.getBatchIntegrity(state.currentBatchId) : Promise.resolve(null)
+    ]);
+
+    setDiagnosticsState(state, {
+      health,
+      workbench: diagnostics?.workbench || null,
+      batchIntegrity,
+      recentOperations: diagnostics?.recentOperations || []
+    });
+    state.isLoadingDiagnostics = false;
 
     if (!silent) {
-      state.isLoadingRuntimeDraft = false;
       clearNotice(state);
       renderApp(dom, state);
     }
-
-    return response.item;
   } catch (error) {
+    state.isLoadingDiagnostics = false;
     if (!silent) {
-      state.isLoadingRuntimeDraft = false;
-      flashNotice(dom, state, error.message || "读取导出草案失败。", "error");
+      flashNotice(dom, state, error.message || "读取诊断信息失败。", "error");
     }
-    return null;
-  }
-}
-
-async function saveRuntimeSelection(dom, state, candidateIds) {
-  state.isLoadingRuntimeSelection = true;
-  renderApp(dom, state);
-
-  try {
-    const response = await api.saveRuntimeSelection(state.currentBatchId, candidateIds);
-    setRuntimeSelection(state, response.item);
-    state.isLoadingRuntimeSelection = false;
-    clearNotice(state);
-    renderApp(dom, state);
-    return response.item;
-  } catch (error) {
-    state.isLoadingRuntimeSelection = false;
-    flashNotice(dom, state, error.message || "保存正式关卡编排池失败。", "error");
-    return null;
-  }
-}
-
-async function toggleRuntimeSelection(dom, state, candidateId) {
-  if (!candidateId) {
-    return;
-  }
-
-  const currentIds = state.runtimeSelection.candidateIds || [];
-  if (currentIds.includes(candidateId)) {
-    const nextIds = currentIds.filter((item) => item !== candidateId);
-    const saved = await saveRuntimeSelection(dom, state, nextIds);
-    if (saved) {
-      flashNotice(dom, state, "已从正式关卡编排池移出。", "success");
-    }
-    return;
-  }
-
-  try {
-    await fetchCandidateDetail(state, candidateId);
-    const saved = await saveRuntimeSelection(dom, state, [...currentIds, candidateId]);
-    if (saved) {
-      flashNotice(dom, state, "已加入正式关卡编排池。", "success");
-    }
-  } catch (error) {
-    flashNotice(dom, state, error.message || "加入正式关卡编排池失败。", "error");
-  }
-}
-
-async function moveRuntimeSelection(dom, state, candidateId, direction) {
-  const currentIds = [...(state.runtimeSelection.candidateIds || [])];
-  const currentIndex = currentIds.indexOf(candidateId);
-  if (currentIndex < 0) {
-    return;
-  }
-
-  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-  if (targetIndex < 0 || targetIndex >= currentIds.length) {
-    return;
-  }
-
-  [currentIds[currentIndex], currentIds[targetIndex]] = [currentIds[targetIndex], currentIds[currentIndex]];
-  const saved = await saveRuntimeSelection(dom, state, currentIds);
-  if (saved) {
-    flashNotice(dom, state, "正式关卡顺序已更新。", "success");
-  }
-}
-
-async function createRuntimeDraft(dom, state) {
-  if (!state.runtimeSelection.candidateIds.length) {
-    flashNotice(dom, state, "正式关卡编排池还是空的，先加入候选再生成草案。", "error");
-    return;
-  }
-
-  state.isExportingRuntimeSelection = true;
-  renderApp(dom, state);
-
-  try {
-    const response = await api.createRuntimeSelectionDraft(state.currentBatchId);
-    await loadRuntimeDraft(dom, state, response.item.exportId, { silent: true });
-    state.isExportingRuntimeSelection = false;
-    state.isLoadingRuntimeDraft = false;
-    flashNotice(dom, state, "导出草案已生成。", "success");
-  } catch (error) {
-    state.isExportingRuntimeSelection = false;
-    state.isLoadingRuntimeDraft = false;
-    flashNotice(dom, state, error.message || "生成导出草案失败。", "error");
-  }
-}
-
-async function commitRuntimeDraft(dom, state, exportId) {
-  if (!exportId) {
-    flashNotice(dom, state, "还没有可提交的导出草案。", "error");
-    return;
-  }
-
-  state.isCommittingRuntimeDraft = true;
-  renderApp(dom, state);
-
-  try {
-    const response = await api.commitExportDraft(exportId);
-    const latestDraft = state.runtimeSelection.latestExportDraft || null;
-    if (latestDraft) {
-      setLatestRuntimeDraft(state, {
-        ...latestDraft,
-        commit: response.item
-      });
-    }
-
-    state.candidateDetailsById = {};
-    await refreshBatchOverview(state);
-    await loadRuntimeSelection(dom, state);
-    await refreshCandidateList(dom, state, true);
-    await loadRuntimeDraft(dom, state, exportId, { silent: true });
-    state.isCommittingRuntimeDraft = false;
-    state.isLoadingRuntimeDraft = false;
-    flashNotice(dom, state, "导出草案已提交到正式目录。", "success");
-  } catch (error) {
-    state.isCommittingRuntimeDraft = false;
-    flashNotice(dom, state, error.message || "提交导出草案失败。", "error");
   }
 }
 
@@ -364,24 +228,31 @@ async function refreshCandidateList(dom, state, preserveSelection = true) {
   }
 }
 
+function getRuntimeHelpers(dom, state) {
+  return {
+    clearNotice,
+    flashNotice,
+    fetchCandidateDetail,
+    refreshBatchOverview,
+    refreshCandidateList: (targetDom, targetState, preserveSelection) => refreshCandidateList(targetDom, targetState, preserveSelection)
+  };
+}
+
 async function loadBatch(dom, state, batchId) {
   state.currentBatchId = batchId;
   state.overview = null;
   state.candidateDetailsById = {};
   state.compareCandidateIds = [];
-  state.runtimeSelection = {
-    batchId,
-    candidateIds: [],
-    items: [],
-    updatedAt: "",
-    latestExportDraft: null
-  };
+  resetRuntimeSelectionState(state, batchId);
+  state.diagnostics = createEmptyDiagnosticsState();
   state.selectedCandidateId = "";
   state.selectedCandidateDetail = null;
   state.isLoadingOverview = true;
   state.isLoadingList = true;
   state.isLoadingDetail = false;
   state.isLoadingRuntimeSelection = true;
+  state.isLoadingExportHistory = true;
+  state.isLoadingDiagnostics = true;
   state.isLoadingRuntimeDraft = false;
   state.isCommittingRuntimeDraft = false;
   renderApp(dom, state);
@@ -392,11 +263,17 @@ async function loadBatch(dom, state, batchId) {
     state.isLoadingOverview = false;
     applyOverviewFilterGuards(state);
     renderApp(dom, state);
-    await loadRuntimeSelection(dom, state);
+
+    const runtimeHelpers = getRuntimeHelpers(dom, state);
+    await loadRuntimeSelection(dom, state, runtimeHelpers);
+    await loadBatchExportHistory(dom, state, runtimeHelpers, { silent: true });
+    await loadDiagnostics(dom, state, { silent: true });
     await refreshCandidateList(dom, state, false);
   } catch (error) {
     state.isLoadingOverview = false;
     state.isLoadingList = false;
+    state.isLoadingExportHistory = false;
+    state.isLoadingDiagnostics = false;
     flashNotice(dom, state, error.message || "读取批次摘要失败。", "error");
   }
 }
@@ -419,7 +296,7 @@ async function handleSaveReview(dom, state) {
     await api.upsertReview(state.currentBatchId, candidateId, payload);
     delete state.candidateDetailsById[candidateId];
     await refreshCandidateList(dom, state, true);
-    await loadRuntimeSelection(dom, state);
+    await loadRuntimeSelection(dom, state, getRuntimeHelpers(dom, state));
     flashNotice(dom, state, "人工标记已保存。", "success");
   } catch (error) {
     flashNotice(dom, state, error.message || "保存人工标记失败。", "error");
@@ -436,7 +313,7 @@ async function handleDeleteReview(dom, state) {
     await api.deleteReview(state.currentBatchId, candidateId);
     delete state.candidateDetailsById[candidateId];
     await refreshCandidateList(dom, state, true);
-    await loadRuntimeSelection(dom, state);
+    await loadRuntimeSelection(dom, state, getRuntimeHelpers(dom, state));
     flashNotice(dom, state, "人工标记已清除。", "success");
   } catch (error) {
     flashNotice(dom, state, error.message || "清除人工标记失败。", "error");
@@ -497,7 +374,7 @@ export function bindActions(dom, state) {
     }
 
     if (action === "toggle-runtime-selection") {
-      await toggleRuntimeSelection(dom, state, candidateId);
+      await toggleRuntimeSelection(dom, state, getRuntimeHelpers(dom, state), candidateId);
     }
   });
 
@@ -519,7 +396,7 @@ export function bindActions(dom, state) {
     }
 
     if (action === "toggle-runtime-selection") {
-      await toggleRuntimeSelection(dom, state, candidateId);
+      await toggleRuntimeSelection(dom, state, getRuntimeHelpers(dom, state), candidateId);
       return;
     }
 
@@ -538,19 +415,27 @@ export function bindActions(dom, state) {
 
     const action = actionButton.getAttribute("data-action");
     const candidateId = actionButton.getAttribute("data-candidate-id");
+    const runtimeHelpers = getRuntimeHelpers(dom, state);
 
     if (action === "create-runtime-draft") {
-      await createRuntimeDraft(dom, state);
+      await createRuntimeDraft(dom, state, runtimeHelpers);
+      await loadDiagnostics(dom, state, { silent: true });
       return;
     }
 
     if (action === "preview-runtime-draft") {
-      await loadRuntimeDraft(dom, state, state.runtimeSelection.latestExportDraft?.exportId);
+      await loadRuntimeDraft(dom, state, runtimeHelpers, state.runtimeSelection.latestExportDraft?.exportId);
+      return;
+    }
+
+    if (action === "preview-runtime-history-draft") {
+      await loadRuntimeDraft(dom, state, runtimeHelpers, actionButton.getAttribute("data-export-id"));
       return;
     }
 
     if (action === "commit-runtime-draft") {
-      await commitRuntimeDraft(dom, state, state.runtimeSelection.latestExportDraft?.exportId);
+      await commitRuntimeDraft(dom, state, runtimeHelpers, state.runtimeSelection.latestExportDraft?.exportId);
+      await loadDiagnostics(dom, state, { silent: true });
       return;
     }
 
@@ -560,17 +445,17 @@ export function bindActions(dom, state) {
     }
 
     if (action === "move-runtime-up") {
-      await moveRuntimeSelection(dom, state, candidateId, "up");
+      await moveRuntimeSelection(dom, state, runtimeHelpers, candidateId, "up");
       return;
     }
 
     if (action === "move-runtime-down") {
-      await moveRuntimeSelection(dom, state, candidateId, "down");
+      await moveRuntimeSelection(dom, state, runtimeHelpers, candidateId, "down");
       return;
     }
 
     if (action === "remove-runtime-item") {
-      await toggleRuntimeSelection(dom, state, candidateId);
+      await toggleRuntimeSelection(dom, state, runtimeHelpers, candidateId);
     }
   });
 
@@ -588,7 +473,7 @@ export function bindActions(dom, state) {
     }
 
     if (action === "toggle-runtime-selection") {
-      await toggleRuntimeSelection(dom, state, candidateId || state.selectedCandidateId);
+      await toggleRuntimeSelection(dom, state, getRuntimeHelpers(dom, state), candidateId || state.selectedCandidateId);
       return;
     }
 
@@ -601,11 +486,23 @@ export function bindActions(dom, state) {
       await handleDeleteReview(dom, state);
     }
   });
+
+  dom.diagnosticsPanel.addEventListener("click", async (event) => {
+    const actionButton = event.target.closest("[data-action]");
+    if (!actionButton) {
+      return;
+    }
+
+    if (actionButton.getAttribute("data-action") === "refresh-diagnostics") {
+      await loadDiagnostics(dom, state);
+    }
+  });
 }
 
 export async function initializeWorkbench(dom, state) {
   state.isBootstrapping = true;
   state.isLoadingList = true;
+  state.isLoadingDiagnostics = true;
   renderApp(dom, state);
 
   try {
@@ -622,15 +519,20 @@ export async function initializeWorkbench(dom, state) {
 
     if (!state.currentBatchId) {
       state.isLoadingList = false;
+      state.isLoadingDiagnostics = false;
       flashNotice(dom, state, "当前没有可用的离线批次，请先生成分析产物。", "error");
       return;
     }
 
-    await loadRuntimeSelection(dom, state);
+    const runtimeHelpers = getRuntimeHelpers(dom, state);
+    await loadRuntimeSelection(dom, state, runtimeHelpers);
+    await loadBatchExportHistory(dom, state, runtimeHelpers, { silent: true });
+    await loadDiagnostics(dom, state, { silent: true });
     await refreshCandidateList(dom, state, false);
   } catch (error) {
     state.isBootstrapping = false;
     state.isLoadingList = false;
+    state.isLoadingDiagnostics = false;
     flashNotice(dom, state, error.message || "初始化工作台失败。", "error");
   }
 }

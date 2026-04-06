@@ -10,6 +10,26 @@ export function createDefaultFilters(defaultSort = "score_desc") {
   };
 }
 
+export function createEmptyRuntimeSelectionState(batchId = "") {
+  return {
+    batchId,
+    candidateIds: [],
+    items: [],
+    updatedAt: "",
+    exportHistory: [],
+    latestExportDraft: null
+  };
+}
+
+export function createEmptyDiagnosticsState() {
+  return {
+    health: null,
+    workbench: null,
+    batchIntegrity: null,
+    recentOperations: []
+  };
+}
+
 export function createAppState() {
   return {
     bootstrap: null,
@@ -25,13 +45,8 @@ export function createAppState() {
     },
     candidateDetailsById: {},
     compareCandidateIds: [],
-    runtimeSelection: {
-      batchId: "",
-      candidateIds: [],
-      items: [],
-      updatedAt: "",
-      latestExportDraft: null
-    },
+    runtimeSelection: createEmptyRuntimeSelectionState(),
+    diagnostics: createEmptyDiagnosticsState(),
     filters: createDefaultFilters(),
     selectedCandidateId: "",
     selectedCandidateDetail: null,
@@ -40,6 +55,8 @@ export function createAppState() {
     isLoadingList: false,
     isLoadingDetail: false,
     isLoadingRuntimeSelection: false,
+    isLoadingExportHistory: false,
+    isLoadingDiagnostics: false,
     isExportingRuntimeSelection: false,
     isLoadingRuntimeDraft: false,
     isCommittingRuntimeDraft: false,

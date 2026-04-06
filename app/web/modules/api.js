@@ -44,6 +44,18 @@ export function getBatchOverview(batchId) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/overview`);
 }
 
+export function getHealth() {
+  return request("/api/health");
+}
+
+export function getDiagnostics() {
+  return request("/api/diagnostics");
+}
+
+export function getBatchIntegrity(batchId) {
+  return request(`/api/batches/${encodeURIComponent(batchId)}/integrity`);
+}
+
 export function getCandidates(batchId, filters) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/candidates${buildQueryString({
     ...filters,
@@ -71,6 +83,10 @@ export function createRuntimeSelectionDraft(batchId) {
   return request(`/api/batches/${encodeURIComponent(batchId)}/exports/runtime-selection`, {
     method: "POST"
   });
+}
+
+export function getBatchExports(batchId) {
+  return request(`/api/batches/${encodeURIComponent(batchId)}/exports`);
 }
 
 export function getExportDraft(exportId) {

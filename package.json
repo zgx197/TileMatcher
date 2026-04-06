@@ -6,6 +6,7 @@
   "scripts": {
     "analysis:start": "node app/server/server.js",
     "analysis:dev": "node app/server/scripts/dev.js",
-    "analysis:check": "node app/server/scripts/check.js"
+    "analysis:check": "node app/server/scripts/check.js",
+    "analysis:commit-smoke": "node app/server/scripts/commit-smoke.js"
   }
 }

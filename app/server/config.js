@@ -38,5 +38,11 @@ export const config = {
   },
   get exportsDir() {
     return path.join(this.workbenchDir, "exports");
+  },
+  get commitLocksDir() {
+    return path.join(this.workbenchDir, "locks", "commits");
+  },
+  get operationsLogFile() {
+    return path.join(this.workbenchDir, "operations.log.jsonl");
   }
 };

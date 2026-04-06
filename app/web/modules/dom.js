@@ -51,6 +51,8 @@ export function getDomRefs() {
     summaryAcceptedCount: requireElement("summary-accepted-count"),
     summaryReviewCount: requireElement("summary-review-count"),
     summaryRuntimeCount: requireElement("summary-runtime-count"),
-    topTags: requireElement("top-tags")
+    topTags: requireElement("top-tags"),
+    diagnosticsStatusBadge: requireElement("diagnostics-status-badge"),
+    diagnosticsPanel: requireElement("diagnostics-panel")
   };
 }
