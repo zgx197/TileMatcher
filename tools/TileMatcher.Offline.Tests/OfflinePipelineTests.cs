@@ -13,6 +13,7 @@ internal static class OfflinePipelineTests
             Run(nameof(EvaluateLayout_FindsSolution_ForSimplePair), EvaluateLayout_FindsSolution_ForSimplePair),
             Run(nameof(EvaluateLayout_RejectsUnsolvableLayout), EvaluateLayout_RejectsUnsolvableLayout),
             Run(nameof(FilterLayout_ProducesExpectedDecisions), FilterLayout_ProducesExpectedDecisions),
+            Run(nameof(ExportAnalysisDashboard_WritesStableHtml), () => ExportAnalysisDashboard_WritesStableHtml(repoRoot)),
             Run(nameof(ExportRuntimeLevels_WritesStableCatalogAndFiles), () => ExportRuntimeLevels_WritesStableCatalogAndFiles(repoRoot)),
         ];
     }
@@ -200,6 +201,78 @@ internal static class OfflinePipelineTests
         TestAssert.Equal(1, levelTwo.Layout.Tiles.Count(tile => tile.FaceHiddenInitial), "The second exported level should mark one tile as initially hidden.");
     }
 
+    private static void ExportAnalysisDashboard_WritesStableHtml(string repoRoot)
+    {
+        var analysisDir = Path.Combine(repoRoot, "artifacts", "test-results", "offline-analysis-dashboard");
+        if (Directory.Exists(analysisDir))
+        {
+            Directory.Delete(analysisDir, recursive: true);
+        }
+
+        Directory.CreateDirectory(analysisDir);
+        var config = new OfflineBatchConfig
+        {
+            BatchName = "dashboard-test-batch",
+        };
+
+        var accepted = new List<OfflineCandidateRecord>
+        {
+            CreateAcceptedRecord(1, "candidate_alpha", "normal_core", 0.7123),
+        };
+
+        var review = new List<OfflineCandidateRecord>
+        {
+            CreateReviewRecord(2, "candidate_review", "hard_core", 0.4512),
+        };
+
+        var rejected = new OfflineCandidateRecord
+        {
+            CandidateId = "candidate_reject",
+            BatchIndex = 3,
+            Seed = 300,
+            Layout = CreateLayout(
+                "candidate_reject",
+                (1, "Bam1", 0, 0, 0),
+                (2, "Dot1", 4, 0, 0)),
+            Evaluation = new OfflineEvaluation
+            {
+                HasSolution = false,
+                SolutionCountEstimate = 0,
+                InitialBranchCount = 0,
+                AverageBranchCount = 0.0,
+                DeadEndRate = 1.0,
+                RandomPlaySurvivalRate = 0.0,
+                TileCount = 2,
+                LayerCount = 1,
+            },
+            FilterResult = new OfflineFilterResult
+            {
+                Decision = OfflineFilterDecision.AutoReject,
+                DifficultyBucket = "rejected",
+                RecommendationScore = 0.0,
+                RejectReasons = ["不存在完整通关路径"],
+                Tags = ["rejected"],
+            },
+        };
+
+        var allCandidates = accepted.Concat(review).Append(rejected).ToList();
+        var dashboardPath = OfflineTestHooks.ExportAnalysisDashboard(
+            config,
+            analysisDir,
+            allCandidates,
+            accepted,
+            review,
+            new DateTime(2026, 4, 6, 8, 30, 0, DateTimeKind.Utc));
+
+        TestAssert.True(File.Exists(dashboardPath), "The analysis dashboard export should write index.html.");
+
+        var html = File.ReadAllText(dashboardPath);
+        TestAssert.True(html.Contains("配对牌局分析台", StringComparison.Ordinal), "The exported dashboard should keep the expected title.");
+        TestAssert.True(html.Contains("candidate_alpha", StringComparison.Ordinal), "The exported dashboard should embed accepted candidates.");
+        TestAssert.True(html.Contains("dashboard-test-batch", StringComparison.Ordinal), "The exported dashboard should embed batch metadata.");
+        TestAssert.True(html.Contains("AutoReject", StringComparison.Ordinal), "The exported dashboard should include decision payloads for filtering.");
+    }
+
     private static OfflineLevelLayout CreateLayout(string candidateId, params (int Id, string Type, int GX, int GY, int GZ)[] tiles)
     {
         return new OfflineLevelLayout
@@ -253,6 +326,44 @@ internal static class OfflinePipelineTests
                 Decision = OfflineFilterDecision.AutoAccept,
                 DifficultyBucket = difficultyBucket,
                 RecommendationScore = recommendationScore,
+            },
+        };
+    }
+
+    private static OfflineCandidateRecord CreateReviewRecord(
+        int levelId,
+        string candidateId,
+        string difficultyBucket,
+        double recommendationScore)
+    {
+        return new OfflineCandidateRecord
+        {
+            CandidateId = candidateId,
+            BatchIndex = levelId,
+            Seed = levelId * 100,
+            Layout = CreateLayout(
+                candidateId,
+                (1, "Bam1", 0, 0, 0),
+                (2, "Bam1", 4, 0, 0),
+                (3, "Dot1", 0, 6, 1),
+                (4, "Dot1", 4, 6, 1)),
+            Evaluation = new OfflineEvaluation
+            {
+                HasSolution = true,
+                SolutionCountEstimate = 4,
+                InitialBranchCount = 2,
+                AverageBranchCount = 1.4,
+                DeadEndRate = 0.18,
+                RandomPlaySurvivalRate = 0.38,
+                TileCount = 4,
+                LayerCount = 2,
+            },
+            FilterResult = new OfflineFilterResult
+            {
+                Decision = OfflineFilterDecision.NeedsReview,
+                DifficultyBucket = difficultyBucket,
+                RecommendationScore = recommendationScore,
+                Tags = ["hard_core", "low_branch_risk"],
             },
         };
     }

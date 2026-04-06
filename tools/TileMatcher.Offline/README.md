@@ -188,6 +188,10 @@ artifacts/mahjong-mvp/analysis/
 - `summary.json`
   - 当前批次的统计摘要
 
+- `index.html`
+  - 第一版静态 Web 分析台首页
+  - 直接嵌入当前批次候选、评估与筛选结果
+
 - `candidates.json`
   - 全部候选牌局、评估结果和筛选结果
 
@@ -242,6 +246,24 @@ artifacts/mahjong-mvp/runtime-levels/
 
 - `FilterResult`
   - 自动筛选结果
+
+### 2.5. `index.html`
+
+这是当前第一版 Web 分析台产物。
+
+它的定位是：
+
+- 离线分析结果浏览器
+- 不依赖额外后端
+- 跑完离线导出后即可直接打开查看
+
+当前第一版已支持：
+
+- 候选列表浏览
+- 按筛选结果、难度桶、标签、推荐分过滤
+- 单局详情查看
+- 静态牌桌结构预览
+- 浏览器本地人工标记
 
 单个候选当前结构大致为：
 
@@ -394,6 +416,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\sync-offline-levels-to-godot.
 1. 调整 `batch-config.sample.json` 或自定义批次配置
 2. 运行离线导出
 3. 检查 `analysis/` 和 `runtime-levels/` 输出
+   - 如需查看分析台，直接打开 `analysis/index.html`
 4. 运行 `sync-offline-levels-to-godot.ps1`
 5. 在 Godot 中按目录索引消费正式关卡
 
