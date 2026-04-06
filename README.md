@@ -33,7 +33,7 @@
 
 ## 这是什么
 
-`TileMatcher` 当前不是单纯的麻将复刻，也不是单纯的技术实验仓库。
+`TileMatcher` 当前不是单纯的早期原型复刻，也不是单纯的技术实验仓库。
 
 它正在逐步演进成一个包含两条主线的项目：
 
@@ -114,20 +114,23 @@ Godot 工程目录：
 - 主工程配置：[project.godot](d:/UGit/TileMatcher/godot/project.godot)
 - Android 导出预设：[export_presets.cfg](d:/UGit/TileMatcher/godot/export_presets.cfg)
 
-### Android 打包
+### 构建与发布
 
-标准脚本：
+统一入口：
 
+- [build-release.ps1](d:/UGit/TileMatcher/scripts/build-release.ps1)
 - [build-android.ps1](d:/UGit/TileMatcher/scripts/build-android.ps1)
+- [build-windows.ps1](d:/UGit/TileMatcher/scripts/build-windows.ps1)
 
-当前脚本已经补上两类关键保障：
+当前链路已经固定为：
 
-- 会在导出前自动补齐 Android 导出所需的主题资源、启动背景资源和 Godot 模板归档。
-- 会在等待 Godot 导出时持续输出心跳，并基于稳定产物判定继续后续流程，避免本地长时间看起来像卡死。
+- 本地和 GitHub Actions 复用同一套核心脚本入口。
+- Android 与 Windows release 统一聚合到同一个 GitHub Release。
+- Web 目标当前只保留为显式限制说明，不伪装成已支持平台。
 
 详细说明见：
 
-- [安卓打包脚本说明.md](d:/UGit/TileMatcher/docs/安卓打包脚本说明.md)
+- [构建与发布说明](d:/UGit/TileMatcher/docs/构建与发布说明.md)
 
 ### GitHub Actions 发布
 
@@ -154,7 +157,8 @@ Godot 工程目录：
 
 - [文档总览](d:/UGit/TileMatcher/docs/README.md)
 - [文档导航约定](d:/UGit/TileMatcher/docs/文档导航约定.md)
-- [麻将牌局构造与评估系统设计](d:/UGit/TileMatcher/docs/麻将牌局构造与评估系统设计.md)
-- [动物消消乐与宠物店产品设计草案](d:/UGit/TileMatcher/docs/动物消消乐与宠物店产品设计草案.md)
-- [项目阶段总结与对外说明](d:/UGit/TileMatcher/docs/项目阶段总结与对外说明.md)
-- [安卓打包脚本说明](d:/UGit/TileMatcher/docs/安卓打包脚本说明.md)
+- [产品方向与外围循环设计](d:/UGit/TileMatcher/docs/产品方向与外围循环设计.md)
+- [堆叠框架与网格规则设计](d:/UGit/TileMatcher/docs/堆叠框架与网格规则设计.md)
+- [配对牌局构造与评估系统设计](d:/UGit/TileMatcher/docs/配对牌局构造与评估系统设计.md)
+- [构建与发布说明](d:/UGit/TileMatcher/docs/构建与发布说明.md)
+- [运行时日志系统设计](d:/UGit/TileMatcher/docs/运行时日志系统设计.md)
