@@ -39,6 +39,7 @@
 - `docs/README.md`
 - `docs/文档导航约定.md`
 - `docs/堆叠框架与网格规则设计.md`
+- `docs/牌局分析台与服务化工作台设计.md`
 - `docs/代码架构与配置说明.md`
 - `docs/研发记录/README.md`
 - `docs/画面风格与渲染分析.md`
